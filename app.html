@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINBOT · 票据预审</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:#F8FAFC;color:#0F172A;min-height:100vh}
+.hdr{background:#fff;border-bottom:1px solid #E2E8F0;padding:0 24px;display:flex;align-items:center;position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.logo{padding:12px 0;margin-right:24px}.logo h1{font-size:15px;font-weight:800;color:#2563EB}.logo p{font-size:10px;color:#94A3B8}
+.tab{padding:17px 14px;background:transparent;border:none;border-bottom:2px solid transparent;color:#475569;cursor:pointer;font-size:13px;font-family:inherit;white-space:nowrap}
+.tab.on{border-bottom-color:#2563EB;color:#2563EB;font-weight:700}
+.user-info{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px}
+.status-badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.s-active{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC}
+.s-inactive{background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5}
+.s-expired{background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5}
+.s-paused{background:#FFFBEB;color:#D97706;border:1px solid #FCD34D}
+.main{max-width:960px;margin:0 auto;padding:28px 20px}
+.page{display:none}.page.on{display:block}
+/* 订阅页 */
+.sub-hero{text-align:center;padding:40px 20px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;margin-bottom:24px}
+.sub-hero h2{font-size:22px;font-weight:700;margin-bottom:8px}
+.sub-hero p{font-size:14px;color:#475569;margin-bottom:24px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.plan{background:#fff;border:2px solid #E2E8F0;border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:all 0.15s}
+.plan:hover{border-color:#2563EB;box-shadow:0 4px 20px rgba(37,99,235,0.1)}
+.plan.hot{border-color:#2563EB}
+.plan-name{font-size:15px;font-weight:700;margin-bottom:6px}
+.plan-price{font-size:32px;font-weight:800;color:#2563EB;margin:8px 0 4px}
+.plan-price span{font-size:13px;color:#94A3B8;font-weight:400}
+.plan-save{font-size:12px;color:#16A34A;margin-bottom:14px;font-weight:600}
+/* 工具区 */
+.ptitle{font-size:20px;font-weight:700;margin-bottom:6px}.psub{font-size:14px;color:#475569;margin-bottom:20px}
+.dz{border:2px dashed #CBD5E1;border-radius:12px;padding:48px 32px;text-align:center;cursor:pointer;background:#F8FAFC;transition:all 0.2s}
+.dz:hover,.dz.drag{border-color:#2563EB;background:#EFF6FF}
+.btn{padding:9px 20px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s}
+.btn:hover{background:#F1F5F9}.btn.pri{background:#2563EB;border-color:#2563EB;color:#fff}.btn.pri:hover{background:#1D4ED8}.btn.full{width:100%;justify-content:center}
+.btn.sm{padding:5px 12px;font-size:12px}.btn.danger{border-color:#FECACA;color:#DC2626;background:#FEF2F2}
+.qbox{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:18px;margin-top:14px;display:none}
+.qi{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #F1F5F9;font-size:13px;color:#475569}
+.spin{width:14px;height:14px;border:2px solid #2563EB;border-top-color:transparent;border-radius:50%;animation:sp 0.8s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.krow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
+.kpi{border-radius:10px;padding:12px 14px}.kl{font-size:10px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px}.kv{font-size:20px;font-weight:800;font-family:monospace}
+.rc{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:16px;margin-bottom:10px}
+.rc.dup{border-color:#FCD34D;background:#FFFBEB}
+.rh{display:flex;align-items:center;gap:10px}
+.ri{width:32px;height:32px;border-radius:8px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.rm{flex:1;min-width:0;cursor:pointer}.rn{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rt{font-size:11px;color:#94A3B8;margin-top:2px}
+.rb{margin-top:14px}
+.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;margin-bottom:12px}
+.fb{background:#F8FAFC;border-radius:7px;padding:8px 10px}.fl{font-size:10px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px}.fv{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
+.th{background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5}.tm{background:#FFFBEB;color:#D97706;border:1px solid #FCD34D}.tl{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC}.td{background:#FFFBEB;color:#D97706;border:1px solid #FCD34D}
+.rki{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:7px;margin-bottom:5px;font-size:12px;line-height:1.5}
+.rkh{background:#FEF2F2;border:1px solid #FECACA}.rkm{background:#FFFBEB;border:1px solid #FDE68A}.rkl{background:#F0FDF4;border:1px solid #BBF7D0}
+.vb{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 14px;margin-top:10px}
+.vl{font-size:10px;font-weight:700;color:#2563EB;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px}
+.vg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px}.vk{font-size:10px;color:#94A3B8;margin-bottom:2px}
+.eg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ec{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:18px}
+.notice{background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.7;margin-top:14px}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:#fff;border-radius:14px;padding:28px;width:460px;max-width:92vw;max-height:85vh;overflow-y:auto}
+.modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
+.fi{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A}
+.fi:focus{border-color:#2563EB}
+.fs{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A;background:#fff}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div class="logo"><h1>FINBOT</h1><p>票据预审 Agent</p></div>
+  <button class="tab on" onclick="go(0)">① 上传票据</button>
+  <button class="tab" id="t1" onclick="go(1)">② 审核结果</button>
+  <button class="tab" onclick="go(2)">③ 导出报告</button>
+  <button class="tab" onclick="go(3)">订阅</button>
+  <div class="user-info">
+    <span id="user-email" style="color:#475569"></span>
+    <span class="status-badge" id="user-status"></span>
+    <button class="btn sm" onclick="logout()">退出</button>
+  </div>
+</div>
+
+<!-- 编辑弹窗 -->
+<div class="modal-bg" id="editModal">
+  <div class="modal">
+    <h3>✏️ 编辑识别结果</h3>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">单据类型</div><select class="fs" id="e_docType"><option>增值税发票</option><option>银行回单</option><option>报销单</option><option>收据</option><option>铁路电子客票</option><option>对账单</option><option>其他</option></select></div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">日期</div><input class="fi" id="e_date" type="date"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">不含税金额</div><input class="fi" id="e_amount" type="number" step="0.01"></div>
+        <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">税额</div><input class="fi" id="e_tax" type="number" step="0.01"></div>
+      </div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">对方单位</div><input class="fi" id="e_party"></div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">发票号/单号</div><input class="fi" id="e_docNo"></div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">对方税号</div><input class="fi" id="e_taxNo"></div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">购买方（抬头）</div><input class="fi" id="e_title"></div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">费用类别</div><select class="fs" id="e_category"><option>差旅</option><option>餐饮招待</option><option>办公用品</option><option>运输物流</option><option>设备采购</option><option>服务费</option><option>租金</option><option>水电费</option><option>广告宣传</option><option>材料采购</option><option>其他</option></select></div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">凭证摘要</div><input class="fi" id="e_memo"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
+      <button class="btn" onclick="closeEdit()">取消</button>
+      <button class="btn pri" onclick="saveEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <!-- 免费试用提示条 -->
+  <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:18px">🎁</span>
+    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">3</b> 次识别机会</span>
+    <button class="btn pri sm" onclick="go(3)">订阅解锁无限次 →</button>
+  </div>
+
+  <!-- 次数用完提示 -->
+  <div id="paywall" style="display:none;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:40px;text-align:center;margin-bottom:20px">
+    <div style="font-size:36px;margin-bottom:14px">🔒</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px">免费次数已用完</div>
+    <div style="font-size:14px;color:#475569;margin-bottom:20px">订阅后无限使用，购买后立即开通</div>
+    <button class="btn pri" onclick="go(3)">查看套餐 →</button>
+  </div>
+
+  <!-- 上传 -->
+  <div class="page on" id="p0">
+    <div class="ptitle">上传票据</div>
+    <div class="psub">支持增值税发票、铁路客票、银行回单、报销单，多页PDF，可批量</div>
+    <div class="dz" id="dz" onclick="document.getElementById('fi').click()">
+      <div style="font-size:44px;margin-bottom:12px">📁</div>
+      <div style="font-size:15px;font-weight:600;margin-bottom:7px" id="dzt">拖拽上传 或 点击选择文件</div>
+      <div style="font-size:13px;color:#94A3B8;margin-bottom:18px">支持 PDF（多页）、JPG、PNG</div>
+      <button class="btn pri" onclick="event.stopPropagation();document.getElementById('fi').click()">选择文件</button>
+    </div>
+    <input type="file" id="fi" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="runF(this.files)">
+    <div class="qbox" id="qb"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">处理队列</p><div id="ql"></div></div>
+    <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;font-size:13px;color:#DC2626;margin-top:12px;display:none" id="eb"></div>
+  </div>
+
+  <!-- 结果 -->
+  <div class="page" id="p1">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
+      <div><div class="ptitle" style="margin-bottom:4px">审核结果</div><div class="psub" style="margin-bottom:0">高风险和重复发票排在最前</div></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="go(0)">继续上传</button>
+        <button class="btn danger sm" onclick="if(confirm('清空所有结果？')){RS=[];renderRes();}">清空</button>
+        <button class="btn pri" onclick="go(2)">导出报告 →</button>
+      </div>
+    </div>
+    <div class="krow" id="kpis"></div>
+    <div id="rlist"></div>
+  </div>
+
+  <!-- 导出 -->
+  <div class="page" id="p2">
+    <div class="ptitle">导出报告</div>
+    <div class="psub">支持 Excel（含凭证编号）和 CSV</div>
+    <div class="eg" id="ec"></div>
+    <div class="notice" id="en" style="display:none"><strong style="color:#D97706">⚑ 会计复核说明：</strong>本报告由AI预审生成，仅供参考。凭证编号为建议编号，最终以会计审核为准。</div>
+  </div>
+
+  <!-- 订阅 -->
+  <div class="page" id="p3">
+    <div class="ptitle">订阅管理</div>
+    <div class="psub">选择适合你的套餐，购买后立即开通</div>
+    <div id="sub-status-box" style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px;margin-bottom:20px;display:none">
+      <div style="font-size:14px;font-weight:600;margin-bottom:4px">当前套餐</div>
+      <div style="font-size:13px;color:#475569" id="sub-detail"></div>
+    </div>
+    <div class="plans">
+      <div class="plan" onclick="buyPlan('monthly')">
+        <div class="plan-name">月付套餐</div>
+        <div class="plan-price">¥399<span>/月</span></div>
+        <div class="plan-save">按月付，灵活订阅</div>
+        <button class="btn" style="width:100%">立即购买</button>
+      </div>
+      <div class="plan hot" onclick="buyPlan('quarterly')">
+        <div style="font-size:11px;color:#2563EB;font-weight:700;margin-bottom:6px">⭐ 推荐</div>
+        <div class="plan-name">季付套餐</div>
+        <div class="plan-price">¥999<span>/季</span></div>
+        <div class="plan-save">省17%，相当于333/月</div>
+        <button class="btn pri" style="width:100%">立即购买</button>
+      </div>
+      <div class="plan" onclick="buyPlan('yearly')">
+        <div class="plan-name">年付套餐</div>
+        <div class="plan-price">¥2999<span>/年</span></div>
+        <div class="plan-save">省37%，相当于250/月</div>
+        <button class="btn" style="width:100%">立即购买</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const AM={"差旅":["660201 差旅费","管理费用/销售费用"],"餐饮招待":["660202 业务招待费","管理费用"],"办公用品":["660203 办公费","管理费用"],"运输物流":["660204 运费","销售费用"],"设备采购":["1601 固定资产","视金额判断"],"服务费":["660210 服务费","管理费用/销售费用"],"租金":["660205 租赁费","管理费用"],"水电费":["660206 水电费","管理费用"],"广告宣传":["660207 广告费","销售费用"],"材料采购":["5001 原材料","视业务类型"],"其他":["660299 其他费用","管理费用"]};
+const DI={"增值税发票":"🧾","银行回单":"🏦","报销单":"📋","收据":"🗒️","铁路电子客票":"🚄"};
+let RS=[],editId=null,USER=null;
+
+// ── 鉴权 ─────────────────────────────────────────────
+const TOKEN=localStorage.getItem("fb_token");
+if(!TOKEN){location.href="/";throw new Error();}
+
+async function loadUser(){
+  try{
+    const r=await fetch("/api/me",{headers:{Authorization:"Bearer "+TOKEN}});
+    if(!r.ok){localStorage.removeItem("fb_token");location.href="/";return;}
+    USER=await r.json();
+    document.getElementById("user-email").textContent=USER.email;
+    const sEl=document.getElementById("user-status");
+    const sMap={active:["s-active","已订阅"],inactive:["s-inactive","未订阅"],expired:["s-expired","已过期"],paused:["s-paused","已暂停"]};
+    const[cls,txt]=sMap[USER.status]||["s-inactive","未知"];
+    sEl.className="status-badge "+cls;sEl.textContent=txt;
+
+    // 订阅详情
+    if(USER.status==="active"){
+      document.getElementById("sub-status-box").style.display="block";
+      document.getElementById("sub-detail").textContent=`套餐：${USER.plan||"月付"} · 到期：${USER.expires||"永久"}`;
+    }
+
+    // 付款成功回调
+    if(location.search.includes("pay=success")){
+      await loadUser(); // 刷新状态
+      history.replaceState(null,"","/app");
+    }
+
+    if(USER.status!=="active"){document.getElementById("paywall").style.display="block";}
+    else{document.getElementById("paywall").style.display="none";}
+  }catch(e){location.href="/";}
+}
+
+function logout(){localStorage.removeItem("fb_token");localStorage.removeItem("fb_user");location.href="/";}
+
+function go(i){
+  document.querySelectorAll(".page").forEach((p,j)=>p.className="page"+(j===i?" on":""));
+  document.querySelectorAll(".tab").forEach((t,j)=>t.className="tab"+(j===i?" on":""));
+  if(i===2)renderEx();
+}
+
+async function checkActive(){
+  if(USER?.status==="active") return true;
+  if(window.__trialRemaining > 0) {
+    // 消耗一次免费次数
+    const r = await fetch("/api/trial/use", {method:"POST", headers:{Authorization:"Bearer "+TOKEN, "Content-Type":"application/json"}});
+    const d = await r.json();
+    if (!r.ok) {
+      document.getElementById("paywall").style.display = "block";
+      document.getElementById("trial-bar").style.display = "none";
+      go(3);
+      return false;
+    }
+    window.__trialRemaining = d.remaining;
+    document.getElementById("trial-count").textContent = d.remaining;
+    if (d.remaining === 0) {
+      document.getElementById("trial-bar").style.display = "none";
+    }
+    return true;
+  }
+  document.getElementById("paywall").style.display = "block";
+  document.getElementById("trial-bar").style.display = "none";
+  go(3);
+  return false;
+}
+
+async function buyPlan(plan){
+  if(!USER){alert("请先登录");return;}
+  const r=await fetch("/api/order/create",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify({plan})});
+  const d=await r.json();
+  if(!d.ok){alert(d.error||"创建订单失败");return;}
+  window.open(d.payUrl,"_blank");
+  // 轮询订单状态
+  let tries=0;
+  const poll=setInterval(async()=>{
+    await loadUser();
+    if(USER?.status==="active"||tries++>30)clearInterval(poll);
+  },3000);
+}
+
+// ── PDF → 图片 ────────────────────────────────────────
+async function pdfToImages(file){
+  const buf=await file.arrayBuffer();
+  const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+  const imgs=[];
+  for(let i=1;i<=pdf.numPages;i++){
+    const page=await pdf.getPage(i);
+    const vp=page.getViewport({scale:3.0});
+    const canvas=document.createElement('canvas');
+    canvas.width=vp.width;canvas.height=vp.height;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,canvas.width,canvas.height);
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+    imgs.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
+  }
+  return imgs;
+}
+async function fileToB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});}
+
+function rl(item){if(item.duplicate)return"dup";return item.risks?.some(r=>r.level==="high")?"high":item.risks?.some(r=>r.level==="mid")?"mid":"low";}
+function tg(lvl,txt){const m={high:"高风险",mid:"需确认",low:"通过",dup:"重复发票"};const c={high:"th",mid:"tm",low:"tl",dup:"td"};return`<span class="tag ${c[lvl]||'tm'}">${txt||m[lvl]||lvl}</span>`;}
+
+async function runF(files){
+  if(!checkActive())return;
+  const key=localStorage.getItem("sf_key")||prompt("请输入硅基流动 API Key（用于AI识别）：");
+  if(!key)return;
+  localStorage.setItem("sf_key",key);
+  const arr=[...files];if(!arr.length)return;
+  document.getElementById("dzt").textContent="AI 审核中…";
+  const qb=document.getElementById("qb"),ql=document.getElementById("ql");
+  qb.style.display="block";
+  ql.innerHTML=arr.map(f=>`<div class="qi" id="qi${f.name.replace(/\W/g,'_')}"><div class="spin"></div><span>${f.name}</span><span style="font-size:11px;color:#94A3B8;margin-left:auto" id="st${f.name.replace(/\W/g,'_')}">准备中</span></div>`).join("");
+  const out=[];
+  for(const f of arr){
+    const sid="st"+f.name.replace(/\W/g,'_');const sel=document.getElementById(sid);
+    try{if(sel)sel.textContent="识别中…";
+      const r=await analyze(f,key);
+      r.duplicate=RS.some(ex=>ex.docNo&&ex.docNo===r.docNo)||out.some(ex=>ex.docNo&&ex.docNo===r.docNo);
+      if(r.duplicate){r.risks=r.risks||[];r.risks.unshift({level:"high",message:"⚠ 发票号重复："+r.docNo+"，疑似重复报销"});}
+      out.push(r);if(sel)sel.textContent="✓ 完成";
+    }catch(e){if(sel)sel.textContent="✗ 失败";out.push({id:Date.now()+Math.random(),fileName:f.name,docType:"识别失败",risks:[{level:"high",message:"错误："+String(e.message)}],manualReview:"请人工处理"});}
+    await new Promise(r=>setTimeout(r,300));
+    const el=document.getElementById("qi"+f.name.replace(/\W/g,'_'));if(el)setTimeout(()=>el.remove(),800);
+  }
+  setTimeout(()=>{if(!document.getElementById("ql").children.length)qb.style.display="none";},1000);
+  document.getElementById("dzt").textContent="拖拽上传 或 点击选择文件";
+  RS=[...out,...RS];renderRes();go(1);
+}
+
+async function analyze(file,key){
+  const sys=`你是专业财务票据预审AI。分析票据只输出JSON：{"docType":"增值税发票/银行回单/报销单/收据/铁路电子客票/对账单/其他","date":"YYYY-MM-DD","amount":不含税金额数字,"tax":税额数字,"party":"对方单位","docNo":"发票号","taxNo":"对方税号","title":"购买方名称","category":"差旅/餐饮招待/办公用品/运输物流/设备采购/服务费/租金/水电费/广告宣传/材料采购/其他","memo":"摘要20字内","manualReview":"需人工确认说明null代表无","risks":[{"level":"high/mid/low","message":"描述"}]}`;
+  let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
+  const results=[];
+  for(const img of images){
+    const resp=await fetch("https://api.siliconflow.cn/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1000,messages:[{role:"system",content:sys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别票据输出JSON"}]}]})});
+    if(!resp.ok){const t=await resp.text();let msg="API错误 "+resp.status;try{const j=JSON.parse(t);msg=j.error?.message||msg;}catch(e){}throw new Error(msg);}
+    const d=await resp.json();
+    const raw=(d.choices[0].message.content||"").trim();
+    try{results.push(JSON.parse(raw.replace(/```json|```/g,"").trim()));}catch(e){}
+  }
+  if(!results.length)throw new Error("AI未返回有效结果");
+  const best=results.reduce((a,b)=>{const sc=r=>Object.values(r).filter(v=>v&&v!=="null"&&v!==0).length;return sc(b)>sc(a)?b:a;},results[0]);
+  return{...best,fileName:file.name,id:Date.now()+Math.random(),pages:images.length};
+}
+
+function openEdit(id){
+  const item=RS.find(r=>r.id===id);if(!item)return;editId=id;
+  ["docType","date","amount","tax","party","docNo","taxNo","title","category","memo"].forEach(k=>{ const el=document.getElementById("e_"+k);if(el)el.value=item[k]||""; });
+  document.getElementById("editModal").className="modal-bg on";
+}
+function closeEdit(){document.getElementById("editModal").className="modal-bg";editId=null;}
+function saveEdit(){
+  if(!editId)return;
+  RS=RS.map(r=>r.id!==editId?r:{...r,docType:document.getElementById("e_docType").value,date:document.getElementById("e_date").value,amount:parseFloat(document.getElementById("e_amount").value)||0,tax:parseFloat(document.getElementById("e_tax").value)||0,party:document.getElementById("e_party").value,docNo:document.getElementById("e_docNo").value,taxNo:document.getElementById("e_taxNo").value,title:document.getElementById("e_title").value,category:document.getElementById("e_category").value,memo:document.getElementById("e_memo").value,edited:true});
+  closeEdit();renderRes();
+}
+document.getElementById("editModal").addEventListener("click",function(e){if(e.target===this)closeEdit();});
+
+function renderRes(){
+  const dups=RS.filter(r=>r.duplicate).length,high=RS.filter(r=>!r.duplicate&&rl(r)==="high").length,mid=RS.filter(r=>!r.duplicate&&rl(r)==="mid").length,amt=RS.reduce((s,r)=>s+(Number(r.amount)||0),0);
+  document.getElementById("kpis").innerHTML=[["单据总数",RS.length,"#2563EB","#EFF6FF"],["金额合计","¥"+amt.toLocaleString("zh-CN"),"#0F172A","#F8FAFC"],["重复",dups,"#D97706","#FFFBEB"],["高风险",high,"#DC2626","#FEF2F2"],["通过",RS.length-dups-high-mid,"#16A34A","#F0FDF4"]].map(([l,v,c,bg])=>`<div class="kpi" style="background:${bg};border:1px solid ${c}22"><div class="kl">${l}</div><div class="kv" style="color:${c}">${v}</div></div>`).join("");
+  const order={dup:0,high:1,mid:2,low:3};
+  const sorted=[...RS].sort((a,b)=>(order[rl(a)]||3)-(order[rl(b)]||3));
+  let vn=1;const yr=String(new Date().getFullYear()).slice(2);
+  document.getElementById("rlist").innerHTML=sorted.map(item=>{
+    const lvl=rl(item),ac=AM[item.category]||AM["其他"],vNo=(lvl==="low"||lvl==="mid")?`JZ${yr}${String(vn++).padStart(4,"0")}`:"—";
+    const flds=[["金额",item.amount?`¥${Number(item.amount).toLocaleString("zh-CN")}`:"—"],["税额",item.tax?`¥${Number(item.tax).toLocaleString("zh-CN")}`:"—"],["对方",item.party||"—"],["发票号",item.docNo||"—"],["税号",item.taxNo||"—"],["抬头",item.title||"—"]];
+    const risks=(item.risks||[]).map(r=>`<div class="rki rk${r.level[0]}">${tg(r.level)}<span>${r.message}</span></div>`).join("");
+    return`<div class="rc${item.duplicate?' dup':''}"><div class="rh"><div class="ri">${DI[item.docType]||"📄"}</div><div class="rm" onclick="openEdit(${item.id})"><div class="rn">${item.fileName}${item.pages>1?`<span style="font-size:10px;color:#2563EB;margin-left:6px">${item.pages}页</span>`:""}${item.edited?`<span style="font-size:10px;color:#94A3B8;margin-left:6px">已编辑</span>`:""}</div><div class="rt">${item.docType||"未知"} · ${item.date||"日期未知"}</div></div><div style="display:flex;gap:5px;align-items:center;flex-shrink:0">${tg(lvl)}<button class="btn sm" onclick="openEdit(${item.id})">编辑</button><button class="btn sm danger" onclick="if(confirm('确定删除？')){RS=RS.filter(r=>r.id!==${item.id});renderRes();}">删除</button></div></div><div class="rb"><div class="fg">${flds.map(([k,v])=>`<div class="fb"><div class="fl">${k}</div><div class="fv" title="${v}">${v}</div></div>`).join("")}</div>${risks?`<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">风险提示</p>${risks}</div>`:""}<div class="vb"><div class="vl">凭证建议</div><div class="vg"><div><div class="vk">费用类别</div><div style="font-weight:600;font-size:12px">${item.category||"待确认"}</div></div><div><div class="vk">建议科目</div><div style="font-weight:600;font-size:11px;color:#2563EB">${ac[0]}</div></div><div><div class="vk">凭证编号</div><div style="font-weight:600;font-size:11px;color:#475569;font-family:monospace">${vNo}</div></div></div>${item.memo?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}${item.manualReview?`<div style="margin-top:6px">${tg("mid","⚑ 需人工复核")}<span style="font-size:11px;color:#475569;margin-left:6px">${item.manualReview}</span></div>`:""}</div></div></div>`;
+  }).join("");
+  document.getElementById("t1").textContent=`② 审核结果 (${RS.length})`;
+}
+
+function renderEx(){
+  if(!RS.length){document.getElementById("ec").innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:60px;color:#94A3B8">还没有审核结果</div>`;document.getElementById("en").style.display="none";return;}
+  let vn=1;const yr=String(new Date().getFullYear()).slice(2);
+  function buildRows(data){return data.map(r=>{const lvl=rl(r),lv=lvl==="high"?"高风险":lvl==="dup"?"重复发票":lvl==="mid"?"需确认":"通过";const vNo=(lvl==="low"||lvl==="mid")?`JZ${yr}${String(vn++).padStart(4,"0")}`:"";return{凭证编号:vNo,文件名:r.fileName,单据类型:r.docType||"",日期:r.date||"",不含税金额:Number(r.amount)||0,税额:Number(r.tax)||0,价税合计:(Number(r.amount)||0)+(Number(r.tax)||0),对方单位:r.party||"",发票号:r.docNo||"",对方税号:r.taxNo||"",购买方抬头:r.title||"",费用类别:r.category||"",建议科目:(AM[r.category]||AM["其他"])[0],建议摘要:r.memo||"",风险等级:lv,风险描述:(r.risks||[]).map(x=>x.message).join("；"),需人工复核:r.manualReview||""};});}
+  const sets=[{icon:"📊",title:"完整汇总表",desc:`全部 ${RS.length} 条`,data:RS},{icon:"⚠️",title:"风险清单",desc:`${RS.filter(r=>rl(r)!=="low").length} 条`,data:RS.filter(r=>rl(r)!=="low")},{icon:"📋",title:"凭证建议表",desc:`通过审核`,data:RS.filter(r=>rl(r)!=="high"&&rl(r)!=="dup")},{icon:"🔁",title:"补件清单",desc:`${RS.filter(r=>r.manualReview).length} 条`,data:RS.filter(r=>r.manualReview)}];
+  window.__ed=sets.map(s=>({...s,rows:buildRows(s.data)}));
+  document.getElementById("ec").innerHTML=sets.map((s,i)=>`<div class="ec"><div style="font-size:28px;margin-bottom:10px">${s.icon}</div><div style="font-weight:700;font-size:14px;margin-bottom:5px">${s.title}</div><div style="font-size:13px;color:#475569;margin-bottom:14px">${s.desc}</div><div style="display:flex;gap:8px"><button class="btn pri full" onclick="doXlsx(${i})">Excel</button><button class="btn full" onclick="doCsv(${i})">CSV</button></div></div>`).join("");
+  document.getElementById("en").style.display="block";
+}
+
+function doXlsx(i){const{rows,title}=window.__ed[i];if(!rows?.length){alert("没有数据");return;}const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:12},{wch:28},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:20},{wch:22},{wch:22},{wch:20},{wch:10},{wch:16},{wch:20},{wch:8},{wch:30},{wch:20}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,title.slice(0,31));XLSX.writeFile(wb,title+"_"+new Date().toISOString().slice(0,10)+".xlsx");}
+function doCsv(i){const{rows,title}=window.__ed[i];if(!rows?.length){alert("没有数据");return;}const H=Object.keys(rows[0]);const csv=[H,...rows.map(r=>H.map(k=>r[k]))].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}));a.download=title+"_"+new Date().toISOString().slice(0,10)+".csv";a.click();}
+
+const dz=document.getElementById("dz");
+dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("drag")});
+dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
+dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("drag");runF(e.dataTransfer.files)});
+
+loadUser();
+</script>
+</body>
+</html>
