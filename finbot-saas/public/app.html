@@ -113,11 +113,18 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 </div>
 
 <div class="main">
-  <!-- 未订阅提示 -->
+  <!-- 免费试用提示条 -->
+  <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:18px">🎁</span>
+    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">3</b> 次识别机会</span>
+    <button class="btn pri sm" onclick="go(3)">订阅解锁无限次 →</button>
+  </div>
+
+  <!-- 次数用完提示 -->
   <div id="paywall" style="display:none;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:40px;text-align:center;margin-bottom:20px">
     <div style="font-size:36px;margin-bottom:14px">🔒</div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:8px">请先订阅以使用全部功能</div>
-    <div style="font-size:14px;color:#475569;margin-bottom:20px">购买套餐后立即开通，支持微信/支付宝</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px">免费次数已用完</div>
+    <div style="font-size:14px;color:#475569;margin-bottom:20px">订阅后无限使用，购买后立即开通</div>
     <button class="btn pri" onclick="go(3)">查看套餐 →</button>
   </div>
 
@@ -236,9 +243,29 @@ function go(i){
   if(i===2)renderEx();
 }
 
-function checkActive(){
-  if(USER?.status!=="active"){alert("请先购买套餐");go(3);return false;}
-  return true;
+async function checkActive(){
+  if(USER?.status==="active") return true;
+  if(window.__trialRemaining > 0) {
+    // 消耗一次免费次数
+    const r = await fetch("/api/trial/use", {method:"POST", headers:{Authorization:"Bearer "+TOKEN, "Content-Type":"application/json"}});
+    const d = await r.json();
+    if (!r.ok) {
+      document.getElementById("paywall").style.display = "block";
+      document.getElementById("trial-bar").style.display = "none";
+      go(3);
+      return false;
+    }
+    window.__trialRemaining = d.remaining;
+    document.getElementById("trial-count").textContent = d.remaining;
+    if (d.remaining === 0) {
+      document.getElementById("trial-bar").style.display = "none";
+    }
+    return true;
+  }
+  document.getElementById("paywall").style.display = "block";
+  document.getElementById("trial-bar").style.display = "none";
+  go(3);
+  return false;
 }
 
 async function buyPlan(plan){
