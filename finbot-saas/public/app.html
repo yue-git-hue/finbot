@@ -305,10 +305,7 @@ function rl(item){if(item.duplicate)return"dup";return item.risks?.some(r=>r.lev
 function tg(lvl,txt){const m={high:"高风险",mid:"需确认",low:"通过",dup:"重复发票"};const c={high:"th",mid:"tm",low:"tl",dup:"td"};return`<span class="tag ${c[lvl]||'tm'}">${txt||m[lvl]||lvl}</span>`;}
 
 async function runF(files){
-  if(!checkActive())return;
-  const key=localStorage.getItem("sf_key")||prompt("请输入硅基流动 API Key（用于AI识别）：");
-  if(!key)return;
-  localStorage.setItem("sf_key",key);
+  if(!(await checkActive()))return;
   const arr=[...files];if(!arr.length)return;
   document.getElementById("dzt").textContent="AI 审核中…";
   const qb=document.getElementById("qb"),ql=document.getElementById("ql");
@@ -318,7 +315,7 @@ async function runF(files){
   for(const f of arr){
     const sid="st"+f.name.replace(/\W/g,'_');const sel=document.getElementById(sid);
     try{if(sel)sel.textContent="识别中…";
-      const r=await analyze(f,key);
+      const r=await analyze(f);
       r.duplicate=RS.some(ex=>ex.docNo&&ex.docNo===r.docNo)||out.some(ex=>ex.docNo&&ex.docNo===r.docNo);
       if(r.duplicate){r.risks=r.risks||[];r.risks.unshift({level:"high",message:"⚠ 发票号重复："+r.docNo+"，疑似重复报销"});}
       out.push(r);if(sel)sel.textContent="✓ 完成";
@@ -331,13 +328,13 @@ async function runF(files){
   RS=[...out,...RS];renderRes();go(1);
 }
 
-async function analyze(file,key){
+async function analyze(file){
   const sys=`你是专业财务票据预审AI。分析票据只输出JSON：{"docType":"增值税发票/银行回单/报销单/收据/铁路电子客票/对账单/其他","date":"YYYY-MM-DD","amount":不含税金额数字,"tax":税额数字,"party":"对方单位","docNo":"发票号","taxNo":"对方税号","title":"购买方名称","category":"差旅/餐饮招待/办公用品/运输物流/设备采购/服务费/租金/水电费/广告宣传/材料采购/其他","memo":"摘要20字内","manualReview":"需人工确认说明null代表无","risks":[{"level":"high/mid/low","message":"描述"}]}`;
   let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
   const results=[];
   for(const img of images){
-    const resp=await fetch("https://api.siliconflow.cn/v1/chat/completions",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1000,messages:[{role:"system",content:sys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别票据输出JSON"}]}]})});
-    if(!resp.ok){const t=await resp.text();let msg="API错误 "+resp.status;try{const j=JSON.parse(t);msg=j.error?.message||msg;}catch(e){}throw new Error(msg);}
+    const resp=await fetch("/api/ai/recognize",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1000,messages:[{role:"system",content:sys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别票据输出JSON"}]}]})});
+    if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
     const d=await resp.json();
     const raw=(d.choices[0].message.content||"").trim();
     try{results.push(JSON.parse(raw.replace(/```json|```/g,"").trim()));}catch(e){}
