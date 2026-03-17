@@ -208,6 +208,29 @@ function activateOrder(outTradeNo) {
   db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(user.id, user.email, "paid:" + order.plan);
 }
 
+
+// ── AI 识别代理（客户无需填Key）────────────────────────
+app.post("/api/ai/recognize", authUser, async (req, res) => {
+  const sfKey = process.env.SF_KEY;
+  if (!sfKey) return res.status(500).json({ error: "AI服务未配置，请联系管理员" });
+
+  try {
+    const r = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sfKey },
+      body: JSON.stringify(req.body),
+    });
+    if (!r.ok) {
+      const t = await r.text();
+      return res.status(r.status).json({ error: "AI服务错误: " + t.slice(0, 200) });
+    }
+    const d = await r.json();
+    res.json(d);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // ── 管理后台 API ─────────────────────────────────────
 app.get("/api/admin/users", authAdmin, (req, res) => {
   const users = db.prepare("SELECT id,email,name,company,status,plan,expires,created,last_login FROM users ORDER BY created DESC").all();
