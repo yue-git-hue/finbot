@@ -17,7 +17,8 @@ db.exec(`
     plan       TEXT DEFAULT '',
     expires    TEXT,                       -- YYYY-MM-DD, null=永久
     created    TEXT DEFAULT (datetime('now','localtime')),
-    last_login TEXT
+    last_login TEXT,
+    free_uses  INTEGER DEFAULT 0          -- 免费试用次数（最多3次）
   );
 
   CREATE TABLE IF NOT EXISTS orders (
@@ -42,3 +43,4 @@ db.exec(`
 `);
 
 module.exports = db;
+
