@@ -1,0 +1,247 @@
+"use strict";
+require("dotenv").config();
+const express = require("express");
+const cors = require("cors");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
+const { nanoid } = require("nanoid");
+const fetch = require("node-fetch");
+const path = require("path");
+const db = require("./db");
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "../public")));
+
+const JWT_SECRET  = process.env.JWT_SECRET  || "finbot-secret-change-me";
+const ADMIN_KEY   = process.env.ADMIN_KEY   || "finbot-admin-2026";
+const HPJ_APPID   = process.env.HPJ_APPID   || "";   // 虎皮椒 AppID
+const HPJ_SECRET  = process.env.HPJ_SECRET  || "";   // 虎皮椒 AppSecret
+const BASE_URL    = process.env.BASE_URL    || "http://localhost:3723";
+
+// ── 套餐配置 ─────────────────────────────────────────
+const PLANS = {
+  monthly:   { name: "月付套餐", price: 39900, days: 30  },  // 单位：分
+  quarterly: { name: "季付套餐", price: 99900, days: 90  },
+  yearly:    { name: "年付套餐", price: 29900, days: 365 },
+};
+
+// ── 中间件 ───────────────────────────────────────────
+function authUser(req, res, next) {
+  const token = (req.headers.authorization || "").replace("Bearer ", "");
+  if (!token) return res.status(401).json({ error: "未登录" });
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch { res.status(401).json({ error: "登录已过期，请重新登录" }); }
+}
+
+function authAdmin(req, res, next) {
+  const k = req.headers["x-admin-key"] || req.query.admin;
+  if (k !== ADMIN_KEY) return res.status(401).json({ error: "无权限" });
+  next();
+}
+
+// ── 用户注册 ─────────────────────────────────────────
+app.post("/api/register", async (req, res) => {
+  const { email, password, name, company } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "邮箱和密码必填" });
+  if (password.length < 6) return res.status(400).json({ error: "密码至少6位" });
+  const exists = db.prepare("SELECT id FROM users WHERE email=?").get(email);
+  if (exists) return res.status(400).json({ error: "该邮箱已注册" });
+  const hash = await bcrypt.hash(password, 10);
+  db.prepare("INSERT INTO users(email,password,name,company) VALUES(?,?,?,?)").run(email, hash, name||"", company||"");
+  res.json({ ok: true, message: "注册成功，请购买套餐后使用" });
+});
+
+// ── 用户登录 ─────────────────────────────────────────
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  const user = db.prepare("SELECT * FROM users WHERE email=?").get(email);
+  if (!user) return res.status(400).json({ error: "邮箱或密码错误" });
+  const ok = await bcrypt.compare(password, user.password);
+  if (!ok) return res.status(400).json({ error: "邮箱或密码错误" });
+
+  // 检查是否过期
+  if (user.expires && user.expires < new Date().toISOString().slice(0,10)) {
+    db.prepare("UPDATE users SET status='expired' WHERE id=?").run(user.id);
+    user.status = "expired";
+  }
+
+  db.prepare("UPDATE users SET last_login=datetime('now','localtime') WHERE id=?").run(user.id);
+  db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(user.id, email, "login");
+
+  const token = jwt.sign({ id: user.id, email: user.email }, JWT_SECRET, { expiresIn: "7d" });
+  res.json({
+    ok: true, token,
+    user: { email: user.email, name: user.name, company: user.company, status: user.status, plan: user.plan, expires: user.expires }
+  });
+});
+
+// ── 获取用户信息 ─────────────────────────────────────
+app.get("/api/me", authUser, (req, res) => {
+  const user = db.prepare("SELECT email,name,company,status,plan,expires,created FROM users WHERE id=?").get(req.user.id);
+  if (!user) return res.status(404).json({ error: "用户不存在" });
+  // 检查过期
+  if (user.expires && user.expires < new Date().toISOString().slice(0,10)) {
+    db.prepare("UPDATE users SET status='expired' WHERE id=?").run(req.user.id);
+    user.status = "expired";
+  }
+  res.json(user);
+});
+
+// ── 创建订单（虎皮椒）─────────────────────────────────
+app.post("/api/order/create", authUser, async (req, res) => {
+  const { plan } = req.body;
+  const p = PLANS[plan];
+  if (!p) return res.status(400).json({ error: "无效套餐" });
+
+  const outTradeNo = "FB" + Date.now() + nanoid(6).toUpperCase();
+  db.prepare("INSERT INTO orders(user_id,out_trade_no,plan,amount,days) VALUES(?,?,?,?,?)").run(req.user.id, outTradeNo, plan, p.price/100, p.days);
+
+  if (!HPJ_APPID || !HPJ_SECRET) {
+    // 开发模式：返回模拟支付链接
+    return res.json({ ok: true, payUrl: `${BASE_URL}/pay-mock?order=${outTradeNo}&amount=${p.price/100}&name=${encodeURIComponent(p.name)}`, outTradeNo, mock: true });
+  }
+
+  // 虎皮椒正式接口
+  try {
+    const params = new URLSearchParams({
+      version: "1.1",
+      appid: HPJ_APPID,
+      trade_order_id: outTradeNo,
+      total_fee: p.price,
+      title: p.name + " - FINBOT票据预审",
+      notify_url: `${BASE_URL}/api/order/notify`,
+      return_url: `${BASE_URL}/app?pay=success`,
+      dtype: "WAP",
+    });
+    const sign = require("crypto").createHash("md5")
+      .update(`${HPJ_APPID}${outTradeNo}${p.price}${p.name+" - FINBOT票据预审"}${HPJ_SECRET}`)
+      .digest("hex");
+    params.set("sign", sign);
+
+    const r = await fetch("https://api.xunhupay.com/payment/do.html", { method: "POST", body: params });
+    const d = await r.json();
+    if (d.errcode !== 0) throw new Error(d.errmsg || "创建订单失败");
+    res.json({ ok: true, payUrl: d.url, outTradeNo });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// ── 模拟支付页面（开发/演示用）─────────────────────────
+app.get("/pay-mock", (req, res) => {
+  const { order, amount, name } = req.query;
+  res.send(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>模拟支付</title>
+<style>body{font-family:system-ui;background:#f0f2f5;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+.box{background:#fff;border-radius:16px;padding:40px;text-align:center;max-width:360px;box-shadow:0 4px 24px rgba(0,0,0,0.08)}
+h2{font-size:20px;margin-bottom:8px}.amount{font-size:40px;font-weight:800;color:#2563EB;margin:20px 0}
+.btn{display:block;width:100%;padding:14px;background:#2563EB;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:700;cursor:pointer;margin-top:16px}
+.btn:hover{background:#1D4ED8}.note{font-size:12px;color:#94A3B8;margin-top:12px}</style></head>
+<body><div class="box">
+<div style="font-size:32px">📱</div>
+<h2>${decodeURIComponent(name||"")}</h2>
+<div class="amount">¥${amount}</div>
+<p style="color:#475569;font-size:14px">这是演示支付页面</p>
+<button class="btn" onclick="pay('${order}')">确认支付（演示）</button>
+<div class="note">正式上线后替换为真实支付</div>
+</div>
+<script>
+async function pay(order){
+  this.disabled=true;
+  await fetch('/api/order/mock-pay',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({outTradeNo:order})});
+  location.href='/app?pay=success';
+}
+</script></body></html>`);
+});
+
+// ── 模拟支付回调 ─────────────────────────────────────
+app.post("/api/order/mock-pay", (req, res) => {
+  const { outTradeNo } = req.body;
+  activateOrder(outTradeNo);
+  res.json({ ok: true });
+});
+
+// ── 虎皮椒支付回调 ───────────────────────────────────
+app.post("/api/order/notify", express.urlencoded({ extended: true }), (req, res) => {
+  const { trade_order_id, openid, status } = req.body;
+  if (status === "OD") {
+    activateOrder(trade_order_id);
+    res.send("success");
+  } else {
+    res.send("fail");
+  }
+});
+
+function activateOrder(outTradeNo) {
+  const order = db.prepare("SELECT * FROM orders WHERE out_trade_no=?").get(outTradeNo);
+  if (!order || order.status === "paid") return;
+  db.prepare("UPDATE orders SET status='paid', paid_at=datetime('now','localtime') WHERE out_trade_no=?").run(outTradeNo);
+  const user = db.prepare("SELECT * FROM users WHERE id=?").get(order.user_id);
+  if (!user) return;
+  // 计算到期日（续费叠加）
+  const base = user.expires && user.expires > new Date().toISOString().slice(0,10) ? new Date(user.expires) : new Date();
+  base.setDate(base.getDate() + order.days);
+  const expires = base.toISOString().slice(0,10);
+  db.prepare("UPDATE users SET status='active', plan=?, expires=? WHERE id=?").run(order.plan, expires, order.user_id);
+  db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(user.id, user.email, "paid:" + order.plan);
+}
+
+// ── 管理后台 API ─────────────────────────────────────
+app.get("/api/admin/users", authAdmin, (req, res) => {
+  const users = db.prepare("SELECT id,email,name,company,status,plan,expires,created,last_login FROM users ORDER BY created DESC").all();
+  res.json(users);
+});
+
+app.post("/api/admin/user-status", authAdmin, (req, res) => {
+  const { id, status } = req.body;
+  if (!["active","paused","inactive","expired"].includes(status)) return res.status(400).json({ error: "无效状态" });
+  db.prepare("UPDATE users SET status=? WHERE id=?").run(status, id);
+  res.json({ ok: true });
+});
+
+app.post("/api/admin/extend", authAdmin, (req, res) => {
+  const { id, days } = req.body;
+  const user = db.prepare("SELECT * FROM users WHERE id=?").get(id);
+  if (!user) return res.status(404).json({ error: "用户不存在" });
+  const base = user.expires && user.expires > new Date().toISOString().slice(0,10) ? new Date(user.expires) : new Date();
+  base.setDate(base.getDate() + Number(days));
+  const expires = base.toISOString().slice(0,10);
+  db.prepare("UPDATE users SET status='active', expires=? WHERE id=?").run(expires, id);
+  res.json({ ok: true, expires });
+});
+
+app.get("/api/admin/stats", authAdmin, (req, res) => {
+  const total  = db.prepare("SELECT COUNT(*) as n FROM users").get().n;
+  const active = db.prepare("SELECT COUNT(*) as n FROM users WHERE status='active'").get().n;
+  const paused = db.prepare("SELECT COUNT(*) as n FROM users WHERE status='paused'").get().n;
+  const revenue = db.prepare("SELECT COALESCE(SUM(amount),0) as n FROM orders WHERE status='paid'").get().n;
+  const logs  = db.prepare("SELECT * FROM usage_log ORDER BY ts DESC LIMIT 100").all();
+  res.json({ total, active, paused, revenue, logs });
+});
+
+app.get("/api/admin/orders", authAdmin, (req, res) => {
+  const orders = db.prepare(`SELECT o.*,u.email,u.name FROM orders o LEFT JOIN users u ON o.user_id=u.id ORDER BY o.created DESC LIMIT 200`).all();
+  res.json(orders);
+});
+
+// ── 管理后台页面 ─────────────────────────────────────
+app.get("/admin", authAdmin, (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/admin.html"));
+});
+
+// ── 应用主页 ─────────────────────────────────────────
+app.get("/app", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/app.html"));
+});
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
+
+const PORT = process.env.PORT || 3723;
+app.listen(PORT, () => {
+  console.log(`\nFINBOT SaaS 已启动: http://localhost:${PORT}`);
+  console.log(`管理后台: http://localhost:${PORT}/admin?admin=${ADMIN_KEY}\n`);
+});

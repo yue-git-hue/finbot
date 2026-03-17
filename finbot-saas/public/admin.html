@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>FINBOT · 管理后台</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:#0F172A;color:#E2E8F0;min-height:100vh}
+.hdr{background:#1E293B;border-bottom:1px solid #334155;padding:14px 28px;display:flex;align-items:center;gap:12px}
+.hdr h1{font-size:16px;font-weight:800;color:#38BDF8;flex:1}
+.main{max-width:1200px;margin:0 auto;padding:24px 20px}
+.stat-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px}
+.stat{background:#1E293B;border:1px solid #334155;border-radius:10px;padding:14px 16px}
+.sl{font-size:10px;color:#64748B;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px}
+.sv{font-size:24px;font-weight:800;font-family:monospace}
+.card{background:#1E293B;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:20px}
+.card h2{font-size:13px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center}
+.btn{padding:7px 16px;border-radius:7px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit}
+.pri{background:#2563EB;color:#fff}.pri:hover{background:#1D4ED8}
+.green{background:#166534;color:#86EFAC}.amber{background:#92400E;color:#FCD34D}.red{background:#7F1D1D;color:#FCA5A5}.ghost{background:transparent;color:#94A3B8;border:1px solid #334155}
+.inp{padding:7px 12px;background:#0F172A;border:1px solid #334155;border-radius:7px;color:#E2E8F0;font-size:12px;font-family:inherit;outline:none}
+.inp:focus{border-color:#38BDF8}
+table{width:100%;border-collapse:collapse}
+th{padding:8px 12px;text-align:left;font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid #334155}
+td{padding:9px 12px;font-size:12px;border-bottom:1px solid #1E293B;vertical-align:middle}
+tr:hover td{background:#ffffff04}
+.tag{display:inline-flex;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600}
+.t-active{background:#166534;color:#86EFAC}.t-paused{background:#92400E;color:#FCD34D}.t-expired{background:#7F1D1D;color:#FCA5A5}.t-inactive{background:#334155;color:#94A3B8}
+.kc{font-family:monospace;color:#38BDF8;font-size:12px}
+.toast{position:fixed;top:16px;right:16px;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;display:none}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <h1>FINBOT 管理后台</h1>
+  <button class="btn ghost" onclick="loadAll()">🔄 刷新</button>
+  <a href="/" style="color:#64748B;font-size:12px;text-decoration:none">← 返回首页</a>
+</div>
+<div class="main">
+  <div class="stat-row" id="stats">
+    <div class="stat"><div class="sl">注册用户</div><div class="sv" id="s-total">—</div></div>
+    <div class="stat"><div class="sl">订阅中</div><div class="sv" style="color:#86EFAC" id="s-active">—</div></div>
+    <div class="stat"><div class="sl">已暂停</div><div class="sv" style="color:#FCD34D" id="s-paused">—</div></div>
+    <div class="stat"><div class="sl">累计收入</div><div class="sv" style="color:#38BDF8" id="s-rev">—</div></div>
+    <div class="stat"><div class="sl">今日操作</div><div class="sv" id="s-logs">—</div></div>
+  </div>
+
+  <!-- 手动开通 -->
+  <div class="card">
+    <h2>✋ 手动开通/延期</h2>
+    <div class="row">
+      <div><div style="font-size:10px;color:#64748B;margin-bottom:4px">用户ID或邮箱</div><input class="inp" id="m-id" placeholder="ID 或 email" style="width:200px"></div>
+      <div><div style="font-size:10px;color:#64748B;margin-bottom:4px">延长天数</div><input class="inp" id="m-days" type="number" value="30" style="width:80px"></div>
+      <button class="btn pri" onclick="manualExtend()">开通/延期</button>
+    </div>
+  </div>
+
+  <!-- 用户列表 -->
+  <div class="card">
+    <h2>👥 用户列表 <input class="inp" id="search" placeholder="搜索邮箱…" oninput="filterUsers()" style="font-weight:400;text-transform:none;letter-spacing:0"></h2>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>ID</th><th>邮箱</th><th>公司</th><th>状态</th><th>套餐</th><th>到期日</th><th>注册时间</th><th>最后登录</th><th>操作</th></tr></thead>
+        <tbody id="user-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 订单 -->
+  <div class="card">
+    <h2>💳 近期订单</h2>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>用户</th><th>套餐</th><th>金额</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="order-body"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 使用日志 -->
+  <div class="card">
+    <h2>📊 使用日志</h2>
+    <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th>邮箱</th><th>操作</th><th>时间</th></tr></thead>
+        <tbody id="log-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const params=new URLSearchParams(location.search);
+const ADMIN=params.get("admin")||"";
+const H={"Content-Type":"application/json","x-admin-key":ADMIN};
+let allUsers=[];
+
+function toast(msg,ok=true){const t=document.getElementById("toast");t.textContent=msg;t.style.background=ok?"#166534":"#7F1D1D";t.style.color=ok?"#86EFAC":"#FCA5A5";t.style.display="block";setTimeout(()=>t.style.display="none",2500);}
+
+async function loadAll(){
+  const [statsR,ordersR]=await Promise.all([fetch("/api/admin/stats",{headers:H}),fetch("/api/admin/orders",{headers:H})]);
+  const stats=await statsR.json();const orders=await ordersR.json();
+  document.getElementById("s-total").textContent=stats.total;
+  document.getElementById("s-active").textContent=stats.active;
+  document.getElementById("s-paused").textContent=stats.paused;
+  document.getElementById("s-rev").textContent="¥"+Number(stats.revenue).toLocaleString("zh-CN");
+  document.getElementById("s-logs").textContent=stats.logs.filter(l=>l.ts>=new Date().toISOString().slice(0,10)).length;
+  await loadUsers();
+  renderOrders(orders);
+  renderLogs(stats.logs);
+}
+
+async function loadUsers(){
+  const r=await fetch("/api/admin/users",{headers:H});
+  allUsers=await r.json();
+  filterUsers();
+}
+
+function filterUsers(){
+  const q=(document.getElementById("search").value||"").toLowerCase();
+  const list=q?allUsers.filter(u=>u.email.toLowerCase().includes(q)||( u.company||"").toLowerCase().includes(q)):allUsers;
+  const stMap={active:"t-active",inactive:"t-inactive",paused:"t-paused",expired:"t-expired"};
+  const stLabel={active:"订阅中",inactive:"未订阅",paused:"已暂停",expired:"已过期"};
+  document.getElementById("user-body").innerHTML=list.map(u=>`
+<tr>
+  <td style="color:#64748B">${u.id}</td>
+  <td><div style="font-weight:500">${u.email}</div><div style="color:#64748B;font-size:11px">${u.name||""}</div></td>
+  <td style="color:#64748B">${u.company||"—"}</td>
+  <td><span class="tag ${stMap[u.status]||'t-inactive'}">${stLabel[u.status]||u.status}</span></td>
+  <td style="color:#64748B">${u.plan||"—"}</td>
+  <td style="font-family:monospace;font-size:11px">${u.expires||"—"}</td>
+  <td style="font-size:11px;color:#64748B">${(u.created||"").slice(0,10)}</td>
+  <td style="font-size:11px;color:#64748B">${(u.last_login||"—").slice(0,16)}</td>
+  <td><div style="display:flex;gap:5px">
+    ${u.status==="active"?`<button class="btn amber" onclick="setStatus(${u.id},'paused')">暂停</button>`:`<button class="btn green" onclick="setStatus(${u.id},'active')">恢复</button>`}
+    <button class="btn pri" onclick="extend(${u.id},30)">+30天</button>
+  </div></td>
+</tr>`).join("");
+}
+
+function renderOrders(orders){
+  const stMap={paid:"t-active",pending:"t-inactive",failed:"t-expired"};
+  const stLabel={paid:"已支付",pending:"待支付",failed:"失败"};
+  document.getElementById("order-body").innerHTML=orders.map(o=>`
+<tr>
+  <td><div>${o.email||"—"}</div><div style="color:#64748B;font-size:11px">${o.name||""}</div></td>
+  <td>${o.plan||"—"}</td>
+  <td style="font-family:monospace;color:#38BDF8">¥${Number(o.amount).toFixed(2)}</td>
+  <td><span class="tag ${stMap[o.status]||'t-inactive'}">${stLabel[o.status]||o.status}</span></td>
+  <td style="font-size:11px;color:#64748B">${(o.created||"").slice(0,16)}</td>
+</tr>`).join("");
+}
+
+function renderLogs(logs){
+  document.getElementById("log-body").innerHTML=logs.map(l=>`
+<tr>
+  <td style="color:#38BDF8">${l.email||"—"}</td>
+  <td>${l.action}</td>
+  <td style="font-size:11px;color:#64748B;font-family:monospace">${l.ts}</td>
+</tr>`).join("");
+}
+
+async function setStatus(id,status){
+  await fetch("/api/admin/user-status",{method:"POST",headers:H,body:JSON.stringify({id,status})});
+  toast(status==="active"?"已恢复":"已暂停");loadUsers();
+}
+
+async function extend(id,days){
+  const r=await fetch("/api/admin/extend",{method:"POST",headers:H,body:JSON.stringify({id,days})});
+  const d=await r.json();
+  toast("已延期至 "+d.expires);loadUsers();
+}
+
+async function manualExtend(){
+  const raw=document.getElementById("m-id").value.trim();
+  const days=parseInt(document.getElementById("m-days").value)||30;
+  if(!raw){alert("请填入用户ID或邮箱");return;}
+  // 如果是邮箱，先找ID
+  let id=parseInt(raw);
+  if(isNaN(id)){
+    const user=allUsers.find(u=>u.email===raw);
+    if(!user){alert("未找到用户："+raw);return;}
+    id=user.id;
+  }
+  await extend(id,days);
+}
+
+loadAll();
+setInterval(loadAll,60000);
+</script>
+</body>
+</html>

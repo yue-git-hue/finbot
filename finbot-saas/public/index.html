@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FINBOT · AI票据预审 Agent</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:#0F172A;color:#E2E8F0;min-height:100vh}
+.nav{padding:18px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1E293B}
+.nav-logo{font-size:20px;font-weight:800;color:#38BDF8}
+.nav-logo span{color:#E2E8F0;font-weight:400;font-size:13px;margin-left:8px}
+.nav-btns{display:flex;gap:10px}
+.btn{padding:9px 22px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all 0.15s}
+.btn-ghost{background:transparent;border:1px solid #334155;color:#94A3B8}
+.btn-ghost:hover{background:#1E293B;color:#E2E8F0}
+.btn-pri{background:#2563EB;color:#fff}
+.btn-pri:hover{background:#1D4ED8}
+.hero{padding:80px 40px 60px;text-align:center;max-width:800px;margin:0 auto}
+.hero h1{font-size:48px;font-weight:800;line-height:1.2;margin-bottom:20px}
+.hero h1 span{color:#38BDF8}
+.hero p{font-size:18px;color:#94A3B8;line-height:1.7;margin-bottom:40px}
+.hero-btns{display:flex;gap:12px;justify-content:center}
+.btn-lg{padding:14px 32px;font-size:15px;border-radius:10px}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;max-width:960px;margin:0 auto 60px;padding:0 40px}
+.feat{background:#1E293B;border:1px solid #334155;border-radius:12px;padding:24px}
+.feat-icon{font-size:28px;margin-bottom:12px}
+.feat-title{font-size:15px;font-weight:700;margin-bottom:8px}
+.feat-desc{font-size:13px;color:#64748B;line-height:1.6}
+.pricing{max-width:860px;margin:0 auto 80px;padding:0 40px}
+.pricing h2{text-align:center;font-size:28px;font-weight:700;margin-bottom:40px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.plan{background:#1E293B;border:2px solid #334155;border-radius:14px;padding:28px 24px;text-align:center}
+.plan.hot{border-color:#2563EB}
+.plan-badge{font-size:11px;font-weight:700;color:#38BDF8;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
+.plan-name{font-size:18px;font-weight:700;margin-bottom:8px}
+.plan-price{font-size:36px;font-weight:800;color:#38BDF8;margin:12px 0 4px}
+.plan-price span{font-size:14px;color:#64748B;font-weight:400}
+.plan-desc{font-size:13px;color:#64748B;margin-bottom:20px}
+.plan-features{text-align:left;margin-bottom:24px}
+.plan-features li{font-size:13px;color:#94A3B8;padding:5px 0;list-style:none}
+.plan-features li::before{content:"✓ ";color:#38BDF8}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:#1E293B;border:1px solid #334155;border-radius:16px;padding:36px;width:420px;max-width:92vw}
+.modal h2{font-size:20px;font-weight:700;margin-bottom:24px;text-align:center}
+.tabs{display:flex;border-bottom:1px solid #334155;margin-bottom:24px}
+.tab-btn{flex:1;padding:10px;background:transparent;border:none;border-bottom:2px solid transparent;color:#64748B;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600}
+.tab-btn.on{border-bottom-color:#2563EB;color:#38BDF8}
+.form-group{margin-bottom:16px}
+.form-label{font-size:12px;color:#64748B;margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:0.05em}
+.form-input{width:100%;padding:10px 14px;background:#0F172A;border:1px solid #334155;border-radius:8px;color:#E2E8F0;font-size:14px;font-family:inherit;outline:none}
+.form-input:focus{border-color:#38BDF8}
+.form-err{color:#F87171;font-size:12px;margin-top:8px;min-height:18px}
+.form-ok{color:#86EFAC;font-size:13px;margin-top:8px;text-align:center}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-logo">FINBOT <span>票据预审 Agent</span></div>
+  <div class="nav-btns">
+    <button class="btn btn-ghost" onclick="openModal('login')">登录</button>
+    <button class="btn btn-pri" onclick="openModal('register')">免费注册</button>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>让票据审核<span>快10倍</span><br>的AI助手</h1>
+  <p>专为代理记账公司和小微企业设计<br>发票识别 · 风险检查 · 凭证建议 · 一键导出</p>
+  <div class="hero-btns">
+    <button class="btn btn-pri btn-lg" onclick="openModal('register')">免费注册体验</button>
+    <button class="btn btn-ghost btn-lg" onclick="openModal('login')">已有账号登录</button>
+  </div>
+</div>
+
+<div class="features">
+  <div class="feat">
+    <div class="feat-icon">🧾</div>
+    <div class="feat-title">智能识别</div>
+    <div class="feat-desc">增值税发票、铁路客票、银行回单、报销单全类型识别，多页PDF一次处理</div>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">⚠️</div>
+    <div class="feat-title">10项风险检查</div>
+    <div class="feat-desc">抬头不符、税号缺失、重复报销、日期过期等自动核查，高风险优先提示</div>
+  </div>
+  <div class="feat">
+    <div class="feat-icon">📊</div>
+    <div class="feat-title">凭证建议导出</div>
+    <div class="feat-desc">自动匹配会计科目，生成含凭证编号的Excel报表，直接交会计复核</div>
+  </div>
+</div>
+
+<div class="pricing">
+  <h2>简单透明的定价</h2>
+  <div class="plans">
+    <div class="plan">
+      <div class="plan-badge">入门</div>
+      <div class="plan-name">月付套餐</div>
+      <div class="plan-price">¥399<span>/月</span></div>
+      <div class="plan-desc">按月订阅，随时取消</div>
+      <ul class="plan-features">
+        <li>无限张票据识别</li>
+        <li>全类型发票支持</li>
+        <li>Excel/CSV导出</li>
+        <li>重复发票检测</li>
+      </ul>
+      <button class="btn btn-ghost" style="width:100%" onclick="openModal('register')">立即开始</button>
+    </div>
+    <div class="plan hot">
+      <div class="plan-badge" style="color:#FBBF24">⭐ 推荐</div>
+      <div class="plan-name">季付套餐</div>
+      <div class="plan-price">¥999<span>/季</span></div>
+      <div class="plan-desc">相当于每月333元，省17%</div>
+      <ul class="plan-features">
+        <li>月付全部功能</li>
+        <li>优先客服支持</li>
+        <li>定制费用科目</li>
+        <li>使用数据统计</li>
+      </ul>
+      <button class="btn btn-pri" style="width:100%" onclick="openModal('register')">立即开始</button>
+    </div>
+    <div class="plan">
+      <div class="plan-badge">超值</div>
+      <div class="plan-name">年付套餐</div>
+      <div class="plan-price">¥2999<span>/年</span></div>
+      <div class="plan-desc">相当于每月250元，省37%</div>
+      <ul class="plan-features">
+        <li>季付全部功能</li>
+        <li>专属客服</li>
+        <li>多账号共用</li>
+        <li>API接口开放</li>
+      </ul>
+      <button class="btn btn-ghost" style="width:100%" onclick="openModal('register')">立即开始</button>
+    </div>
+  </div>
+</div>
+
+<!-- 登录/注册弹窗 -->
+<div class="modal-bg" id="authModal">
+  <div class="modal">
+    <div class="tabs">
+      <button class="tab-btn on" id="tab-login" onclick="switchTab('login')">登录</button>
+      <button class="tab-btn" id="tab-register" onclick="switchTab('register')">注册</button>
+    </div>
+
+    <div id="pane-login">
+      <div class="form-group"><label class="form-label">邮箱</label><input class="form-input" id="l-email" type="email" placeholder="your@email.com"></div>
+      <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="l-pass" type="password" placeholder="······" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <div class="form-err" id="l-err"></div>
+      <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doLogin()">登录</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:#64748B">没有账号？<a href="#" onclick="switchTab('register')" style="color:#38BDF8">立即注册</a></div>
+    </div>
+
+    <div id="pane-register" style="display:none">
+      <div class="form-group"><label class="form-label">邮箱</label><input class="form-input" id="r-email" type="email" placeholder="your@email.com"></div>
+      <div class="form-group"><label class="form-label">密码（至少6位）</label><input class="form-input" id="r-pass" type="password" placeholder="······"></div>
+      <div class="form-group"><label class="form-label">姓名（可选）</label><input class="form-input" id="r-name" placeholder="张三"></div>
+      <div class="form-group"><label class="form-label">公司名称（可选）</label><input class="form-input" id="r-company" placeholder="XX财务公司"></div>
+      <div class="form-err" id="r-err"></div>
+      <div class="form-ok" id="r-ok"></div>
+      <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doRegister()">注册</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:#64748B">已有账号？<a href="#" onclick="switchTab('login')" style="color:#38BDF8">立即登录</a></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function openModal(tab) {
+  document.getElementById("authModal").className = "modal-bg on";
+  switchTab(tab);
+}
+document.getElementById("authModal").addEventListener("click", function(e){ if(e.target===this) this.className="modal-bg"; });
+
+function switchTab(t) {
+  document.getElementById("tab-login").className = "tab-btn" + (t==="login"?" on":"");
+  document.getElementById("tab-register").className = "tab-btn" + (t==="register"?" on":"");
+  document.getElementById("pane-login").style.display = t==="login"?"block":"none";
+  document.getElementById("pane-register").style.display = t==="register"?"block":"none";
+}
+
+async function doLogin() {
+  const email = document.getElementById("l-email").value.trim();
+  const password = document.getElementById("l-pass").value;
+  document.getElementById("l-err").textContent = "";
+  try {
+    const r = await fetch("/api/login", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email,password}) });
+    const d = await r.json();
+    if (!d.ok) { document.getElementById("l-err").textContent = d.error; return; }
+    localStorage.setItem("fb_token", d.token);
+    localStorage.setItem("fb_user", JSON.stringify(d.user));
+    location.href = "/app";
+  } catch(e) { document.getElementById("l-err").textContent = "网络错误，请重试"; }
+}
+
+async function doRegister() {
+  const email = document.getElementById("r-email").value.trim();
+  const password = document.getElementById("r-pass").value;
+  const name = document.getElementById("r-name").value.trim();
+  const company = document.getElementById("r-company").value.trim();
+  document.getElementById("r-err").textContent = "";
+  document.getElementById("r-ok").textContent = "";
+  try {
+    const r = await fetch("/api/register", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({email,password,name,company}) });
+    const d = await r.json();
+    if (!d.ok) { document.getElementById("r-err").textContent = d.error; return; }
+    document.getElementById("r-ok").textContent = "✓ 注册成功！正在跳转登录…";
+    setTimeout(() => switchTab("login"), 1200);
+  } catch(e) { document.getElementById("r-err").textContent = "网络错误，请重试"; }
+}
+</script>
+</body>
+</html>
