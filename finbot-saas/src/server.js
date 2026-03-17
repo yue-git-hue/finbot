@@ -79,6 +79,25 @@ app.post("/api/login", async (req, res) => {
   });
 });
 
+// ── 免费试用 ──────────────────────────────────────────
+const FREE_LIMIT = 3;
+
+app.get("/api/trial", authUser, (req, res) => {
+  const user = db.prepare("SELECT free_uses, status FROM users WHERE id=?").get(req.user.id);
+  const remaining = Math.max(0, FREE_LIMIT - (user?.free_uses || 0));
+  res.json({ remaining, limit: FREE_LIMIT, isActive: user?.status === "active" });
+});
+
+app.post("/api/trial/use", authUser, (req, res) => {
+  const user = db.prepare("SELECT free_uses, status FROM users WHERE id=?").get(req.user.id);
+  if (user?.status === "active") return res.json({ ok: true, remaining: FREE_LIMIT });
+  const used = user?.free_uses || 0;
+  if (used >= FREE_LIMIT) return res.status(403).json({ error: "免费次数已用完，请订阅后继续使用" });
+  db.prepare("UPDATE users SET free_uses=free_uses+1 WHERE id=?").run(req.user.id);
+  db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(req.user.id, req.user.email, "free_trial");
+  res.json({ ok: true, remaining: FREE_LIMIT - used - 1 });
+});
+
 // ── 获取用户信息 ─────────────────────────────────────
 app.get("/api/me", authUser, (req, res) => {
   const user = db.prepare("SELECT email,name,company,status,plan,expires,created FROM users WHERE id=?").get(req.user.id);
@@ -245,3 +264,4 @@ app.listen(PORT, () => {
   console.log(`\nFINBOT SaaS 已启动: http://localhost:${PORT}`);
   console.log(`管理后台: http://localhost:${PORT}/admin?admin=${ADMIN_KEY}\n`);
 });
+
