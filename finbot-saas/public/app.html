@@ -282,6 +282,16 @@ async function loadRecords(){
   }catch(e){}
 }
 
+// 按发票号去重，保留最新的
+function dedupeRS(){
+  const seen=new Map();
+  for(const r of RS){
+    const key=r.docNo||r.id;
+    if(!seen.has(key)) seen.set(key,r);
+  }
+  RS=[...seen.values()];
+}
+
 function logout(){localStorage.removeItem("fb_token");localStorage.removeItem("fb_user");location.href="/";}
 
 function go(i){
@@ -372,8 +382,22 @@ async function runF(files){
   }
   setTimeout(()=>{if(!document.getElementById("ql").children.length)qb.style.display="none";},1000);
   document.getElementById("dzt").textContent="拖拽上传 或 点击选择文件";
-  RS=[...out,...RS];renderRes();go(1);
-  // 自动保存到服务器
+  // 合并新结果，发票号去重
+  for(const r of out){
+    const isDup = RS.some(ex=>ex.docNo&&ex.docNo===r.docNo&&ex.id!==r.id);
+    if(isDup){
+      // 标记重复但不再添加重复记录
+      r.duplicate=true;
+      if(!r.risks) r.risks=[];
+      const hasWarn=r.risks.some(x=>x.message.includes("重复"));
+      if(!hasWarn) r.risks.unshift({level:"high",message:"⚠ 发票号重复："+r.docNo+"，疑似重复报销"});
+    }
+    // 若发票号已存在则替换，否则追加
+    const idx=RS.findIndex(ex=>ex.docNo&&ex.docNo===r.docNo);
+    if(idx>=0) RS[idx]=r; else RS.unshift(r);
+  }
+  renderRes();go(1);
+  // 自动保存到服务器（服务端会过滤重复）
   try{
     await fetch("/api/records",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify({records:out})});
   }catch(e){}
