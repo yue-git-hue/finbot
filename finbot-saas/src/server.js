@@ -23,9 +23,9 @@ const BASE_URL    = process.env.BASE_URL    || "http://localhost:3723";
 
 // ── 套餐配置 ─────────────────────────────────────────
 const PLANS = {
-  monthly:   { name: "月付套餐", price: 39900, days: 30  },  // 单位：分
-  quarterly: { name: "季付套餐", price: 99900, days: 90  },
-  yearly:    { name: "年付套餐", price: 29900, days: 365 },
+  monthly:   { name: "月付套餐", price: 29900, days: 30  },  // 单位：分
+  quarterly: { name: "季付套餐", price: 79900, days: 90  },
+  yearly:    { name: "年付套餐", price: 299900, days: 365 },
 };
 
 // ── 中间件 ───────────────────────────────────────────
