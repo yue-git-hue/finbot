@@ -156,7 +156,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       <div><div class="ptitle" style="margin-bottom:4px">审核结果</div><div class="psub" style="margin-bottom:0">高风险和重复发票排在最前</div></div>
       <div style="display:flex;gap:8px">
         <button class="btn" onclick="go(0)">继续上传</button>
-        <button class="btn danger sm" onclick="if(confirm('清空所有结果？')){RS=[];renderRes();fetch('/api/records',{method:'DELETE',headers:{Authorization:'Bearer '+TOKEN}}).catch(()=>{});}">清空</button>
+        <button class="btn danger sm" onclick="if(confirm('清空所有结果？')){RS=[];renderRes();}">清空</button>
         <button class="btn pri" onclick="go(2)">导出报告 →</button>
       </div>
     </div>
@@ -271,26 +271,7 @@ async function loadUser(){
   }catch(e){location.href="/";}
 }
 
-async function loadRecords(){
-  try{
-    const r=await fetch("/api/records",{headers:{Authorization:"Bearer "+TOKEN}});
-    const data=await r.json();
-    if(data.length>0){
-      RS=data;
-      renderRes();
-    }
-  }catch(e){}
-}
-
-// 按发票号去重，保留最新的
-function dedupeRS(){
-  const seen=new Map();
-  for(const r of RS){
-    const key=r.docNo||r.id;
-    if(!seen.has(key)) seen.set(key,r);
-  }
-  RS=[...seen.values()];
-}
+// 历史记录已禁用
 
 function logout(){localStorage.removeItem("fb_token");localStorage.removeItem("fb_user");location.href="/";}
 
@@ -334,7 +315,7 @@ async function buyPlan(plan){
   // 轮询订单状态
   let tries=0;
   const poll=setInterval(async()=>{
-    await loadUser().then(()=>loadRecords());
+    await loadUser();
     if(USER?.status==="active"||tries++>30)clearInterval(poll);
   },3000);
 }
@@ -382,25 +363,15 @@ async function runF(files){
   }
   setTimeout(()=>{if(!document.getElementById("ql").children.length)qb.style.display="none";},1000);
   document.getElementById("dzt").textContent="拖拽上传 或 点击选择文件";
-  // 合并新结果，发票号去重
+  // 重复发票直接跳过，按发票号去重
   for(const r of out){
-    const isDup = RS.some(ex=>ex.docNo&&ex.docNo===r.docNo&&ex.id!==r.id);
-    if(isDup){
-      // 标记重复但不再添加重复记录
-      r.duplicate=true;
-      if(!r.risks) r.risks=[];
-      const hasWarn=r.risks.some(x=>x.message.includes("重复"));
-      if(!hasWarn) r.risks.unshift({level:"high",message:"⚠ 发票号重复："+r.docNo+"，疑似重复报销"});
+    if(r.docNo && RS.some(ex=>ex.docNo===r.docNo)){
+      // 发票号已存在，跳过
+      continue;
     }
-    // 若发票号已存在则替换，否则追加
-    const idx=RS.findIndex(ex=>ex.docNo&&ex.docNo===r.docNo);
-    if(idx>=0) RS[idx]=r; else RS.unshift(r);
+    RS.unshift(r);
   }
   renderRes();go(1);
-  // 自动保存到服务器（服务端会过滤重复）
-  try{
-    await fetch("/api/records",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify({records:out})});
-  }catch(e){}
 }
 
 async function analyze(file){
@@ -428,11 +399,6 @@ function closeEdit(){document.getElementById("editModal").className="modal-bg";e
 function saveEdit(){
   if(!editId)return;
   RS=RS.map(r=>r.id!==editId?r:{...r,docType:document.getElementById("e_docType").value,date:document.getElementById("e_date").value,amount:parseFloat(document.getElementById("e_amount").value)||0,tax:parseFloat(document.getElementById("e_tax").value)||0,party:document.getElementById("e_party").value,docNo:document.getElementById("e_docNo").value,taxNo:document.getElementById("e_taxNo").value,title:document.getElementById("e_title").value,category:document.getElementById("e_category").value,memo:document.getElementById("e_memo").value,edited:true});
-  // 同步到服务器
-  const edited=RS.find(r=>r.id===editId);
-  if(edited && typeof editId==='number' && editId<1000000000){
-    fetch("/api/records/"+editId,{method:"PUT",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify(edited)}).catch(()=>{});
-  }
   closeEdit();renderRes();
 }
 document.getElementById("editModal").addEventListener("click",function(e){if(e.target===this)closeEdit();});
@@ -447,7 +413,7 @@ function renderRes(){
     const lvl=rl(item),ac=AM[item.category]||AM["其他"],vNo=(lvl==="low"||lvl==="mid")?`JZ${yr}${String(vn++).padStart(4,"0")}`:"—";
     const flds=[["金额",item.amount?`¥${Number(item.amount).toLocaleString("zh-CN")}`:"—"],["税额",item.tax?`¥${Number(item.tax).toLocaleString("zh-CN")}`:"—"],["对方",item.party||"—"],["发票号",item.docNo||"—"],["税号",item.taxNo||"—"],["抬头",item.title||"—"]];
     const risks=(item.risks||[]).map(r=>`<div class="rki rk${r.level[0]}">${tg(r.level)}<span>${r.message}</span></div>`).join("");
-    return`<div class="rc${item.duplicate?' dup':''}"><div class="rh"><div class="ri">${DI[item.docType]||"📄"}</div><div class="rm" onclick="openEdit(${item.id})"><div class="rn">${item.fileName}${item.pages>1?`<span style="font-size:10px;color:#2563EB;margin-left:6px">${item.pages}页</span>`:""}${item.edited?`<span style="font-size:10px;color:#94A3B8;margin-left:6px">已编辑</span>`:""}</div><div class="rt">${item.docType||"未知"} · ${item.date||"日期未知"}</div></div><div style="display:flex;gap:5px;align-items:center;flex-shrink:0">${tg(lvl)}<button class="btn sm" onclick="openEdit(${item.id})">编辑</button><button class="btn sm danger" onclick="if(confirm('确定删除？')){const rid=${item.id};if(typeof rid==='number'&&rid>1000000000){}else{fetch('/api/records/'+rid,{method:'DELETE',headers:{Authorization:'Bearer '+TOKEN}}).catch(()=>{});}RS=RS.filter(r=>r.id!==rid);renderRes();}">删除</button></div></div><div class="rb"><div class="fg">${flds.map(([k,v])=>`<div class="fb"><div class="fl">${k}</div><div class="fv" title="${v}">${v}</div></div>`).join("")}</div>${risks?`<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">风险提示</p>${risks}</div>`:""}<div class="vb"><div class="vl">凭证建议</div><div class="vg"><div><div class="vk">费用类别</div><div style="font-weight:600;font-size:12px">${item.category||"待确认"}</div></div><div><div class="vk">建议科目</div><div style="font-weight:600;font-size:11px;color:#2563EB">${ac[0]}</div></div><div><div class="vk">凭证编号</div><div style="font-weight:600;font-size:11px;color:#475569;font-family:monospace">${vNo}</div></div></div>${item.memo?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}${item.manualReview?`<div style="margin-top:6px">${tg("mid","⚑ 需人工复核")}<span style="font-size:11px;color:#475569;margin-left:6px">${item.manualReview}</span></div>`:""}</div></div></div>`;
+    return`<div class="rc${item.duplicate?' dup':''}"><div class="rh"><div class="ri">${DI[item.docType]||"📄"}</div><div class="rm" onclick="openEdit(${item.id})"><div class="rn">${item.fileName}${item.pages>1?`<span style="font-size:10px;color:#2563EB;margin-left:6px">${item.pages}页</span>`:""}${item.edited?`<span style="font-size:10px;color:#94A3B8;margin-left:6px">已编辑</span>`:""}</div><div class="rt">${item.docType||"未知"} · ${item.date||"日期未知"}</div></div><div style="display:flex;gap:5px;align-items:center;flex-shrink:0">${tg(lvl)}<button class="btn sm" onclick="openEdit(${item.id})">编辑</button><button class="btn sm danger" onclick="if(confirm('确定删除？')){RS=RS.filter(r=>r.id!==${item.id});renderRes();}">删除</button></div></div><div class="rb"><div class="fg">${flds.map(([k,v])=>`<div class="fb"><div class="fl">${k}</div><div class="fv" title="${v}">${v}</div></div>`).join("")}</div>${risks?`<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">风险提示</p>${risks}</div>`:""}<div class="vb"><div class="vl">凭证建议</div><div class="vg"><div><div class="vk">费用类别</div><div style="font-weight:600;font-size:12px">${item.category||"待确认"}</div></div><div><div class="vk">建议科目</div><div style="font-weight:600;font-size:11px;color:#2563EB">${ac[0]}</div></div><div><div class="vk">凭证编号</div><div style="font-weight:600;font-size:11px;color:#475569;font-family:monospace">${vNo}</div></div></div>${item.memo?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}${item.manualReview?`<div style="margin-top:6px">${tg("mid","⚑ 需人工复核")}<span style="font-size:11px;color:#475569;margin-left:6px">${item.manualReview}</span></div>`:""}</div></div></div>`;
   }).join("");
   document.getElementById("t1").textContent = RS.length > 0 ? `② 审核结果 (${RS.length})` : '② 审核结果';
 }
