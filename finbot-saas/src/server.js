@@ -326,7 +326,7 @@ app.post("/api/admin/reset-trial", authAdmin, (req, res) => {
 
 // ── 管理后台 API ─────────────────────────────────────
 app.get("/api/admin/users", authAdmin, (req, res) => {
-  const users = db.prepare("SELECT id,email,name,company,status,plan,expires,created,last_login FROM users ORDER BY created DESC").all();
+  const users = db.prepare("SELECT id,email,name,company,status,plan,expires,free_uses,created,last_login FROM users ORDER BY created DESC").all();
   res.json(users);
 });
 
@@ -352,9 +352,10 @@ app.get("/api/admin/stats", authAdmin, (req, res) => {
   const total  = db.prepare("SELECT COUNT(*) as n FROM users").get().n;
   const active = db.prepare("SELECT COUNT(*) as n FROM users WHERE status='active'").get().n;
   const paused = db.prepare("SELECT COUNT(*) as n FROM users WHERE status='paused'").get().n;
+  const trial  = db.prepare("SELECT COUNT(*) as n FROM users WHERE status!='active' AND free_uses>0 AND free_uses<3").get().n;
   const revenue = db.prepare("SELECT COALESCE(SUM(amount),0) as n FROM orders WHERE status='paid'").get().n;
   const logs  = db.prepare("SELECT * FROM usage_log ORDER BY ts DESC LIMIT 100").all();
-  res.json({ total, active, paused, revenue, logs });
+  res.json({ total, active, paused, trial, revenue, logs });
 });
 
 app.get("/api/admin/orders", authAdmin, (req, res) => {
