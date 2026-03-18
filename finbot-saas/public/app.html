@@ -220,27 +220,54 @@ async function loadUser(){
     const r=await fetch("/api/me",{headers:{Authorization:"Bearer "+TOKEN}});
     if(!r.ok){localStorage.removeItem("fb_token");location.href="/";return;}
     USER=await r.json();
+
+    // 右上角邮箱和状态
     document.getElementById("user-email").textContent=USER.email;
     const sEl=document.getElementById("user-status");
     const sMap={active:["s-active","已订阅"],inactive:["s-inactive","未订阅"],expired:["s-expired","已过期"],paused:["s-paused","已暂停"]};
     const[cls,txt]=sMap[USER.status]||["s-inactive","未知"];
-    sEl.className="status-badge "+cls;sEl.textContent=txt;
-    console.log("User status:", USER.status, "expires:", USER.expires);
+    sEl.className="status-badge "+cls; sEl.textContent=txt;
 
-    // 订阅详情
+    // 付款成功回调
+    if(location.search.includes("pay=success")){
+      history.replaceState(null,"","/app");
+    }
+
+    // 订阅详情页
     if(USER.status==="active"){
       document.getElementById("sub-status-box").style.display="block";
       document.getElementById("sub-detail").textContent=`套餐：${USER.plan||"月付"} · 到期：${USER.expires||"永久"}`;
     }
 
-    // 付款成功回调
-    if(location.search.includes("pay=success")){
-      await loadUser(); // 刷新状态
-      history.replaceState(null,"","/app");
-    }
+    // 拉取免费次数，决定显示哪个横幅
+    const tr=await fetch("/api/trial",{headers:{Authorization:"Bearer "+TOKEN}});
+    const td=await tr.json();
+    window.__trialRemaining=td.remaining;
+    window.__isActive=(USER.status==="active");
 
-    if(USER.status!=="active"){document.getElementById("paywall").style.display="block";}
-    else{document.getElementById("paywall").style.display="none";}
+    // 全部先隐藏
+    ["bar-active","trial-bar","paywall"].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el) el.style.display="none";
+    });
+
+    if(USER.status==="active"){
+      // 已订阅：绿色横幅
+      const bar=document.getElementById("bar-active");
+      if(bar){bar.style.display="flex";bar.style.alignItems="center";bar.style.gap="12px";}
+      const exp=document.getElementById("bar-expires");
+      if(exp) exp.textContent=USER.expires||"永久有效";
+    } else if(td.remaining>0){
+      // 有剩余试用次数
+      const bar=document.getElementById("trial-bar");
+      if(bar){bar.style.display="flex";bar.style.alignItems="center";bar.style.gap="12px";}
+      const cnt=document.getElementById("trial-count");
+      if(cnt) cnt.textContent=td.remaining;
+    } else {
+      // 次数用完
+      const pw=document.getElementById("paywall");
+      if(pw) pw.style.display="block";
+    }
   }catch(e){location.href="/";}
 }
 
