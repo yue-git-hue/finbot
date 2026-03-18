@@ -71,6 +71,26 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 .fi{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A}
 .fi:focus{border-color:#2563EB}
 .fs{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A;background:#fff}
+
+@media(max-width:768px){
+  .hdr{padding:0 12px;flex-wrap:wrap;gap:0}
+  .logo{margin-right:12px;padding:10px 0}
+  .tab{padding:12px 8px;font-size:11px}
+  .user-info{font-size:11px;gap:6px}
+  .user-info span[id="user-email"]{display:none}
+  .main{padding:16px 12px}
+  .krow{grid-template-columns:repeat(3,1fr)}
+  .vg{grid-template-columns:1fr 1fr}
+  .eg{grid-template-columns:1fr}
+  .plans{grid-template-columns:1fr}
+  .fg{grid-template-columns:repeat(2,1fr)}
+  .rh{flex-wrap:wrap;gap:6px}
+  .btn.sm{padding:4px 8px;font-size:11px}
+}
+@media(max-width:480px){
+  .krow{grid-template-columns:repeat(2,1fr)}
+  .tab{padding:10px 6px;font-size:10px}
+}
 </style>
 </head>
 <body>
@@ -80,6 +100,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   <button class="tab" id="t1" onclick="go(1)">② 审核结果</button>
   <button class="tab" onclick="go(2)">③ 导出报告</button>
   <button class="tab" onclick="go(3)">订阅</button>
+  <a href="https://work.weixin.qq.com/kfid/请替换为你的客服链接" target="_blank" style="padding:7px 14px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;color:#166534;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;margin-right:8px">💬 联系客服</a>
   <div class="user-info">
     <span id="user-email" style="color:#475569"></span>
     <span class="status-badge" id="user-status"></span>
@@ -428,7 +449,27 @@ function renderEx(){
   document.getElementById("en").style.display="block";
 }
 
-function doXlsx(i){const{rows,title}=window.__ed[i];if(!rows?.length){alert("没有数据");return;}const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:12},{wch:28},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:20},{wch:22},{wch:22},{wch:20},{wch:10},{wch:16},{wch:20},{wch:8},{wch:30},{wch:20}];const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,title.slice(0,31));XLSX.writeFile(wb,title+"_"+new Date().toISOString().slice(0,10)+".xlsx");}
+function doXlsx(i){
+  const{rows,title}=window.__ed[i];
+  if(!rows?.length){alert("没有数据");return;}
+  const ws=XLSX.utils.json_to_sheet(rows);
+  // 列宽
+  ws['!cols']=[{wch:10},{wch:30},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:20},{wch:22},{wch:20},{wch:20},{wch:10},{wch:16},{wch:20},{wch:8},{wch:36},{wch:20}];
+  // 数字格式：金额列设为数字格式
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=1;R<=range.e.r;R++){
+    ['E','F','G'].forEach(col=>{
+      const cell=ws[col+(R+1)];
+      if(cell&&typeof cell.v==='number'){cell.t='n';cell.z='#,##0.00';}
+    });
+    // 风险等级列加颜色标记（通过文字区分）
+  }
+  // 冻结首行
+  ws['!freeze']={xSplit:0,ySplit:1};
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,title.slice(0,31));
+  XLSX.writeFile(wb,title+"_"+new Date().toISOString().slice(0,10)+".xlsx");
+}
 function doCsv(i){const{rows,title}=window.__ed[i];if(!rows?.length){alert("没有数据");return;}const H=Object.keys(rows[0]);const csv=[H,...rows.map(r=>H.map(k=>r[k]))].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}));a.download=title+"_"+new Date().toISOString().slice(0,10)+".csv";a.click();}
 
 const dz=document.getElementById("dz");
