@@ -100,7 +100,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   <button class="tab" id="t1" onclick="go(1)">② 审核结果</button>
   <button class="tab" onclick="go(2)">③ 导出报告</button>
   <button class="tab" onclick="go(3)">订阅</button>
-  <a href="https://work.weixin.qq.com/kfid/17661369798" target="_blank" style="padding:7px 14px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;color:#166534;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;margin-right:8px">💬 联系客服</a>
+  <a href="tel:17661369798" style="padding:7px 14px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;color:#166534;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;margin-right:8px">📞 17661369798</a>
   <div class="user-info">
     <span id="user-email" style="color:#475569"></span>
     <span class="status-badge" id="user-status"></span>
@@ -396,7 +396,41 @@ async function runF(files){
 }
 
 async function analyze(file){
-  const sys=`你是专业财务票据预审AI。分析票据只输出JSON：{"docType":"增值税发票/银行回单/报销单/收据/铁路电子客票/对账单/其他","date":"YYYY-MM-DD","amount":不含税金额数字,"tax":税额数字,"party":"对方单位","docNo":"发票号","taxNo":"对方税号","title":"购买方名称","category":"差旅/餐饮招待/办公用品/运输物流/设备采购/服务费/租金/水电费/广告宣传/材料采购/其他","memo":"摘要20字内","manualReview":"需人工确认说明null代表无","risks":[{"level":"high/mid/low","message":"描述"}]}`;
+  const sys=`你是专业财务票据初审Agent，服务代理记账公司和小微企业财务。仔细分析票据图片，只输出JSON不要其他内容：
+{
+  "docType":"增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/对账单/其他",
+  "date":"YYYY-MM-DD",
+  "amount":不含税金额数字,
+  "tax":税额数字,
+  "party":"对方单位名称",
+  "docNo":"发票号或票号",
+  "taxNo":"对方税号",
+  "title":"购买方名称即发票抬头",
+  "category":"差旅/餐饮招待/办公用品/运输物流/设备采购/服务费/租金/水电费/广告宣传/材料采购/其他",
+  "memo":"建议凭证摘要20字内",
+  "conclusion":"通过/驳回/人工复核",
+  "manualReview":"需人工确认的具体说明没有则null",
+  "risks":[{"level":"high或mid或low","message":"具体风险描述"}]
+}
+
+审核结论判断规则：
+- 通过：字段完整、金额正确、抬头无误、日期在3个月内、无明显风险
+- 驳回：抬头明显错误、发票作废/已报销标记、图片严重模糊无法识别关键字段、金额税额计算错误
+- 人工复核：其他存疑情况
+
+风险检查规则（严格执行）：
+1. [高风险] 发票抬头与购买方不符
+2. [高风险] 税号缺失或格式明显错误（应为15-20位）
+3. [高风险] 金额税额计算异常（增值税13%/9%/6%/3%/1%）
+4. [高风险] 旅客运输服务发票出行人姓名未填写
+5. [高风险] 发票日期超过3个月（报销超期）
+6. [高风险] 个人消费票据（餐厅、超市个人购物等）用于企业报销
+7. [中风险] 大额餐饮发票超过2000元，无人数和事由说明
+8. [中风险] 周末或节假日产生的非差旅票据，需说明业务事由
+9. [中风险] 图片模糊、部分字段无法确认
+10. [中风险] 小规模纳税人（个体工商户）发票，进项税不可抵扣
+11. [中风险] 机票/火车票等出行票据，缺少出发地到达地信息
+12. [低风险] 发票备注栏为空，建议补充业务说明`;
   let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
   const results=[];
   for(const img of images){
@@ -425,10 +459,29 @@ function saveEdit(){
 document.getElementById("editModal").addEventListener("click",function(e){if(e.target===this)closeEdit();});
 
 function renderRes(){
-  const dups=RS.filter(r=>r.duplicate).length,high=RS.filter(r=>!r.duplicate&&rl(r)==="high").length,mid=RS.filter(r=>!r.duplicate&&rl(r)==="mid").length,amt=RS.reduce((s,r)=>s+(Number(r.amount)||0),0);
-  document.getElementById("kpis").innerHTML=[["单据总数",RS.length,"#2563EB","#EFF6FF"],["金额合计","¥"+amt.toLocaleString("zh-CN"),"#0F172A","#F8FAFC"],["重复",dups,"#D97706","#FFFBEB"],["高风险",high,"#DC2626","#FEF2F2"],["通过",RS.length-dups-high-mid,"#16A34A","#F0FDF4"]].map(([l,v,c,bg])=>`<div class="kpi" style="background:${bg};border:1px solid ${c}22"><div class="kl">${l}</div><div class="kv" style="color:${c}">${v}</div></div>`).join("");
-  const order={dup:0,high:1,mid:2,low:3};
-  const sorted=[...RS].sort((a,b)=>(order[rl(a)]||3)-(order[rl(b)]||3));
+  const dups=RS.filter(r=>r.duplicate).length;
+  const rejected=RS.filter(r=>!r.duplicate&&r.conclusion==="驳回").length;
+  const passed=RS.filter(r=>!r.duplicate&&r.conclusion==="通过").length;
+  const review=RS.filter(r=>!r.duplicate&&r.conclusion==="人工复核").length;
+  const high=RS.filter(r=>!r.duplicate&&r.conclusion!=="通过"&&r.conclusion!=="人工复核"&&rl(r)==="high").length;
+  const amt=RS.reduce((s,r)=>s+(Number(r.amount)||0),0);
+  document.getElementById("kpis").innerHTML=[
+    ["单据总数",RS.length,"#2563EB","#EFF6FF"],
+    ["金额合计","¥"+amt.toLocaleString("zh-CN"),"#0F172A","#F8FAFC"],
+    ["✓ 通过",passed,"#16A34A","#F0FDF4"],
+    ["⚑ 复核",review+high,"#D97706","#FFFBEB"],
+    ["✗ 驳回/重复",rejected+dups,"#DC2626","#FEF2F2"],
+  ].map(([l,v,c,bg])=>`<div class="kpi" style="background:${bg};border:1px solid ${c}22"><div class="kl">${l}</div><div class="kv" style="color:${c}">${v}</div></div>`).join("");
+  const conclusionOrder={"驳回":0,"人工复核":1,"通过":2};
+  const sorted=[...RS].sort((a,b)=>{
+    if(a.duplicate&&!b.duplicate) return -1;
+    if(!a.duplicate&&b.duplicate) return 1;
+    const ca=conclusionOrder[a.conclusion]??1;
+    const cb=conclusionOrder[b.conclusion]??1;
+    if(ca!==cb) return ca-cb;
+    const o={high:0,mid:1,low:2};
+    return (o[rl(a)]||2)-(o[rl(b)]||2);
+  });
   let vn=1;const yr=String(new Date().getFullYear()).slice(2);
   document.getElementById("rlist").innerHTML=sorted.map(item=>{
     const lvl=rl(item),ac=AM[item.category]||AM["其他"],vNo=(lvl==="low"||lvl==="mid")?`JZ${yr}${String(vn++).padStart(4,"0")}`:"—";
