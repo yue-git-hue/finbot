@@ -114,14 +114,14 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 
 <div class="main">
   <!-- 已订阅状态横幅 -->
-  <div id="bar-active" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:12px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+  <div id="bar-active" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">✅</span>
     <span style="font-size:14px;color:#166534;flex:1">专业版已开通，无限次识别已解锁 · 到期时间：<b id="bar-expires">—</b></span>
     <button class="btn sm" style="border-color:#86EFAC;color:#166534;background:#DCFCE7" onclick="go(3)">管理订阅</button>
   </div>
 
   <!-- 免费试用提示条 -->
-  <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+  <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">🎁</span>
     <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">3</b> 次识别机会，用完后需订阅</span>
     <button class="btn pri sm" onclick="go(3)">立即订阅 →</button>
@@ -225,6 +225,7 @@ async function loadUser(){
     const sMap={active:["s-active","已订阅"],inactive:["s-inactive","未订阅"],expired:["s-expired","已过期"],paused:["s-paused","已暂停"]};
     const[cls,txt]=sMap[USER.status]||["s-inactive","未知"];
     sEl.className="status-badge "+cls;sEl.textContent=txt;
+    console.log("User status:", USER.status, "expires:", USER.expires);
 
     // 订阅详情
     if(USER.status==="active"){
