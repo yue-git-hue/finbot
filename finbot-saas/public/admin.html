@@ -44,6 +44,7 @@ tr:hover td{background:#ffffff04}
     <div class="stat"><div class="sl">已暂停</div><div class="sv" style="color:#FCD34D" id="s-paused">—</div></div>
     <div class="stat"><div class="sl">累计收入</div><div class="sv" style="color:#38BDF8" id="s-rev">—</div></div>
     <div class="stat"><div class="sl">今日操作</div><div class="sv" id="s-logs">—</div></div>
+    <div class="stat"><div class="sl">试用中用户</div><div class="sv" style="color:#38BDF8" id="s-trial">—</div></div>
   </div>
 
   <!-- 手动开通 -->
@@ -61,7 +62,7 @@ tr:hover td{background:#ffffff04}
     <h2>👥 用户列表 <input class="inp" id="search" placeholder="搜索邮箱…" oninput="filterUsers()" style="font-weight:400;text-transform:none;letter-spacing:0"></h2>
     <div style="overflow-x:auto">
       <table>
-        <thead><tr><th>ID</th><th>邮箱</th><th>公司</th><th>状态</th><th>套餐</th><th>到期日</th><th>注册时间</th><th>最后登录</th><th>操作</th></tr></thead>
+        <thead><tr><th>ID</th><th>邮箱</th><th>公司</th><th>状态</th><th>套餐</th><th>到期日</th><th>剩余试用</th><th>注册时间</th><th>最后登录</th><th>操作</th></tr></thead>
         <tbody id="user-body"></tbody>
       </table>
     </div>
@@ -107,6 +108,7 @@ async function loadAll(){
   document.getElementById("s-paused").textContent=stats.paused;
   document.getElementById("s-rev").textContent="¥"+Number(stats.revenue).toLocaleString("zh-CN");
   document.getElementById("s-logs").textContent=stats.logs.filter(l=>l.ts>=new Date().toISOString().slice(0,10)).length;
+  document.getElementById("s-trial").textContent=stats.trial||0;
   await loadUsers();
   renderOrders(orders);
   renderLogs(stats.logs);
@@ -131,6 +133,7 @@ function filterUsers(){
   <td><span class="tag ${stMap[u.status]||'t-inactive'}">${stLabel[u.status]||u.status}</span></td>
   <td style="color:#64748B">${u.plan||"—"}</td>
   <td style="font-family:monospace;font-size:11px">${u.expires||"—"}</td>
+  <td style="text-align:center"><span style="color:${(3-(u.free_uses||0))<=0?'#FCA5A5':'#86EFAC'};font-weight:600">${Math.max(0,3-(u.free_uses||0))}</span><span style="color:#64748B;font-size:10px">/3</span></td>
   <td style="font-size:11px;color:#64748B">${(u.created||"").slice(0,10)}</td>
   <td style="font-size:11px;color:#64748B">${(u.last_login||"—").slice(0,16)}</td>
   <td><div style="display:flex;gap:5px">
@@ -171,6 +174,13 @@ async function extend(id,days){
   const r=await fetch("/api/admin/extend",{method:"POST",headers:H,body:JSON.stringify({id,days})});
   const d=await r.json();
   toast("已延期至 "+d.expires);loadUsers();
+}
+
+async function resetTrial(id){
+  if(!confirm("重置此用户免费次数为3次？"))return;
+  await fetch("/api/admin/reset-trial",{method:"POST",headers:H,body:JSON.stringify({id})});
+  toast("已重置免费次数");
+  loadUsers();
 }
 
 async function manualExtend(){
