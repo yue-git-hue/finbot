@@ -205,21 +205,21 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
     <div class="plans">
       <div class="plan" onclick="buyPlan('monthly')">
         <div class="plan-name">月付套餐</div>
-        <div class="plan-price">¥399<span>/月</span></div>
+        <div class="plan-price">¥299<span>/月</span></div>
         <div class="plan-save">按月付，灵活订阅</div>
         <button class="btn" style="width:100%">立即购买</button>
       </div>
       <div class="plan hot" onclick="buyPlan('quarterly')">
         <div style="font-size:11px;color:#2563EB;font-weight:700;margin-bottom:6px">⭐ 推荐</div>
         <div class="plan-name">季付套餐</div>
-        <div class="plan-price">¥999<span>/季</span></div>
-        <div class="plan-save">省17%，相当于333/月</div>
+        <div class="plan-price">¥799<span>/季</span></div>
+        <div class="plan-save">相当于266元/月</div>
         <button class="btn pri" style="width:100%">立即购买</button>
       </div>
       <div class="plan" onclick="buyPlan('yearly')">
         <div class="plan-name">年付套餐</div>
         <div class="plan-price">¥2999<span>/年</span></div>
-        <div class="plan-save">省37%，相当于250/月</div>
+        <div class="plan-save">相当于250元/月</div>
         <button class="btn" style="width:100%">立即购买</button>
       </div>
     </div>
@@ -406,7 +406,7 @@ async function analyze(file){
   "docNo":"发票号或票号",
   "taxNo":"对方税号",
   "title":"购买方名称即发票抬头",
-  "category":"差旅/餐饮招待/办公用品/运输物流/设备采购/服务费/租金/水电费/广告宣传/材料采购/其他",
+  "category":"费用类别（差旅：含住宿/交通/出行；餐饮招待：含商务宴请；办公用品；运输物流；设备采购；服务费；租金；水电费；广告宣传；材料采购；其他）",
   "memo":"建议凭证摘要20字内",
   "conclusion":"通过/驳回/人工复核",
   "manualReview":"需人工确认的具体说明没有则null",
@@ -424,7 +424,7 @@ async function analyze(file){
 3. [高风险] 金额税额计算异常（增值税13%/9%/6%/3%/1%）
 4. [高风险] 旅客运输服务发票出行人姓名未填写
 5. [高风险] 发票日期超过3个月（报销超期）
-6. [高风险] 个人消费票据（餐厅、超市个人购物等）用于企业报销
+6. [中风险] 销售方为个体工商户，进项税额不可抵扣，需财务确认是否影响税务处理（注意：个体工商户开具的住宿、餐饮、交通等票据属于正常业务，不应判定为个人消费）
 7. [中风险] 大额餐饮发票超过2000元，无人数和事由说明
 8. [中风险] 周末或节假日产生的非差旅票据，需说明业务事由
 9. [中风险] 图片模糊、部分字段无法确认
