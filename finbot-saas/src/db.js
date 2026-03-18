@@ -42,5 +42,8 @@ db.exec(`
   );
 `);
 
-module.exports = db;
 
+// 兼容旧数据库：自动添加 free_uses 字段
+try { db.exec("ALTER TABLE users ADD COLUMN free_uses INTEGER DEFAULT 0"); } catch(e) {}
+
+module.exports = db;
