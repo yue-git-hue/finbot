@@ -232,6 +232,92 @@ app.post("/api/ai/recognize", authUser, async (req, res) => {
   }
 });
 
+
+// ── 审核记录存取 ──────────────────────────────────────
+
+// 保存一批记录
+app.post("/api/records", authUser, (req, res) => {
+  const { records } = req.body;
+  if (!Array.isArray(records)) return res.status(400).json({ error: "格式错误" });
+  const insert = db.prepare(`
+    INSERT INTO records (user_id,file_name,doc_type,date,amount,tax,party,doc_no,tax_no,title,category,memo,manual_review,risks,duplicate,edited,pages)
+    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+  `);
+  const insertMany = db.transaction((rows) => {
+    for (const r of rows) {
+      insert.run(
+        req.user.id, r.fileName||"", r.docType||"", r.date||"",
+        Number(r.amount)||0, Number(r.tax)||0, r.party||"", r.docNo||"",
+        r.taxNo||"", r.title||"", r.category||"", r.memo||"",
+        r.manualReview||null, JSON.stringify(r.risks||[]),
+        r.duplicate?1:0, r.edited?1:0, r.pages||1
+      );
+    }
+  });
+  insertMany(records);
+  res.json({ ok: true, count: records.length });
+});
+
+// 获取历史记录
+app.get("/api/records", authUser, (req, res) => {
+  const rows = db.prepare(
+    "SELECT * FROM records WHERE user_id=? ORDER BY created_at DESC LIMIT 500"
+  ).all(req.user.id);
+  const records = rows.map(r => ({
+    id: r.id,
+    fileName: r.file_name,
+    docType: r.doc_type,
+    date: r.date,
+    amount: r.amount,
+    tax: r.tax,
+    party: r.party,
+    docNo: r.doc_no,
+    taxNo: r.tax_no,
+    title: r.title,
+    category: r.category,
+    memo: r.memo,
+    manualReview: r.manual_review,
+    risks: JSON.parse(r.risks||"[]"),
+    duplicate: !!r.duplicate,
+    edited: !!r.edited,
+    pages: r.pages,
+    createdAt: r.created_at,
+  }));
+  res.json(records);
+});
+
+// 删除单条记录
+app.delete("/api/records/:id", authUser, (req, res) => {
+  db.prepare("DELETE FROM records WHERE id=? AND user_id=?").run(req.params.id, req.user.id);
+  res.json({ ok: true });
+});
+
+// 清空所有记录
+app.delete("/api/records", authUser, (req, res) => {
+  db.prepare("DELETE FROM records WHERE user_id=?").run(req.user.id);
+  res.json({ ok: true });
+});
+
+// 更新单条记录
+app.put("/api/records/:id", authUser, (req, res) => {
+  const r = req.body;
+  db.prepare(`UPDATE records SET
+    doc_type=?, date=?, amount=?, tax=?, party=?, doc_no=?, tax_no=?,
+    title=?, category=?, memo=?, edited=1
+    WHERE id=? AND user_id=?
+  `).run(r.docType||"", r.date||"", Number(r.amount)||0, Number(r.tax)||0,
+    r.party||"", r.docNo||"", r.taxNo||"", r.title||"", r.category||"",
+    r.memo||"", req.params.id, req.user.id);
+  res.json({ ok: true });
+});
+
+// ── 重置免费次数 ─────────────────────────────────────
+app.post("/api/admin/reset-trial", authAdmin, (req, res) => {
+  const { id } = req.body;
+  db.prepare("UPDATE users SET free_uses=0 WHERE id=?").run(id);
+  res.json({ ok: true });
+});
+
 // ── 管理后台 API ─────────────────────────────────────
 app.get("/api/admin/users", authAdmin, (req, res) => {
   const users = db.prepare("SELECT id,email,name,company,status,plan,expires,created,last_login FROM users ORDER BY created DESC").all();
