@@ -43,7 +43,32 @@ db.exec(`
 `);
 
 
-// 兼容旧数据库：自动添加 free_uses 字段
+// 兼容旧数据库：自动添加字段
 try { db.exec("ALTER TABLE users ADD COLUMN free_uses INTEGER DEFAULT 0"); } catch(e) {}
+
+// 审核记录表
+db.exec(`
+  CREATE TABLE IF NOT EXISTS records (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id     INTEGER NOT NULL,
+    file_name   TEXT,
+    doc_type    TEXT,
+    date        TEXT,
+    amount      REAL,
+    tax         REAL,
+    party       TEXT,
+    doc_no      TEXT,
+    tax_no      TEXT,
+    title       TEXT,
+    category    TEXT,
+    memo        TEXT,
+    manual_review TEXT,
+    risks       TEXT,   -- JSON string
+    duplicate   INTEGER DEFAULT 0,
+    edited      INTEGER DEFAULT 0,
+    pages       INTEGER DEFAULT 1,
+    created_at  TEXT DEFAULT (datetime('now','localtime'))
+  );
+`);
 
 module.exports = db;
