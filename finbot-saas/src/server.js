@@ -243,8 +243,12 @@ app.post("/api/records", authUser, (req, res) => {
     INSERT INTO records (user_id,file_name,doc_type,date,amount,tax,party,doc_no,tax_no,title,category,memo,manual_review,risks,duplicate,edited,pages)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
   `);
+  const checkExists = db.prepare("SELECT id FROM records WHERE user_id=? AND doc_no=? AND doc_no != ''");
   const insertMany = db.transaction((rows) => {
+    let saved = 0;
     for (const r of rows) {
+      // 跳过发票号已存在的记录，避免重复入库
+      if (r.docNo && checkExists.get(req.user.id, r.docNo)) continue;
       insert.run(
         req.user.id, r.fileName||"", r.docType||"", r.date||"",
         Number(r.amount)||0, Number(r.tax)||0, r.party||"", r.docNo||"",
@@ -252,10 +256,12 @@ app.post("/api/records", authUser, (req, res) => {
         r.manualReview||null, JSON.stringify(r.risks||[]),
         r.duplicate?1:0, r.edited?1:0, r.pages||1
       );
+      saved++;
     }
+    return saved;
   });
-  insertMany(records);
-  res.json({ ok: true, count: records.length });
+  const saved = insertMany(records);
+  res.json({ ok: true, count: saved });
 });
 
 // 获取历史记录
