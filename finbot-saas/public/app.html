@@ -113,11 +113,18 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 </div>
 
 <div class="main">
+  <!-- 已订阅状态横幅 -->
+  <div id="bar-active" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:12px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
+    <span style="font-size:18px">✅</span>
+    <span style="font-size:14px;color:#166534;flex:1">专业版已开通，无限次识别已解锁 · 到期时间：<b id="bar-expires">—</b></span>
+    <button class="btn sm" style="border-color:#86EFAC;color:#166534;background:#DCFCE7" onclick="go(3)">管理订阅</button>
+  </div>
+
   <!-- 免费试用提示条 -->
   <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;display:flex;align-items:center;gap:12px">
     <span style="font-size:18px">🎁</span>
-    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">3</b> 次识别机会</span>
-    <button class="btn pri sm" onclick="go(3)">订阅解锁无限次 →</button>
+    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">3</b> 次识别机会，用完后需订阅</span>
+    <button class="btn pri sm" onclick="go(3)">立即订阅 →</button>
   </div>
 
   <!-- 次数用完提示 -->
@@ -135,7 +142,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
     <div class="dz" id="dz" onclick="document.getElementById('fi').click()">
       <div style="font-size:44px;margin-bottom:12px">📁</div>
       <div style="font-size:15px;font-weight:600;margin-bottom:7px" id="dzt">拖拽上传 或 点击选择文件</div>
-      <div style="font-size:13px;color:#94A3B8;margin-bottom:18px">支持 PDF（多页）、JPG、PNG</div>
+      <div style="font-size:13px;color:#94A3B8;margin-bottom:18px">支持 PDF（多页）、JPG、PNG · 单文件最大 20MB · 可批量上传 · 上传后自动识别</div>
       <button class="btn pri" onclick="event.stopPropagation();document.getElementById('fi').click()">选择文件</button>
     </div>
     <input type="file" id="fi" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="runF(this.files)">
@@ -169,9 +176,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   <div class="page" id="p3">
     <div class="ptitle">订阅管理</div>
     <div class="psub">选择适合你的套餐，购买后立即开通</div>
-    <div id="sub-status-box" style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px;margin-bottom:20px;display:none">
-      <div style="font-size:14px;font-weight:600;margin-bottom:4px">当前套餐</div>
+    <div id="sub-status-box" style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:12px;padding:20px;margin-bottom:20px;display:none">
+      <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:8px">✅ 当前已订阅</div>
       <div style="font-size:13px;color:#475569" id="sub-detail"></div>
+      <div style="font-size:13px;color:#475569;margin-top:6px">权益：无限次识别 · 批量上传 · Excel/CSV报告导出</div>
     </div>
     <div class="plans">
       <div class="plan" onclick="buyPlan('monthly')">
@@ -369,7 +377,7 @@ function renderRes(){
     const risks=(item.risks||[]).map(r=>`<div class="rki rk${r.level[0]}">${tg(r.level)}<span>${r.message}</span></div>`).join("");
     return`<div class="rc${item.duplicate?' dup':''}"><div class="rh"><div class="ri">${DI[item.docType]||"📄"}</div><div class="rm" onclick="openEdit(${item.id})"><div class="rn">${item.fileName}${item.pages>1?`<span style="font-size:10px;color:#2563EB;margin-left:6px">${item.pages}页</span>`:""}${item.edited?`<span style="font-size:10px;color:#94A3B8;margin-left:6px">已编辑</span>`:""}</div><div class="rt">${item.docType||"未知"} · ${item.date||"日期未知"}</div></div><div style="display:flex;gap:5px;align-items:center;flex-shrink:0">${tg(lvl)}<button class="btn sm" onclick="openEdit(${item.id})">编辑</button><button class="btn sm danger" onclick="if(confirm('确定删除？')){RS=RS.filter(r=>r.id!==${item.id});renderRes();}">删除</button></div></div><div class="rb"><div class="fg">${flds.map(([k,v])=>`<div class="fb"><div class="fl">${k}</div><div class="fv" title="${v}">${v}</div></div>`).join("")}</div>${risks?`<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">风险提示</p>${risks}</div>`:""}<div class="vb"><div class="vl">凭证建议</div><div class="vg"><div><div class="vk">费用类别</div><div style="font-weight:600;font-size:12px">${item.category||"待确认"}</div></div><div><div class="vk">建议科目</div><div style="font-weight:600;font-size:11px;color:#2563EB">${ac[0]}</div></div><div><div class="vk">凭证编号</div><div style="font-weight:600;font-size:11px;color:#475569;font-family:monospace">${vNo}</div></div></div>${item.memo?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}${item.manualReview?`<div style="margin-top:6px">${tg("mid","⚑ 需人工复核")}<span style="font-size:11px;color:#475569;margin-left:6px">${item.manualReview}</span></div>`:""}</div></div></div>`;
   }).join("");
-  document.getElementById("t1").textContent=`② 审核结果 (${RS.length})`;
+  document.getElementById("t1").textContent = RS.length > 0 ? `② 审核结果 (${RS.length})` : '② 审核结果';
 }
 
 function renderEx(){
