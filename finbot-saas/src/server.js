@@ -338,13 +338,17 @@ app.post("/api/admin/user-status", authAdmin, (req, res) => {
 });
 
 app.post("/api/admin/extend", authAdmin, (req, res) => {
-  const { id, days } = req.body;
+  const { id, days, plan } = req.body;
   const user = db.prepare("SELECT * FROM users WHERE id=?").get(id);
   if (!user) return res.status(404).json({ error: "用户不存在" });
   const base = user.expires && user.expires > new Date().toISOString().slice(0,10) ? new Date(user.expires) : new Date();
   base.setDate(base.getDate() + Number(days));
   const expires = base.toISOString().slice(0,10);
-  db.prepare("UPDATE users SET status='active', expires=? WHERE id=?").run(expires, id);
+  if (plan) {
+    db.prepare("UPDATE users SET status='active', expires=?, plan=? WHERE id=?").run(expires, plan, id);
+  } else {
+    db.prepare("UPDATE users SET status='active', expires=? WHERE id=?").run(expires, id);
+  }
   res.json({ ok: true, expires });
 });
 
