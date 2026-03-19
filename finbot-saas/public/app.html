@@ -10,10 +10,10 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:#F8FAFC;color:#0F172A;min-height:100vh}
 .hdr{background:#fff;border-bottom:1px solid #E2E8F0;padding:0 24px;display:flex;align-items:center;position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.logo{padding:12px 0;margin-right:24px}.logo h1{font-size:15px;font-weight:800;color:#2563EB}.logo p{font-size:10px;color:#94A3B8}
-.tab{padding:17px 14px;background:transparent;border:none;border-bottom:2px solid transparent;color:#475569;cursor:pointer;font-size:13px;font-family:inherit;white-space:nowrap}
+.logo{padding:12px 0;margin-right:20px}.logo h1{font-size:15px;font-weight:800;color:#2563EB}.logo p{font-size:10px;color:#94A3B8}
+.tab{padding:17px 12px;background:transparent;border:none;border-bottom:2px solid transparent;color:#475569;cursor:pointer;font-size:13px;font-family:inherit;white-space:nowrap}
 .tab.on{border-bottom-color:#2563EB;color:#2563EB;font-weight:700}
-.user-info{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px}
+.user-info{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px}
 .status-badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
 .s-active{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC}
 .s-inactive{background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5}
@@ -21,19 +21,13 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 .s-paused{background:#FFFBEB;color:#D97706;border:1px solid #FCD34D}
 .main{max-width:960px;margin:0 auto;padding:28px 20px}
 .page{display:none}.page.on{display:block}
-/* 订阅页 */
-.sub-hero{text-align:center;padding:40px 20px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;margin-bottom:24px}
-.sub-hero h2{font-size:22px;font-weight:700;margin-bottom:8px}
-.sub-hero p{font-size:14px;color:#475569;margin-bottom:24px}
 .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .plan{background:#fff;border:2px solid #E2E8F0;border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:all 0.15s}
-.plan:hover{border-color:#2563EB;box-shadow:0 4px 20px rgba(37,99,235,0.1)}
-.plan.hot{border-color:#2563EB}
+.plan:hover{border-color:#2563EB}.plan.hot{border-color:#2563EB}
 .plan-name{font-size:15px;font-weight:700;margin-bottom:6px}
 .plan-price{font-size:32px;font-weight:800;color:#2563EB;margin:8px 0 4px}
 .plan-price span{font-size:13px;color:#94A3B8;font-weight:400}
 .plan-save{font-size:12px;color:#16A34A;margin-bottom:14px;font-weight:600}
-/* 工具区 */
 .ptitle{font-size:20px;font-weight:700;margin-bottom:6px}.psub{font-size:14px;color:#475569;margin-bottom:20px}
 .dz{border:2px dashed #CBD5E1;border-radius:12px;padding:48px 32px;text-align:center;cursor:pointer;background:#F8FAFC;transition:all 0.2s}
 .dz:hover,.dz.drag{border-color:#2563EB;background:#EFF6FF}
@@ -71,12 +65,9 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 .fi{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A}
 .fi:focus{border-color:#2563EB}
 .fs{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A;background:#fff}
-
 @media(max-width:768px){
-  .hdr{padding:0 12px;flex-wrap:wrap;gap:0}
-  .logo{margin-right:12px;padding:10px 0}
+  .hdr{padding:0 12px;flex-wrap:wrap}
   .tab{padding:12px 8px;font-size:11px}
-  .user-info{font-size:11px;gap:6px}
   .user-info span[id="user-email"]{display:none}
   .main{padding:16px 12px}
   .krow{grid-template-columns:repeat(3,1fr)}
@@ -84,12 +75,6 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   .eg{grid-template-columns:1fr}
   .plans{grid-template-columns:1fr}
   .fg{grid-template-columns:repeat(2,1fr)}
-  .rh{flex-wrap:wrap;gap:6px}
-  .btn.sm{padding:4px 8px;font-size:11px}
-}
-@media(max-width:480px){
-  .krow{grid-template-columns:repeat(2,1fr)}
-  .tab{padding:10px 6px;font-size:10px}
 }
 </style>
 </head>
@@ -108,12 +93,11 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   </div>
 </div>
 
-<!-- 编辑弹窗 -->
 <div class="modal-bg" id="editModal">
   <div class="modal">
     <h3>✏️ 编辑识别结果</h3>
     <div style="display:flex;flex-direction:column;gap:12px">
-      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">单据类型</div><select class="fs" id="e_docType"><option>增值税发票</option><option>银行回单</option><option>报销单</option><option>收据</option><option>铁路电子客票</option><option>对账单</option><option>其他</option></select></div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">单据类型</div><select class="fs" id="e_docType"><option>增值税发票</option><option>银行回单</option><option>报销单</option><option>收据</option><option>铁路电子客票</option><option>机票行程单</option><option>出租车票</option><option>网约车发票</option><option>酒店发票</option><option>餐饮发票</option><option>对账单</option><option>其他</option></select></div>
       <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">日期</div><input class="fi" id="e_date" type="date"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
         <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">不含税金额</div><input class="fi" id="e_amount" type="number" step="0.01"></div>
@@ -123,7 +107,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">发票号/单号</div><input class="fi" id="e_docNo"></div>
       <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">对方税号</div><input class="fi" id="e_taxNo"></div>
       <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">购买方（抬头）</div><input class="fi" id="e_title"></div>
-      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">费用类别</div><select class="fs" id="e_category"><option>差旅</option><option>餐饮招待</option><option>办公用品</option><option>运输物流</option><option>设备采购</option><option>服务费</option><option>租金</option><option>水电费</option><option>广告宣传</option><option>材料采购</option><option>其他</option></select></div>
+      <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">费用类别</div><select class="fs" id="e_category"><option>差旅-住宿</option><option>差旅-城际交通</option><option>差旅-市内交通</option><option>餐饮招待</option><option>办公用品</option><option>银行付款凭证</option><option>服务费</option><option>租金</option><option>水电费</option><option>广告宣传</option><option>材料采购</option><option>其他</option></select></div>
       <div><div style="font-size:11px;color:#64748B;margin-bottom:4px">凭证摘要</div><input class="fi" id="e_memo"></div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:20px">
@@ -134,21 +118,16 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 </div>
 
 <div class="main">
-  <!-- 已订阅状态横幅 -->
   <div id="bar-active" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">✅</span>
     <span style="font-size:14px;color:#166534;flex:1">专业版已开通，无限次识别已解锁 · 到期时间：<b id="bar-expires">—</b></span>
     <button class="btn sm" style="border-color:#86EFAC;color:#166534;background:#DCFCE7" onclick="go(3)">管理订阅</button>
   </div>
-
-  <!-- 免费试用提示条 -->
   <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">🎁</span>
     <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">3</b> 次识别机会，用完后需订阅</span>
     <button class="btn pri sm" onclick="go(3)">立即订阅 →</button>
   </div>
-
-  <!-- 次数用完提示 -->
   <div id="paywall" style="display:none;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:40px;text-align:center;margin-bottom:20px">
     <div style="font-size:36px;margin-bottom:14px">🔒</div>
     <div style="font-size:18px;font-weight:700;margin-bottom:8px">免费次数已用完</div>
@@ -156,7 +135,6 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
     <button class="btn pri" onclick="go(3)">查看套餐 →</button>
   </div>
 
-  <!-- 上传 -->
   <div class="page on" id="p0">
     <div class="ptitle">上传票据</div>
     <div class="psub">支持增值税发票、铁路客票、银行回单、报销单，多页PDF，可批量</div>
@@ -171,10 +149,9 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
     <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;font-size:13px;color:#DC2626;margin-top:12px;display:none" id="eb"></div>
   </div>
 
-  <!-- 结果 -->
   <div class="page" id="p1">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px">
-      <div><div class="ptitle" style="margin-bottom:4px">审核结果</div><div class="psub" style="margin-bottom:0">高风险和重复发票排在最前</div></div>
+      <div><div class="ptitle" style="margin-bottom:4px">审核结果</div><div class="psub" style="margin-bottom:0">驳回和重复发票排在最前</div></div>
       <div style="display:flex;gap:8px">
         <button class="btn" onclick="go(0)">继续上传</button>
         <button class="btn danger sm" onclick="if(confirm('清空所有结果？')){RS=[];renderRes();}">清空</button>
@@ -185,7 +162,6 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
     <div id="rlist"></div>
   </div>
 
-  <!-- 导出 -->
   <div class="page" id="p2">
     <div class="ptitle">导出报告</div>
     <div class="psub">支持 Excel（含凭证编号）和 CSV</div>
@@ -193,46 +169,63 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
     <div class="notice" id="en" style="display:none"><strong style="color:#D97706">⚑ 会计复核说明：</strong>本报告由AI预审生成，仅供参考。凭证编号为建议编号，最终以会计审核为准。</div>
   </div>
 
-  <!-- 订阅 -->
   <div class="page" id="p3">
     <div class="ptitle">订阅管理</div>
-    <div class="psub">选择适合你的套餐，购买后立即开通</div>
-    <div id="sub-status-box" style="background:#F0FDF4;border:1px solid #86EFAC;border-radius:12px;padding:20px;margin-bottom:20px;display:none">
+    <div class="psub">选择适合你的套餐，购买后联系客服开通</div>
+    <div id="sub-status-box" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:12px;padding:20px;margin-bottom:20px">
       <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:8px">✅ 当前已订阅</div>
       <div style="font-size:13px;color:#475569" id="sub-detail"></div>
       <div style="font-size:13px;color:#475569;margin-top:6px">权益：无限次识别 · 批量上传 · Excel/CSV报告导出</div>
     </div>
     <div class="plans">
-      <div class="plan" onclick="buyPlan('monthly')">
+      <div class="plan">
         <div class="plan-name">月付套餐</div>
         <div class="plan-price">¥299<span>/月</span></div>
-        <div class="plan-save">按月付，灵活订阅</div>
-        <button class="btn" style="width:100%">立即购买</button>
+        <div class="plan-save">按月订阅，随时取消</div>
+        <button class="btn full" onclick="alert('请微信/支付宝转账后拨打：17661369798')">联系开通</button>
       </div>
-      <div class="plan hot" onclick="buyPlan('quarterly')">
+      <div class="plan hot">
         <div style="font-size:11px;color:#2563EB;font-weight:700;margin-bottom:6px">⭐ 推荐</div>
         <div class="plan-name">季付套餐</div>
         <div class="plan-price">¥799<span>/季</span></div>
         <div class="plan-save">相当于266元/月</div>
-        <button class="btn pri" style="width:100%">立即购买</button>
+        <button class="btn pri full" onclick="alert('请微信/支付宝转账后拨打：17661369798')">联系开通</button>
       </div>
-      <div class="plan" onclick="buyPlan('yearly')">
+      <div class="plan">
         <div class="plan-name">年付套餐</div>
         <div class="plan-price">¥2999<span>/年</span></div>
-        <div class="plan-save">相当于250元/月</div>
-        <button class="btn" style="width:100%">立即购买</button>
+        <div class="plan-save">相当于250元/月，省17%</div>
+        <button class="btn full" onclick="alert('请微信/支付宝转账后拨打：17661369798')">联系开通</button>
       </div>
+    </div>
+    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:20px;margin-top:20px;text-align:center">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px">购买方式</div>
+      <div style="font-size:13px;color:#475569;line-height:1.8">微信/支付宝转账后，发截图到客服电话<br>
+      <a href="tel:17661369798" style="color:#2563EB;font-weight:700;font-size:16px">📞 17661369798</a><br>
+      工作日 9:00-18:00，收到款项后立即开通</div>
     </div>
   </div>
 </div>
 
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const AM={"差旅":["660201 差旅费","管理费用/销售费用"],"餐饮招待":["660202 业务招待费","管理费用"],"办公用品":["660203 办公费","管理费用"],"运输物流":["660204 运费","销售费用"],"设备采购":["1601 固定资产","视金额判断"],"服务费":["660210 服务费","管理费用/销售费用"],"租金":["660205 租赁费","管理费用"],"水电费":["660206 水电费","管理费用"],"广告宣传":["660207 广告费","销售费用"],"材料采购":["5001 原材料","视业务类型"],"其他":["660299 其他费用","管理费用"]};
-const DI={"增值税发票":"🧾","银行回单":"🏦","报销单":"📋","收据":"🗒️","铁路电子客票":"🚄"};
+const AM={
+  "差旅-住宿":["660201 差旅费-住宿","管理费用"],
+  "差旅-城际交通":["660201 差旅费-交通","管理费用"],
+  "差旅-市内交通":["660201 差旅费-市内交通","管理费用"],
+  "差旅":["660201 差旅费","管理费用"],
+  "餐饮招待":["660202 业务招待费","管理费用"],
+  "办公用品":["660203 办公费","管理费用"],
+  "银行付款凭证":["660299 其他费用","管理费用"],
+  "服务费":["660210 服务费","管理费用"],
+  "租金":["660205 租赁费","管理费用"],
+  "水电费":["660206 水电费","管理费用"],
+  "广告宣传":["660207 广告费","销售费用"],
+  "材料采购":["5001 原材料","视业务类型"],
+  "其他":["660299 其他费用","管理费用"]
+};
+const DI={"增值税发票":"🧾","银行回单":"🏦","报销单":"📋","收据":"🗒️","铁路电子客票":"🚄","机票行程单":"✈️","出租车票":"🚕","网约车发票":"🚗","酒店发票":"🏨","餐饮发票":"🍽️"};
 let RS=[],editId=null,USER=null;
-
-// ── 鉴权 ─────────────────────────────────────────────
 const TOKEN=localStorage.getItem("fb_token");
 if(!TOKEN){location.href="/";throw new Error();}
 
@@ -241,58 +234,34 @@ async function loadUser(){
     const r=await fetch("/api/me",{headers:{Authorization:"Bearer "+TOKEN}});
     if(!r.ok){localStorage.removeItem("fb_token");location.href="/";return;}
     USER=await r.json();
-
-    // 右上角邮箱和状态
     document.getElementById("user-email").textContent=USER.email;
     const sEl=document.getElementById("user-status");
     const sMap={active:["s-active","已订阅"],inactive:["s-inactive","未订阅"],expired:["s-expired","已过期"],paused:["s-paused","已暂停"]};
     const[cls,txt]=sMap[USER.status]||["s-inactive","未知"];
     sEl.className="status-badge "+cls; sEl.textContent=txt;
-
-    // 付款成功回调
-    if(location.search.includes("pay=success")){
-      history.replaceState(null,"","/app");
-    }
-
-    // 订阅详情页
     if(USER.status==="active"){
       document.getElementById("sub-status-box").style.display="block";
-      document.getElementById("sub-detail").textContent=`套餐：${USER.plan||"月付"} · 到期：${USER.expires||"永久"}`;
+      document.getElementById("sub-detail").textContent="套餐："+(USER.plan||"月付")+" · 到期："+(USER.expires||"永久");
     }
-
-    // 拉取免费次数，决定显示哪个横幅
+    if(location.search.includes("pay=success")) history.replaceState(null,"","/app");
     const tr=await fetch("/api/trial",{headers:{Authorization:"Bearer "+TOKEN}});
     const td=await tr.json();
     window.__trialRemaining=td.remaining;
     window.__isActive=(USER.status==="active");
-
-    // 全部先隐藏
-    ["bar-active","trial-bar","paywall"].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el) el.style.display="none";
-    });
-
+    ["bar-active","trial-bar","paywall"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display="none";});
     if(USER.status==="active"){
-      // 已订阅：绿色横幅
       const bar=document.getElementById("bar-active");
       if(bar){bar.style.display="flex";bar.style.alignItems="center";bar.style.gap="12px";}
-      const exp=document.getElementById("bar-expires");
-      if(exp) exp.textContent=USER.expires||"永久有效";
-    } else if(td.remaining>0){
-      // 有剩余试用次数
+      const exp=document.getElementById("bar-expires");if(exp)exp.textContent=USER.expires||"永久有效";
+    }else if(td.remaining>0){
       const bar=document.getElementById("trial-bar");
       if(bar){bar.style.display="flex";bar.style.alignItems="center";bar.style.gap="12px";}
-      const cnt=document.getElementById("trial-count");
-      if(cnt) cnt.textContent=td.remaining;
-    } else {
-      // 次数用完
-      const pw=document.getElementById("paywall");
-      if(pw) pw.style.display="block";
+      const cnt=document.getElementById("trial-count");if(cnt)cnt.textContent=td.remaining;
+    }else{
+      const pw=document.getElementById("paywall");if(pw)pw.style.display="block";
     }
   }catch(e){location.href="/";}
 }
-
-// 历史记录已禁用
 
 function logout(){localStorage.removeItem("fb_token");localStorage.removeItem("fb_user");location.href="/";}
 
@@ -303,45 +272,21 @@ function go(i){
 }
 
 async function checkActive(){
-  if(USER?.status==="active") return true;
-  if(window.__trialRemaining > 0) {
-    // 消耗一次免费次数
-    const r = await fetch("/api/trial/use", {method:"POST", headers:{Authorization:"Bearer "+TOKEN, "Content-Type":"application/json"}});
-    const d = await r.json();
-    if (!r.ok) {
-      document.getElementById("paywall").style.display = "block";
-      document.getElementById("trial-bar").style.display = "none";
-      go(3);
-      return false;
-    }
-    window.__trialRemaining = d.remaining;
-    document.getElementById("trial-count").textContent = d.remaining;
-    if (d.remaining === 0) {
-      document.getElementById("trial-bar").style.display = "none";
-    }
+  if(USER?.status==="active")return true;
+  if(window.__trialRemaining>0){
+    const r=await fetch("/api/trial/use",{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"}});
+    const d=await r.json();
+    if(!r.ok){document.getElementById("paywall").style.display="block";document.getElementById("trial-bar").style.display="none";go(3);return false;}
+    window.__trialRemaining=d.remaining;
+    const cnt=document.getElementById("trial-count");if(cnt)cnt.textContent=d.remaining;
+    if(d.remaining===0)document.getElementById("trial-bar").style.display="none";
     return true;
   }
-  document.getElementById("paywall").style.display = "block";
-  document.getElementById("trial-bar").style.display = "none";
-  go(3);
-  return false;
+  document.getElementById("paywall").style.display="block";
+  document.getElementById("trial-bar").style.display="none";
+  go(3);return false;
 }
 
-async function buyPlan(plan){
-  if(!USER){alert("请先登录");return;}
-  const r=await fetch("/api/order/create",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify({plan})});
-  const d=await r.json();
-  if(!d.ok){alert(d.error||"创建订单失败");return;}
-  window.open(d.payUrl,"_blank");
-  // 轮询订单状态
-  let tries=0;
-  const poll=setInterval(async()=>{
-    await loadUser();
-    if(USER?.status==="active"||tries++>30)clearInterval(poll);
-  },3000);
-}
-
-// ── PDF → 图片 ────────────────────────────────────────
 async function pdfToImages(file){
   const buf=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
@@ -360,8 +305,19 @@ async function pdfToImages(file){
 }
 async function fileToB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});}
 
-function rl(item){if(item.duplicate)return"dup";return item.risks?.some(r=>r.level==="high")?"high":item.risks?.some(r=>r.level==="mid")?"mid":"low";}
-function tg(lvl,txt){const m={high:"高风险",mid:"需确认",low:"通过",dup:"重复发票"};const c={high:"th",mid:"tm",low:"tl",dup:"td"};return`<span class="tag ${c[lvl]||'tm'}">${txt||m[lvl]||lvl}</span>`;}
+function rl(item){
+  if(item.duplicate)return"dup";
+  const c=item.conclusion||"";
+  if(c==="REJECT"||c==="驳回")return"high";
+  if(c==="REVIEW"||c==="人工复核")return"mid";
+  if(c==="PASS"||c==="通过")return"low";
+  return item.risks?.some(r=>r.level==="HIGH"||r.level==="high")?"high":item.risks?.some(r=>r.level==="MEDIUM"||r.level==="mid")?"mid":"low";
+}
+function tg(lvl,txt){
+  const m={high:"高风险",mid:"需确认",low:"通过",dup:"重复发票"};
+  const c={high:"th",mid:"tm",low:"tl",dup:"td"};
+  return`<span class="tag ${c[lvl]||'tm'}">${txt||m[lvl]||lvl}</span>`;
+}
 
 async function runF(files){
   if(!(await checkActive()))return;
@@ -373,241 +329,217 @@ async function runF(files){
   const out=[];
   for(const f of arr){
     const sid="st"+f.name.replace(/\W/g,'_');const sel=document.getElementById(sid);
-    try{if(sel)sel.textContent="识别中…";
+    try{
+      if(sel)sel.textContent="识别中…";
       const r=await analyze(f);
-      r.duplicate=RS.some(ex=>ex.docNo&&ex.docNo===r.docNo)||out.some(ex=>ex.docNo&&ex.docNo===r.docNo);
-      if(r.duplicate){r.risks=r.risks||[];r.risks.unshift({level:"high",message:"⚠ 发票号重复："+r.docNo+"，疑似重复报销"});}
+      if(r.docNo&&(RS.some(ex=>ex.docNo===r.docNo)||out.some(ex=>ex.docNo===r.docNo))){
+        if(sel)sel.textContent="⊘ 重复跳过";continue;
+      }
       out.push(r);if(sel)sel.textContent="✓ 完成";
-    }catch(e){if(sel)sel.textContent="✗ 失败";out.push({id:Date.now()+Math.random(),fileName:f.name,docType:"识别失败",risks:[{level:"high",message:"错误："+String(e.message)}],manualReview:"请人工处理"});}
+    }catch(e){
+      if(sel)sel.textContent="✗ 失败";
+      out.push({id:Date.now()+Math.random(),fileName:f.name,docType:"识别失败",conclusion:"REVIEW",risks:[{level:"HIGH",message:"错误："+String(e.message)}],manualReview:"请人工处理"});
+    }
     await new Promise(r=>setTimeout(r,300));
     const el=document.getElementById("qi"+f.name.replace(/\W/g,'_'));if(el)setTimeout(()=>el.remove(),800);
   }
   setTimeout(()=>{if(!document.getElementById("ql").children.length)qb.style.display="none";},1000);
   document.getElementById("dzt").textContent="拖拽上传 或 点击选择文件";
-  // 重复发票直接跳过，按发票号去重
-  for(const r of out){
-    if(r.docNo && RS.some(ex=>ex.docNo===r.docNo)){
-      // 发票号已存在，跳过
-      continue;
-    }
-    RS.unshift(r);
-  }
+  for(const r of out)RS.unshift(r);
   renderRes();go(1);
 }
 
 async function analyze(file){
-  const sys=`你是专业财务票据初审Agent，严格按照以下规则执行审核，只输出JSON不要任何其他内容。
+  const sys=`你是专业财务票据初审Agent，严格按规则执行，只输出JSON不要其他内容。
 
-## 输出格式（严格遵守）
-{
-  "docType": "增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/对账单/其他",
-  "date": "YYYY-MM-DD",
-  "amount": 不含税金额数字,
-  "tax": 税额数字,
-  "party": "对方单位名称",
-  "docNo": "发票号或票号或流水号",
-  "taxNo": "对方税号",
-  "title": "购买方名称即发票抬头",
-  "category": "差旅-住宿/差旅-城际交通/差旅-市内交通/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/广告宣传/材料采购/其他",
-  "memo": "建议凭证摘要20字内",
-  "conclusion": "PASS或REVIEW或REJECT",
-  "conclusionText": "通过或人工复核或驳回",
-  "manualReview": "需人工确认的具体说明，无则null",
-  "suggestedAction": "直接通过或补充说明或补充附件或转人工复核或驳回重提",
-  "risks": [{"level": "HIGH或MEDIUM或LOW", "ruleId": "规则编号", "message": "具体风险描述"}]
+输出格式：{"docType":"增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/对账单/其他","date":"YYYY-MM-DD","amount":不含税金额数字,"tax":税额数字,"party":"对方单位","docNo":"发票号或票号","taxNo":"对方税号","title":"购买方名称","category":"差旅-住宿/差旅-城际交通/差旅-市内交通/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/广告宣传/材料采购/其他","memo":"建议摘要20字内","conclusion":"PASS或REVIEW或REJECT","conclusionText":"通过或人工复核或驳回","suggestedAction":"直接通过或补充说明或补充附件或转人工复核或驳回重提","manualReview":"需人工确认说明null代表无","risks":[{"level":"HIGH或MEDIUM或LOW","ruleId":"规则编号","message":"具体描述"}]}
+
+结论判断：命中REJECT规则→REJECT；命中REVIEW规则→REVIEW；否则→PASS
+
+核心规则：
+G003 核心字段(日期/金额/开票方/票号)缺失→REJECT HIGH
+G002 图片严重模糊→REJECT HIGH；轻度→REVIEW MEDIUM
+G005 金额为负或0→REJECT HIGH；税额异常→REVIEW MEDIUM
+G009 费用类别明显冲突→REJECT HIGH；疑似→REVIEW MEDIUM
+T105 酒店单晚超1200元→REJECT HIGH；超800元→REVIEW MEDIUM
+T106 同城住宿无说明→REVIEW MEDIUM
+T202 出行人/乘车人信息缺失→REVIEW HIGH
+T205 商务座/商务舱→REVIEW MEDIUM
+E101 餐饮发票默认→REVIEW MEDIUM（需人工核查用途）
+E102 餐饮超2000元→REVIEW HIGH（需补接待信息）
+O102 发票抬头与购买方不符→REJECT HIGH；轻度不一致→REVIEW MEDIUM
+B102 银行回单核心字段缺失→REJECT HIGH
+D103 同金额+同商户+相近日期疑似重复→REVIEW HIGH
+增值税专项：税号格式错误→REVIEW MEDIUM；超3个月→REVIEW HIGH；已作废→REJECT HIGH；个体工商户→REVIEW LOW(进项税不可抵扣)
+M101 规则冲突兜底→REVIEW MEDIUM
+M102 分类不确定→REVIEW MEDIUM
+
+注意：住宿费归类为"差旅-住宿"，不要归为餐饮招待。个体工商户开具的住宿、交通等票据属于正常业务，不要判定为个人消费。`;
+
+  let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
+  const results=[];
+  for(const img of images){
+    const resp=await fetch("/api/ai/recognize",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
+      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1200,messages:[{role:"system",content:sys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据输出JSON"}]}]})
+    });
+    if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
+    const d=await resp.json();
+    const raw=(d.choices[0].message.content||"").trim();
+    try{results.push(JSON.parse(raw.replace(/```json|```/g,"").trim()));}catch(e){}
+  }
+  if(!results.length)throw new Error("AI未返回有效结果");
+  const best=results.reduce((a,b)=>{const sc=r=>Object.values(r).filter(v=>v&&v!=="null"&&v!==0).length;return sc(b)>sc(a)?b:a;},results[0]);
+  return{...best,fileName:file.name,id:Date.now()+Math.random(),pages:images.length};
 }
 
-## 结论判断逻辑（严格执行）
-- 命中任一 REJECT 规则 → conclusion = REJECT
-- 否则命中任一 REVIEW 规则 → conclusion = REVIEW  
-- 否则 → conclusion = PASS
-
-## 通用规则（全部票据适用）
-
-G001 票据类型识别
-- 无法识别类型 → REVIEW，提示"无法自动识别票据类型，请人工确认"
-
-G002 图像可读性
-- 轻度模糊/遮挡 → REVIEW，提示"票据清晰度不足，请人工复核"
-- 严重无法识别 → REJECT，提示"票据无法识别，请重新上传清晰文件"
-
-G003 核心字段完整性
-- 日期/金额/开票方/票号任一缺失 → REJECT HIGH，提示"票据核心信息缺失，无法完成审核"
-
-G005 金额合法性
-- 金额为负数或0且无红冲说明 → REJECT HIGH
-- 税额合计逻辑异常 → REVIEW MEDIUM
-
-G007 报销金额一致性
-- 报销金额与票面金额不一致 → REVIEW MEDIUM，提示"报销金额与票面金额存在差异，请复核"
-
-G009 费用类别匹配
-- 酒店票报成办公费、交通票报成住宿费等明显错分 → REJECT HIGH
-- 轻度疑似错分 → REVIEW MEDIUM
-
-## 差旅规则
-
-T101 住宿票据归类
-- 识别到酒店/住宿字段 → 自动归类"差旅-住宿"，LOW
-
-T105 住宿金额标准（参考）
-- 单晚超过800元 → REVIEW MEDIUM，提示"住宿费用较高，请确认是否有审批"
-- 单晚超过1200元 → REJECT HIGH，提示"住宿费用超出标准，请补充审批单"
-
-T106 同城住宿
-- 开票方城市与常见办公城市相同 → REVIEW MEDIUM，提示"同城住宿需确认合理性"
-
-T202 乘车人匹配
-- 铁路客票/机票出行人姓名字段为空 → REVIEW HIGH，提示"出行人信息缺失，请人工确认"
-
-T205 舱位席别
-- 机票商务舱/头等舱 → REVIEW MEDIUM，提示"舱位超出经济舱标准，请确认是否有审批"
-- 高铁商务座 → REVIEW MEDIUM，提示"席别为商务座，请确认是否符合报销标准"
-
-## 餐饮规则
-
-E101 餐饮票据默认复核
-- 识别到餐饮类发票 → 默认 REVIEW MEDIUM，提示"餐饮票据需结合用途判断，请人工复核"
-
-E102 大额餐饮
-- 餐饮金额超过2000元 → REVIEW HIGH，提示"大额餐饮票据，请补充接待对象、事由和人数"
-
-## 办公费规则
-
-O102 办公费抬头
-- 发票抬头与购买方明显不一致 → REJECT HIGH，提示"发票抬头与公司名称不符，无法通过"
-- 轻度不一致 → REVIEW MEDIUM
-
-## 银行回单规则
-
-B102 回单核心字段
-- 付款日期/付款金额/付款方/收款方/流水号任一缺失 → REJECT HIGH，提示"银行回单关键信息缺失"
-
-B103 回单金额一致
-- 金额与说明不一致 → REVIEW MEDIUM
-
-## 重复报销规则
-
-D101 强重复检测
-- 发票号/票号/流水号重复（由系统前端检测，AI不做此判断）
-
-D103 弱重复特征
-- 同金额+同商户+相近日期 → REVIEW HIGH，提示"疑似重复报销，请人工核查"
-
-## 增值税发票专项规则
-
-- 税号格式应为15-20位，格式明显错误 → REVIEW MEDIUM
-- 增值税专票税率校验：13%/9%/6%/3%/1%，税额计算明显错误 → REVIEW HIGH
-- 开票日期超过3个月 → REVIEW HIGH，提示"发票已超过3个月，可能超出报销期限"
-- 个体工商户/小规模纳税人发票 → REVIEW LOW，提示"个体工商户发票进项税不可抵扣，请财务确认税务处理"
-- 发票已作废或注明红冲 → REJECT HIGH
-
-## 兜底规则
-
-M101 规则冲突
-- 同一票据命中多个冲突规则 → REVIEW MEDIUM，提示"系统判断存在冲突，请人工复核"
-
-M102 分类不确定
-- 可归入多个费用类别 → REVIEW MEDIUM，提示"费用归类不明确，请人工确认"
-
-## 建议动作映射
-- PASS → suggestedAction = "直接通过"
-- REVIEW + 缺字段 → "补充附件"
-- REVIEW + 金额超标 → "补充审批说明"  
-- REVIEW + 分类不确定 → "转人工复核"
-- REJECT → "驳回重提"`;tml lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FINBOT · 票据预审</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:#F8FAFC;color:#0F172A;min-height:100vh}
-.hdr{background:#fff;border-bottom:1px solid #E2E8F0;padding:0 24px;display:flex;align-items:center;position:sticky;top:0;z-index:10;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-.logo{padding:12px 0;margin-right:24px}.logo h1{font-size:15px;font-weight:800;color:#2563EB}.logo p{font-size:10px;color:#94A3B8}
-.tab{padding:17px 14px;background:transparent;border:none;border-bottom:2px solid transparent;color:#475569;cursor:pointer;font-size:13px;font-family:inherit;white-space:nowrap}
-.tab.on{border-bottom-color:#2563EB;color:#2563EB;font-weight:700}
-.user-info{margin-left:auto;display:flex;align-items:center;gap:12px;font-size:13px}
-.status-badge{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
-.s-active{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC}
-.s-inactive{background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5}
-.s-expired{background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5}
-.s-paused{background:#FFFBEB;color:#D97706;border:1px solid #FCD34D}
-.main{max-width:960px;margin:0 auto;padding:28px 20px}
-.page{display:none}.page.on{display:block}
-/* 订阅页 */
-.sub-hero{text-align:center;padding:40px 20px;background:#fff;border:1px solid #E2E8F0;border-radius:16px;margin-bottom:24px}
-.sub-hero h2{font-size:22px;font-weight:700;margin-bottom:8px}
-.sub-hero p{font-size:14px;color:#475569;margin-bottom:24px}
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.plan{background:#fff;border:2px solid #E2E8F0;border-radius:14px;padding:24px;text-align:center;cursor:pointer;transition:all 0.15s}
-.plan:hover{border-color:#2563EB;box-shadow:0 4px 20px rgba(37,99,235,0.1)}
-.plan.hot{border-color:#2563EB}
-.plan-name{font-size:15px;font-weight:700;margin-bottom:6px}
-.plan-price{font-size:32px;font-weight:800;color:#2563EB;margin:8px 0 4px}
-.plan-price span{font-size:13px;color:#94A3B8;font-weight:400}
-.plan-save{font-size:12px;color:#16A34A;margin-bottom:14px;font-weight:600}
-/* 工具区 */
-.ptitle{font-size:20px;font-weight:700;margin-bottom:6px}.psub{font-size:14px;color:#475569;margin-bottom:20px}
-.dz{border:2px dashed #CBD5E1;border-radius:12px;padding:48px 32px;text-align:center;cursor:pointer;background:#F8FAFC;transition:all 0.2s}
-.dz:hover,.dz.drag{border-color:#2563EB;background:#EFF6FF}
-.btn{padding:9px 20px;border-radius:8px;border:1px solid #E2E8F0;background:#fff;color:#475569;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:all 0.15s}
-.btn:hover{background:#F1F5F9}.btn.pri{background:#2563EB;border-color:#2563EB;color:#fff}.btn.pri:hover{background:#1D4ED8}.btn.full{width:100%;justify-content:center}
-.btn.sm{padding:5px 12px;font-size:12px}.btn.danger{border-color:#FECACA;color:#DC2626;background:#FEF2F2}
-.qbox{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:18px;margin-top:14px;display:none}
-.qi{display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #F1F5F9;font-size:13px;color:#475569}
-.spin{width:14px;height:14px;border:2px solid #2563EB;border-top-color:transparent;border-radius:50%;animation:sp 0.8s linear infinite;flex-shrink:0}
-@keyframes sp{to{transform:rotate(360deg)}}
-.krow{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px}
-.kpi{border-radius:10px;padding:12px 14px}.kl{font-size:10px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:5px}.kv{font-size:20px;font-weight:800;font-family:monospace}
-.rc{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:16px;margin-bottom:10px}
-.rc.dup{border-color:#FCD34D;background:#FFFBEB}
-.rh{display:flex;align-items:center;gap:10px}
-.ri{width:32px;height:32px;border-radius:8px;background:#EFF6FF;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
-.rm{flex:1;min-width:0;cursor:pointer}.rn{font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rt{font-size:11px;color:#94A3B8;margin-top:2px}
-.rb{margin-top:14px}
-.fg{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:7px;margin-bottom:12px}
-.fb{background:#F8FAFC;border-radius:7px;padding:8px 10px}.fl{font-size:10px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px}.fv{font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap}
-.th{background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5}.tm{background:#FFFBEB;color:#D97706;border:1px solid #FCD34D}.tl{background:#F0FDF4;color:#16A34A;border:1px solid #86EFAC}.td{background:#FFFBEB;color:#D97706;border:1px solid #FCD34D}
-.rki{display:flex;align-items:flex-start;gap:8px;padding:8px 10px;border-radius:7px;margin-bottom:5px;font-size:12px;line-height:1.5}
-.rkh{background:#FEF2F2;border:1px solid #FECACA}.rkm{background:#FFFBEB;border:1px solid #FDE68A}.rkl{background:#F0FDF4;border:1px solid #BBF7D0}
-.vb{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:8px;padding:12px 14px;margin-top:10px}
-.vl{font-size:10px;font-weight:700;color:#2563EB;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px}
-.vg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;font-size:12px}.vk{font-size:10px;color:#94A3B8;margin-bottom:2px}
-.eg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.ec{background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:18px}
-.notice{background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.7;margin-top:14px}
-.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
-.modal-bg.on{display:flex}
-.modal{background:#fff;border-radius:14px;padding:28px;width:460px;max-width:92vw;max-height:85vh;overflow-y:auto}
-.modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
-.fi{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A}
-.fi:focus{border-color:#2563EB}
-.fs{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A;background:#fff}
-
-@media(max-width:768px){
-  .hdr{padding:0 12px;flex-wrap:wrap;gap:0}
-  .logo{margin-right:12px;padding:10px 0}
-  .tab{padding:12px 8px;font-size:11px}
-  .user-info{font-size:11px;gap:6px}
-  .user-info span[id="user-email"]{display:none}
-  .main{padding:16px 12px}
-  .krow{grid-template-columns:repeat(3,1fr)}
-  .vg{grid-template-columns:1fr 1fr}
-  .eg{grid-template-columns:1fr}
-  .plans{grid-template-columns:1fr}
-  .fg{grid-template-columns:repeat(2,1fr)}
-  .rh{flex-wrap:wrap;gap:6px}
-  .btn.sm{padding:4px 8px;font-size:11px}
+function openEdit(id){
+  const item=RS.find(r=>r.id===id);if(!item)return;
+  editId=id;
+  ["docType","date","amount","tax","party","docNo","taxNo","title","category","memo"].forEach(k=>{const el=document.getElementById("e_"+k);if(el)el.value=item[k]||"";});
+  document.getElementById("editModal").className="modal-bg on";
 }
-@media(max-width:480px){
-  .krow{grid-template-columns:repeat(2,1fr)}
-  .tab{padding:10px 6px;font-size:10px}
+function closeEdit(){document.getElementById("editModal").className="modal-bg";editId=null;}
+function saveEdit(){
+  if(!editId)return;
+  RS=RS.map(r=>r.id!==editId?r:{...r,
+    docType:document.getElementById("e_docType").value,
+    date:document.getElementById("e_date").value,
+    amount:parseFloat(document.getElementById("e_amount").value)||0,
+    tax:parseFloat(document.getElementById("e_tax").value)||0,
+    party:document.getElementById("e_party").value,
+    docNo:document.getElementById("e_docNo").value,
+    taxNo:document.getElementById("e_taxNo").value,
+    title:document.getElementById("e_title").value,
+    category:document.getElementById("e_category").value,
+    memo:document.getElementById("e_memo").value,
+    edited:true
+  });
+  closeEdit();renderRes();
 }
-</style>
-</head>
+document.getElementById("editModal").addEventListener("click",function(e){if(e.target===this)closeEdit();});
+
+function renderRes(){
+  const isPASS=c=>(c==="PASS"||c==="通过");
+  const isREJECT=c=>(c==="REJECT"||c==="驳回");
+  const dups=RS.filter(r=>r.duplicate).length;
+  const rejected=RS.filter(r=>!r.duplicate&&isREJECT(r.conclusion)).length;
+  const passed=RS.filter(r=>!r.duplicate&&isPASS(r.conclusion)).length;
+  const review=RS.filter(r=>!r.duplicate&&!isPASS(r.conclusion)&&!isREJECT(r.conclusion)).length;
+  const amt=RS.reduce((s,r)=>s+(Number(r.amount)||0),0);
+  document.getElementById("kpis").innerHTML=[
+    ["单据总数",RS.length,"#2563EB","#EFF6FF"],
+    ["金额合计","¥"+amt.toLocaleString("zh-CN"),"#0F172A","#F8FAFC"],
+    ["✓ 通过",passed,"#16A34A","#F0FDF4"],
+    ["⚑ 复核",review,"#D97706","#FFFBEB"],
+    ["✗ 驳回/重复",rejected+dups,"#DC2626","#FEF2F2"],
+  ].map(([l,v,c,bg])=>`<div class="kpi" style="background:${bg};border:1px solid ${c}22"><div class="kl">${l}</div><div class="kv" style="color:${c}">${v}</div></div>`).join("");
+
+  const cOrder={"REJECT":0,"驳回":0,"REVIEW":1,"人工复核":1,"PASS":2,"通过":2};
+  const sorted=[...RS].sort((a,b)=>{
+    if(a.duplicate&&!b.duplicate)return -1;
+    if(!a.duplicate&&b.duplicate)return 1;
+    return(cOrder[a.conclusion]??1)-(cOrder[b.conclusion]??1);
+  });
+
+  let vn=1;const yr=String(new Date().getFullYear()).slice(2);
+  document.getElementById("rlist").innerHTML=sorted.map(item=>{
+    const lvl=rl(item);
+    const ac=AM[item.category]||AM["其他"];
+    const vNo=(item.conclusion==="PASS"||item.conclusion==="通过")?`JZ${yr}${String(vn++).padStart(4,"0")}`:"—";
+    const flds=[["金额",item.amount?`¥${Number(item.amount).toLocaleString("zh-CN")}`:"—"],["税额",item.tax?`¥${Number(item.tax).toLocaleString("zh-CN")}`:"—"],["对方",item.party||"—"],["发票号",item.docNo||"—"],["税号",item.taxNo||"—"],["抬头",item.title||"—"]];
+    const risks=(item.risks||[]).map(r=>{
+      const rl2=(r.level==="HIGH"||r.level==="high")?"h":(r.level==="MEDIUM"||r.level==="mid")?"m":"l";
+      const lbl=(r.level==="HIGH"||r.level==="high")?"高风险":(r.level==="MEDIUM"||r.level==="mid")?"需确认":"提示";
+      return`<div class="rki rk${rl2}"><span class="tag t${rl2}">${lbl}</span><span>${r.ruleId?`[${r.ruleId}] `:""}${r.message}</span></div>`;
+    }).join("");
+    const cTag=(item.conclusion==="PASS"||item.conclusion==="通过")?
+      '<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;background:#F0FDF4;color:#166534;border:1px solid #86EFAC">✓ 通过</span>':
+      (item.conclusion==="REJECT"||item.conclusion==="驳回")?
+      '<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5">✗ 驳回</span>':
+      '<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;background:#FFFBEB;color:#D97706;border:1px solid #FCD34D">⚑ 人工复核</span>';
+    return`<div class="rc${item.duplicate?' dup':''}">
+<div class="rh">
+  <div class="ri">${DI[item.docType]||"📄"}</div>
+  <div class="rm" onclick="openEdit(${item.id})">
+    <div class="rn">${item.fileName}${item.pages>1?`<span style="font-size:10px;color:#2563EB;margin-left:6px">${item.pages}页</span>`:""}${item.edited?`<span style="font-size:10px;color:#94A3B8;margin-left:6px">已编辑</span>`:""}</div>
+    <div class="rt">${item.docType||"未知"} · ${item.date||"日期未知"}</div>
+  </div>
+  <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
+    ${tg(lvl)}${item.duplicate?`<span class="tag td">重复</span>`:""}
+    <button class="btn sm" onclick="openEdit(${item.id})">编辑</button>
+    <button class="btn sm danger" onclick="if(confirm('确定删除？')){RS=RS.filter(r=>r.id!==${item.id});renderRes();}">删除</button>
+  </div>
+</div>
+<div class="rb">
+  <div class="fg">${flds.map(([k,v])=>`<div class="fb"><div class="fl">${k}</div><div class="fv" title="${v}">${v}</div></div>`).join("")}</div>
+  ${risks?`<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">风险提示</p>${risks}</div>`:""}
+  <div class="vb">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div class="vl" style="margin-bottom:0">审核结论</div>${cTag}
+    </div>
+    <div class="vg">
+      <div><div class="vk">费用类别</div><div style="font-weight:600;font-size:12px">${item.category||"待确认"}</div></div>
+      <div><div class="vk">建议科目</div><div style="font-weight:600;font-size:11px;color:#2563EB">${ac[0]}</div></div>
+      <div><div class="vk">凭证编号</div><div style="font-weight:600;font-size:11px;color:#475569;font-family:monospace">${vNo}</div></div>
+    </div>
+    ${item.suggestedAction?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#94A3B8">建议动作</span><span style="font-size:12px;font-weight:600;color:#2563EB">${item.suggestedAction}</span></div>`:""}
+    ${item.memo?`<div style="margin-top:6px;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}
+    ${item.manualReview&&item.manualReview!=="null"?`<div style="margin-top:6px">${tg("mid","⚑ 需人工复核")}<span style="font-size:11px;color:#475569;margin-left:6px">${item.manualReview}</span></div>`:""}
+  </div>
+</div>
+</div>`;
+  }).join("");
+  document.getElementById("t1").textContent=RS.length>0?`② 审核结果 (${RS.length})`:"② 审核结果";
+}
+
+function renderEx(){
+  if(!RS.length){document.getElementById("ec").innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:60px;color:#94A3B8">还没有审核结果</div>`;document.getElementById("en").style.display="none";return;}
+  let vn=1;const yr=String(new Date().getFullYear()).slice(2);
+  function buildRows(data){
+    return data.map(r=>{
+      const isPASS=c=>(c==="PASS"||c==="通过");
+      const isREJECT=c=>(c==="REJECT"||c==="驳回");
+      const lv=isREJECT(r.conclusion)?"驳回":isPASS(r.conclusion)?"通过":r.duplicate?"重复发票":"人工复核";
+      const vNo=(isPASS(r.conclusion)&&!r.duplicate)?`JZ${yr}${String(vn++).padStart(4,"0")}`:"";
+      return{凭证编号:vNo,文件名:r.fileName,单据类型:r.docType||"",日期:r.date||"",不含税金额:Number(r.amount)||0,税额:Number(r.tax)||0,价税合计:(Number(r.amount)||0)+(Number(r.tax)||0),对方单位:r.party||"",发票号:r.docNo||"",对方税号:r.taxNo||"",购买方抬头:r.title||"",费用类别:r.category||"",建议科目:(AM[r.category]||AM["其他"])[0],建议摘要:r.memo||"",审核结论:lv,建议动作:r.suggestedAction||"",风险描述:(r.risks||[]).map(x=>x.message).join("；"),需人工复核:r.manualReview||""};
+    });
+  }
+  const sets=[
+    {icon:"📊",title:"完整汇总表",desc:`全部 ${RS.length} 条`,data:RS},
+    {icon:"✗",title:"驳回清单",desc:`驳回和重复`,data:RS.filter(r=>r.conclusion==="REJECT"||r.conclusion==="驳回"||r.duplicate)},
+    {icon:"📋",title:"凭证建议表",desc:"通过审核",data:RS.filter(r=>r.conclusion==="PASS"||r.conclusion==="通过")},
+    {icon:"🔁",title:"补件清单",desc:"需人工复核",data:RS.filter(r=>r.manualReview&&r.manualReview!=="null")}
+  ];
+  window.__ed=sets.map(s=>({...s,rows:buildRows(s.data)}));
+  document.getElementById("ec").innerHTML=sets.map((s,i)=>`<div class="ec"><div style="font-size:28px;margin-bottom:10px">${s.icon}</div><div style="font-weight:700;font-size:14px;margin-bottom:5px">${s.title}</div><div style="font-size:13px;color:#475569;margin-bottom:14px">${s.desc}</div><div style="display:flex;gap:8px"><button class="btn pri full" onclick="doXlsx(${i})">Excel</button><button class="btn full" onclick="doCsv(${i})">CSV</button></div></div>`).join("");
+  document.getElementById("en").style.display="block";
+}
+
+function doXlsx(i){
+  const{rows,title}=window.__ed[i];if(!rows?.length){alert("没有数据");return;}
+  const ws=XLSX.utils.json_to_sheet(rows);
+  ws['!cols']=[{wch:10},{wch:30},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:20},{wch:22},{wch:20},{wch:20},{wch:12},{wch:16},{wch:20},{wch:8},{wch:10},{wch:30},{wch:20}];
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=1;R<=range.e.r;R++){['E','F','G'].forEach(col=>{const cell=ws[col+(R+1)];if(cell&&typeof cell.v==='number'){cell.t='n';cell.z='#,##0.00';}});}
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,title.slice(0,31));
+  XLSX.writeFile(wb,title+"_"+new Date().toISOString().slice(0,10)+".xlsx");
+}
+function doCsv(i){
+  const{rows,title}=window.__ed[i];if(!rows?.length){alert("没有数据");return;}
+  const H=Object.keys(rows[0]);
+  const csv=[H,...rows.map(r=>H.map(k=>r[k]))].map(row=>row.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}));a.download=title+"_"+new Date().toISOString().slice(0,10)+".csv";a.click();
+}
+
+const dz=document.getElementById("dz");
+dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("drag")});
+dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
+dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("drag");runF(e.dataTransfer.files)});
+
+loadUser();
+</script>
 </body>
 </html>
