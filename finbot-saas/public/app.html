@@ -171,7 +171,9 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 
   <div class="page" id="p3">
     <div class="ptitle">订阅管理</div>
-    <div class="psub" id="sub-psub">选择适合你的套餐，购买后联系客服开通</div>
+    <div class="psub" id="sub-psub">选择套餐，扫码付款，发截图给客服即可开通</div>
+
+    <!-- 已订阅状态 -->
     <div id="sub-status-box" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:12px;padding:24px;margin-bottom:20px">
       <div style="font-size:16px;font-weight:700;color:#166534;margin-bottom:12px">✅ 专业版订阅中</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
@@ -182,36 +184,55 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       <div style="background:#DCFCE7;border-radius:8px;padding:10px 14px;font-size:13px;color:#166534">
         权益：无限次票据识别 · 批量上传 · Excel/CSV报告导出 · 优先客服响应
       </div>
-      <div style="margin-top:14px;font-size:13px;color:#475569">续费或升级套餐请联系客服：<a href="tel:17661369798" style="color:#2563EB;font-weight:600">17661369798</a></div>
+      <div style="margin-top:14px;font-size:13px;color:#475569">续费请联系客服：<a href="tel:17661369798" style="color:#2563EB;font-weight:600">17661369798</a></div>
     </div>
+
+    <!-- 未订阅：套餐选择 + 收款码 -->
     <div id="sub-plans-section">
-    <div class="plans">
-      <div class="plan">
-        <div class="plan-name">月付套餐</div>
-        <div class="plan-price">¥299<span>/月</span></div>
-        <div class="plan-save">按月订阅，随时取消</div>
-        <button class="btn full" onclick="alert('请微信/支付宝转账后拨打：17661369798')">联系开通</button>
+      <div class="plans" style="margin-bottom:24px">
+        <div class="plan" onclick="selectPlan('monthly',this)" id="plan-monthly">
+          <div class="plan-name">月付套餐</div>
+          <div class="plan-price">¥499<span>/月</span></div>
+          <div class="plan-save">按月订阅，随时取消</div>
+          <button class="btn full" onclick="event.stopPropagation();selectPlan('monthly',document.getElementById('plan-monthly'))">选择此套餐</button>
+        </div>
+        <div class="plan hot" onclick="selectPlan('quarterly',this)" id="plan-quarterly">
+          <div style="font-size:11px;color:#2563EB;font-weight:700;margin-bottom:6px">⭐ 推荐</div>
+          <div class="plan-name">季付套餐</div>
+          <div class="plan-price">¥1299<span>/季</span></div>
+          <div class="plan-save">相当于266元/月</div>
+          <button class="btn pri full" onclick="event.stopPropagation();selectPlan('quarterly',document.getElementById('plan-quarterly'))">选择此套餐</button>
+        </div>
+        <div class="plan" onclick="selectPlan('yearly',this)" id="plan-yearly">
+          <div class="plan-name">年付套餐</div>
+          <div class="plan-price">¥4999<span>/年</span></div>
+          <div class="plan-save">相当于250元/月，省17%</div>
+          <button class="btn full" onclick="event.stopPropagation();selectPlan('yearly',document.getElementById('plan-yearly'))">选择此套餐</button>
+        </div>
       </div>
-      <div class="plan hot">
-        <div style="font-size:11px;color:#2563EB;font-weight:700;margin-bottom:6px">⭐ 推荐</div>
-        <div class="plan-name">季付套餐</div>
-        <div class="plan-price">¥799<span>/季</span></div>
-        <div class="plan-save">相当于266元/月</div>
-        <button class="btn pri full" onclick="alert('请微信/支付宝转账后拨打：17661369798')">联系开通</button>
+
+      <!-- 收款码区域 -->
+      <div id="pay-box" style="display:none;background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:28px;text-align:center">
+        <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="pay-title">—</div>
+        <div style="font-size:22px;font-weight:800;color:#2563EB;margin-bottom:20px" id="pay-amount">—</div>
+        <div style="display:flex;gap:24px;justify-content:center;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:12px;color:#475569;margin-bottom:8px;font-weight:600">💚 微信扫码付款</div>
+            <img id="qr-wechat" src="https://via.placeholder.com/160x160/07C160/ffffff?text=微信收款码" style="width:160px;height:160px;border-radius:8px;border:1px solid #E2E8F0">
+          </div>
+          <div>
+            <div style="font-size:12px;color:#475569;margin-bottom:8px;font-weight:600">💙 支付宝扫码付款</div>
+            <img id="qr-alipay" src="https://via.placeholder.com/160x160/1677FF/ffffff?text=支付宝收款码" style="width:160px;height:160px;border-radius:8px;border:1px solid #E2E8F0">
+          </div>
+        </div>
+        <div style="margin-top:20px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:14px;font-size:13px;color:#92400E;line-height:1.8;text-align:left">
+          <strong>付款步骤：</strong><br>
+          1. 扫码付款对应金额<br>
+          2. 截图付款成功界面<br>
+          3. 将截图发送至微信或拨打 <a href="tel:17661369798" style="color:#2563EB;font-weight:600">17661369798</a><br>
+          4. 工作日 9:00-18:00 收到后立即开通，非工作时间次日开通
+        </div>
       </div>
-      <div class="plan">
-        <div class="plan-name">年付套餐</div>
-        <div class="plan-price">¥2999<span>/年</span></div>
-        <div class="plan-save">相当于250元/月，省17%</div>
-        <button class="btn full" onclick="alert('请微信/支付宝转账后拨打：17661369798')">联系开通</button>
-      </div>
-    </div>
-    <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:20px;margin-top:20px;text-align:center">
-      <div style="font-size:14px;font-weight:600;margin-bottom:8px">购买方式</div>
-      <div style="font-size:13px;color:#475569;line-height:1.8">微信/支付宝转账后，发截图到客服电话<br>
-      <a href="tel:17661369798" style="color:#2563EB;font-weight:700;font-size:16px">📞 17661369798</a><br>
-      工作日 9:00-18:00，收到款项后立即开通</div>
-    </div>
     </div>
   </div>
 </div>
@@ -250,8 +271,7 @@ async function loadUser(){
     sEl.className="status-badge "+cls; sEl.textContent=txt;
     if(USER.status==="active"){
       document.getElementById("sub-status-box").style.display="block";
-      document.getElementById("sub-plans-section").style.display="none";
-      document.getElementById("sub-psub").textContent="当前订阅状态";
+      document.getElementById("sub-psub").textContent="当前订阅状态 · 续费或升级请选择套餐后联系客服";
       const planName=document.getElementById("sub-plan-name");
       const expiresDetail=document.getElementById("sub-expires-detail");
       const emailDetail=document.getElementById("sub-email-detail");
@@ -277,6 +297,27 @@ async function loadUser(){
       const pw=document.getElementById("paywall");if(pw)pw.style.display="block";
     }
   }catch(e){location.href="/";}
+}
+
+const PLANS_INFO={
+  monthly:{name:"月付套餐",amount:"¥499"},
+  quarterly:{name:"季付套餐",amount:"¥1299"},
+  yearly:{name:"年付套餐",amount:"¥4999"}
+};
+// 收款码图片URL（替换为你的真实收款码）
+const QR_WECHAT="YOUR_WECHAT_QR_URL";
+const QR_ALIPAY="YOUR_ALIPAY_QR_URL";
+
+function selectPlan(key,el){
+  document.querySelectorAll(".plan").forEach(p=>p.style.boxShadow="");
+  if(el) el.style.boxShadow="0 0 0 3px #2563EB";
+  const p=PLANS_INFO[key];
+  document.getElementById("pay-title").textContent=p.name;
+  document.getElementById("pay-amount").textContent=p.amount;
+  if(QR_WECHAT!=="YOUR_WECHAT_QR_URL") document.getElementById("qr-wechat").src=QR_WECHAT;
+  if(QR_ALIPAY!=="YOUR_ALIPAY_QR_URL") document.getElementById("qr-alipay").src=QR_ALIPAY;
+  document.getElementById("pay-box").style.display="block";
+  document.getElementById("pay-box").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
 function logout(){localStorage.removeItem("fb_token");localStorage.removeItem("fb_user");location.href="/";}
