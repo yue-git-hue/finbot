@@ -52,7 +52,14 @@ tr:hover td{background:#ffffff04}
     <h2>✋ 手动开通/延期</h2>
     <div class="row">
       <div><div style="font-size:10px;color:#64748B;margin-bottom:4px">用户ID或邮箱</div><input class="inp" id="m-id" placeholder="ID 或 email" style="width:200px"></div>
-      <div><div style="font-size:10px;color:#64748B;margin-bottom:4px">延长天数</div><input class="inp" id="m-days" type="number" value="30" style="width:80px"></div>
+      <div><div style="font-size:10px;color:#64748B;margin-bottom:4px">套餐</div>
+        <select class="inp" id="m-plan" style="width:110px">
+          <option value="月付套餐">月付 30天</option>
+          <option value="季付套餐">季付 90天</option>
+          <option value="年付套餐">年付 365天</option>
+        </select>
+      </div>
+      <div><div style="font-size:10px;color:#64748B;margin-bottom:4px">天数（可改）</div><input class="inp" id="m-days" type="number" value="30" style="width:80px"></div>
       <button class="btn pri" onclick="manualExtend()">开通/延期</button>
     </div>
   </div>
@@ -176,12 +183,23 @@ async function extend(id,days){
   toast("已延期至 "+d.expires);loadUsers();
 }
 
+async function extendWithPlan(id,days,plan){
+  const r=await fetch("/api/admin/extend",{method:"POST",headers:H,body:JSON.stringify({id,days,plan})});
+  const d=await r.json();
+  toast("已开通 "+plan+"，到期："+d.expires);loadUsers();
+}
+
 async function resetTrial(id){
   if(!confirm("重置此用户免费次数为3次？"))return;
   await fetch("/api/admin/reset-trial",{method:"POST",headers:H,body:JSON.stringify({id})});
   toast("已重置免费次数");
   loadUsers();
 }
+
+document.getElementById("m-plan").addEventListener("change", function(){
+  const map={"月付套餐":30,"季付套餐":90,"年付套餐":365};
+  document.getElementById("m-days").value=map[this.value]||30;
+});
 
 async function manualExtend(){
   const raw=document.getElementById("m-id").value.trim();
@@ -194,7 +212,8 @@ async function manualExtend(){
     if(!user){alert("未找到用户："+raw);return;}
     id=user.id;
   }
-  await extend(id,days);
+  const plan=document.getElementById("m-plan").value;
+  await extendWithPlan(id,days,plan);
 }
 
 loadAll();
