@@ -23,9 +23,9 @@ const BASE_URL    = process.env.BASE_URL    || "http://localhost:3723";
 
 // ── 套餐配置 ─────────────────────────────────────────
 const PLANS = {
-  monthly:   { name: "月付套餐", price: 29900, days: 30  },  // 单位：分
-  quarterly: { name: "季付套餐", price: 79900, days: 90  },
-  yearly:    { name: "年付套餐", price: 299900, days: 365 },
+  monthly:   { name: "月付套餐", price: 49900, days: 30  },  // 单位：分
+  quarterly: { name: "季付套餐", price: 129900, days: 90  },
+  yearly:    { name: "年付套餐", price: 499900, days: 365 },
 };
 
 // ── 中间件 ───────────────────────────────────────────
@@ -321,6 +321,19 @@ app.put("/api/records/:id", authUser, (req, res) => {
 app.post("/api/admin/reset-trial", authAdmin, (req, res) => {
   const { id } = req.body;
   db.prepare("UPDATE users SET free_uses=0 WHERE id=?").run(id);
+  res.json({ ok: true });
+});
+
+// ── 手动记录收款 ─────────────────────────────────────
+app.post("/api/admin/record-payment", authAdmin, async (req, res) => {
+  const { email, amount, note } = req.body;
+  const user = db.prepare("SELECT id FROM users WHERE email=?").get(email);
+  const userId = user ? user.id : null;
+  const outTradeNo = "MANUAL" + Date.now();
+  // 插入订单记录
+  db.prepare("INSERT INTO orders(user_id,out_trade_no,plan,amount,days,status,paid_at) VALUES(?,?,?,?,?,?,datetime('now','localtime'))")
+    .run(userId, outTradeNo, note||"手动收款", Number(amount), 0, "paid");
+  db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(userId||0, email, "manual_payment:¥"+amount);
   res.json({ ok: true });
 });
 
