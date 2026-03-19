@@ -184,9 +184,18 @@ async function extend(id,days){
 }
 
 async function extendWithPlan(id,days,plan){
-  const r=await fetch("/api/admin/extend",{method:"POST",headers:H,body:JSON.stringify({id,days,plan})});
-  const d=await r.json();
-  toast("已开通 "+plan+"，到期："+d.expires);loadUsers();
+  try{
+    const r=await fetch("/api/admin/extend",{method:"POST",headers:H,body:JSON.stringify({id:Number(id),days:Number(days),plan})});
+    const d=await r.json();
+    if(d.ok){
+      toast("已开通 "+plan+"，到期："+d.expires);
+      loadUsers();
+    } else {
+      toast("开通失败："+( d.error||"未知错误"),false);
+    }
+  }catch(e){
+    toast("请求失败："+e.message,false);
+  }
 }
 
 async function resetTrial(id){
