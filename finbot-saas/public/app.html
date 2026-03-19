@@ -171,12 +171,20 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 
   <div class="page" id="p3">
     <div class="ptitle">订阅管理</div>
-    <div class="psub">选择适合你的套餐，购买后联系客服开通</div>
-    <div id="sub-status-box" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:12px;padding:20px;margin-bottom:20px">
-      <div style="font-size:14px;font-weight:700;color:#166534;margin-bottom:8px">✅ 当前已订阅</div>
-      <div style="font-size:13px;color:#475569" id="sub-detail"></div>
-      <div style="font-size:13px;color:#475569;margin-top:6px">权益：无限次识别 · 批量上传 · Excel/CSV报告导出</div>
+    <div class="psub" id="sub-psub">选择适合你的套餐，购买后联系客服开通</div>
+    <div id="sub-status-box" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:12px;padding:24px;margin-bottom:20px">
+      <div style="font-size:16px;font-weight:700;color:#166534;margin-bottom:12px">✅ 专业版订阅中</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+        <div><div style="font-size:11px;color:#94A3B8;margin-bottom:4px">当前套餐</div><div style="font-weight:600" id="sub-plan-name">—</div></div>
+        <div><div style="font-size:11px;color:#94A3B8;margin-bottom:4px">到期时间</div><div style="font-weight:600" id="sub-expires-detail">—</div></div>
+        <div><div style="font-size:11px;color:#94A3B8;margin-bottom:4px">账号</div><div style="font-weight:600;font-size:12px" id="sub-email-detail">—</div></div>
+      </div>
+      <div style="background:#DCFCE7;border-radius:8px;padding:10px 14px;font-size:13px;color:#166534">
+        权益：无限次票据识别 · 批量上传 · Excel/CSV报告导出 · 优先客服响应
+      </div>
+      <div style="margin-top:14px;font-size:13px;color:#475569">续费或升级套餐请联系客服：<a href="tel:17661369798" style="color:#2563EB;font-weight:600">17661369798</a></div>
     </div>
+    <div id="sub-plans-section">
     <div class="plans">
       <div class="plan">
         <div class="plan-name">月付套餐</div>
@@ -203,6 +211,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       <div style="font-size:13px;color:#475569;line-height:1.8">微信/支付宝转账后，发截图到客服电话<br>
       <a href="tel:17661369798" style="color:#2563EB;font-weight:700;font-size:16px">📞 17661369798</a><br>
       工作日 9:00-18:00，收到款项后立即开通</div>
+    </div>
     </div>
   </div>
 </div>
@@ -241,7 +250,14 @@ async function loadUser(){
     sEl.className="status-badge "+cls; sEl.textContent=txt;
     if(USER.status==="active"){
       document.getElementById("sub-status-box").style.display="block";
-      document.getElementById("sub-detail").textContent="套餐："+(USER.plan||"月付")+" · 到期："+(USER.expires||"永久");
+      document.getElementById("sub-plans-section").style.display="none";
+      document.getElementById("sub-psub").textContent="当前订阅状态";
+      const planName=document.getElementById("sub-plan-name");
+      const expiresDetail=document.getElementById("sub-expires-detail");
+      const emailDetail=document.getElementById("sub-email-detail");
+      if(planName) planName.textContent=USER.plan||"月付套餐";
+      if(expiresDetail) expiresDetail.textContent=USER.expires?"到期："+USER.expires:"长期有效（无截止日）";
+      if(emailDetail) emailDetail.textContent=USER.email;
     }
     if(location.search.includes("pay=success")) history.replaceState(null,"","/app");
     const tr=await fetch("/api/trial",{headers:{Authorization:"Bearer "+TOKEN}});
