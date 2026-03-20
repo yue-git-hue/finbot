@@ -455,6 +455,10 @@ Step1 票据有效性判断：
 - 其余情况 → invoiceValidity=VALID → 继续
 
 Step2 业务完整性判断：
+重要：费用类别归属规则
+- 铁路客票/机票/长途客运 → expenseCategory必须为"差旅-城际交通"
+- 网约车/出租车/地铁/公交 → expenseCategory必须为"差旅-市内交通"（不能归城际交通）
+- 酒店/住宿 → expenseCategory必须为"差旅-住宿"
 - 网约车/出租车：缺出行人+路线+订单号中2项以上 → PARTIAL或INSUFFICIENT
 - 酒店：缺入住人/日期/晚数 → PARTIAL
 - 餐饮：无用途说明 → PARTIAL
@@ -479,19 +483,25 @@ D101 发票号/票号重复（已由前端检测）
 D103 同金额+同商户+相近日期疑似重复 → REVIEW HIGH，message:"疑似重复报销，请人工核查"
 
 ### 差旅-城际交通规则（铁路客票/机票）
-T201 乘车人/乘机人姓名缺失 → REVIEW MEDIUM，message:"出行人信息缺失，建议确认乘车人与报销人一致"
+T201 仅适用于城际交通（铁路客票/机票）：乘车人/乘机人姓名缺失 → REVIEW MEDIUM，message:"出行人信息缺失，建议确认乘车人与报销人一致"
+   重要：T201不适用于网约车/出租车/市内交通，这类票据走T301规则
 T202 路线与出差目的地明显冲突 → REJECT HIGH
-T203 商务座/商务舱/头等舱 → REVIEW MEDIUM，message:"席别超出普通标准，请确认是否有审批"
+T203 席别/舱位规则：
+   - 高铁一等座 → REVIEW MEDIUM，message:"一等座通常需经理级及以上方可报销，请确认报销人级别"
+   - 高铁商务座 → REVIEW MEDIUM，message:"商务座费用较高，请确认是否符合公司报销政策并附审批"
+   - 飞机头等舱/商务舱 → REVIEW MEDIUM，message:"头等舱/商务舱费用较高，请确认是否符合公司报销政策并附审批"
+   - 飞机经济舱/高铁二等座 → 不触发，正常通过
 T204 去返程链路严重断裂 → REVIEW MEDIUM
 
 ### 差旅-市内交通规则（网约车/出租车）
-T301 出行人+路线+订单信息不足（businessCompleteness=PARTIAL）→ REVIEW MEDIUM，supportingDocStatus=pending，message:"行程字段不完整，请上传平台订单截图补强"
+T301 网约车/出租车费用类别必须归"差旅-市内交通"，不能归"差旅-城际交通"
+   出行人+路线+订单信息不足（businessCompleteness=PARTIAL）→ REVIEW MEDIUM，supportingDocStatus=pending，message:"行程字段不完整，请上传平台订单截图补强"
 T301 出行人+路线全部缺失（INSUFFICIENT）→ REVIEW HIGH，supportingDocStatus=pending，message:"缺少关键出行信息，必须补充订单详情截图"
 T302 当日市内交通合计明显偏高（如超500元）→ REVIEW MEDIUM
 
 ### 住宿规则
 T401 酒店单晚超1500元 → REJECT HIGH；超1000元 → REVIEW MEDIUM，message:"住宿费较高，请确认是否有审批"（注：一线城市1000元以下属正常范围）
-T402 入住人缺失 → REVIEW LOW，message:"酒店入住人信息缺失，建议确认报销人与入住人一致"（注：酒店发票常无入住人字段，不强制要求补附件）
+T402 入住人缺失 → 仅记录为低级提示，不改变结论（酒店发票字段完整时仍为PASS），message:"建议确认报销人与入住人一致"
 T403 同城住宿：仅在发票明确显示住宿城市与开票地相同时触发 → REVIEW LOW，message:"疑似同城住宿，请确认合理性"（注：AI无法判断用户常驻地，不确定时不触发此规则）
 
 ### 餐饮规则
