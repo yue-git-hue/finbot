@@ -754,7 +754,42 @@ function renderEx(){
       const cat2=r.expenseCategory||r.category||"其他";
       const acct=r.suggestedAccount||(AM[cat2]||AM["其他"])[0];
       const rules=r.hitRules||r.risks||[];
-      return{凭证编号:vNo,文件名:r.fileName,单据类型:r.docType||"",日期:r.date||"",不含税金额:Number(r.amount)||0,税额:Number(r.tax)||0,价税合计:(Number(r.amount)||0)+(Number(r.tax)||0),对方单位:r.party||"",发票号:r.docNo||"",出行人:r.traveler||"",对方税号:r.taxNo||"",购买方抬头:r.title||"",费用类别:cat2,建议科目:acct,建议摘要:r.memo||"",票据有效性:r.invoiceValidity||"",业务完整性:r.businessCompleteness||"",附件补强状态:r.supportingDocStatus||"",审核结论:lv,建议动作:r.suggestedAction||"",命中规则:rules.filter(x=>x.result!=="PASS").map(x=>`[${x.ruleId||""}]${x.message||""}`).join("；"),需人工复核:r.manualReview||""};
+      // 中文化状态值
+      const ivLabel={"VALID":"有效","INVALID":"无效"}[r.invoiceValidity]||r.invoiceValidity||"";
+      const bcLabel={"COMPLETE":"完整","PARTIAL":"部分缺失","INSUFFICIENT":"严重缺失"}[r.businessCompleteness]||r.businessCompleteness||"";
+      const sdLabel={"not_required":"无需补强","pending":"待补充附件","matched":"补强成功","conflict":"存在冲突"}[r.supportingDocStatus]||r.supportingDocStatus||"";
+      // 凭证编号：人工复核用"待审-NNNN"，驳回用"驳回"
+      const vNoFull=vNo||( lv==="驳回"?"驳回":(lv==="人工复核"?`待审-${String(vn++).padStart(4,"0")}`:""));
+      // 出行人过滤：如果包含金额特征（数字+圆/元）则视为误识别，置空
+      const travelerClean=(r.traveler&&!/[零一二三四五六七八九十百千万圆元角分]/u.test(r.traveler)&&!/^\d/.test(r.traveler))?r.traveler:"";
+      // 税号"无"字符串清理
+      const taxNoClean=(r.taxNo&&r.taxNo!=="无"&&r.taxNo!=="null")?r.taxNo:"";
+      // 合并风险说明（去掉重复的需人工复核列）
+      const riskSummary=rules.filter(x=>x.result!=="PASS").map(x=>`[${x.ruleId||""}]${x.message||""}`).join("；")||(r.manualReview&&r.manualReview!=="null"?r.manualReview:"");
+      // 列顺序：财务最关心的放前面
+      return{
+        凭证编号:vNoFull,
+        审核结论:lv,
+        建议动作:r.suggestedAction||"",
+        日期:r.date||"",
+        费用类别:cat2,
+        建议科目:acct,
+        不含税金额:Number(r.amount)||0,
+        税额:Number(r.tax)||0,
+        价税合计:(Number(r.amount)||0)+(Number(r.tax)||0),
+        对方单位:r.party||"",
+        发票号:r.docNo||"",
+        出行人:travelerClean,
+        购买方抬头:r.title||"",
+        对方税号:taxNoClean,
+        票据有效性:ivLabel,
+        业务完整性:bcLabel,
+        附件补强状态:sdLabel,
+        风险说明:riskSummary,
+        建议摘要:r.memo||"",
+        单据类型:r.docType||"",
+        文件名:r.fileName
+      };
     });
   }
   const sets=[
