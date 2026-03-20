@@ -240,14 +240,15 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const AM={
-  "差旅-住宿":["660201 差旅费-住宿","管理费用"],
-  "差旅-城际交通":["660201 差旅费-交通","管理费用"],
-  "差旅-市内交通":["660201 差旅费-市内交通","管理费用"],
-  "差旅":["660201 差旅费","管理费用"],
+  "差旅-住宿":["660201 差旅费-住宿","管理费用/销售费用"],
+  "差旅-城际交通":["660201 差旅费-交通","管理费用/销售费用"],
+  "差旅-市内交通":["660201 差旅费-市内交通","管理费用/销售费用"],
+  "差旅-车辆相关":["660201 差旅费-车辆","管理费用/销售费用"],
+  "差旅":["660201 差旅费","管理费用/销售费用"],
   "餐饮招待":["660202 业务招待费","管理费用"],
   "办公用品":["660203 办公费","管理费用"],
-  "银行付款凭证":["660299 其他费用","管理费用"],
-  "服务费":["660210 服务费","管理费用"],
+  "银行付款凭证":["应付账款/预付账款","视付款性质"],
+  "服务费":["660210 服务费","管理费用/销售费用"],
   "租金":["660205 租赁费","管理费用"],
   "水电费":["660206 水电费","管理费用"],
   "广告宣传":["660207 广告费","销售费用"],
@@ -368,7 +369,9 @@ function rl(item){
   if(c==="REJECT"||c==="驳回")return"high";
   if(c==="REVIEW"||c==="人工复核")return"mid";
   if(c==="PASS"||c==="通过")return"low";
-  return item.risks?.some(r=>r.level==="HIGH"||r.level==="high")?"high":item.risks?.some(r=>r.level==="MEDIUM"||r.level==="mid")?"mid":"low";
+  const risks=item.hitRules||item.risks||[];
+  return risks.some(r=>r.riskLevel==="HIGH"||r.level==="HIGH"||r.level==="high")?"high":
+         risks.some(r=>r.riskLevel==="MEDIUM"||r.level==="MEDIUM"||r.level==="mid")?"mid":"low";
 }
 function tg(lvl,txt){
   const m={high:"高风险",mid:"需确认",low:"通过",dup:"重复发票"};
@@ -407,31 +410,129 @@ async function runF(files){
 }
 
 async function analyze(file){
-  const sys=`你是专业财务票据初审Agent，严格按规则执行，只输出JSON不要其他内容。
+  const sys=`你是专业财务票据初审Agent。严格按照以下框架执行审核，只输出JSON，不要任何其他内容。
 
-输出格式：{"docType":"增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/对账单/其他","date":"YYYY-MM-DD","amount":不含税金额数字,"tax":税额数字,"party":"对方单位","docNo":"发票号或票号","taxNo":"对方税号","title":"购买方名称","category":"差旅-住宿/差旅-城际交通/差旅-市内交通/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/广告宣传/材料采购/其他","memo":"建议摘要20字内","conclusion":"PASS或REVIEW或REJECT","conclusionText":"通过或人工复核或驳回","suggestedAction":"直接通过或补充说明或补充附件或转人工复核或驳回重提","manualReview":"需人工确认说明null代表无","risks":[{"level":"HIGH或MEDIUM或LOW","ruleId":"规则编号","message":"具体描述"}]}
+## 核心原则
+1. 票据有效性（invoice_validity）≠ 业务完整性（business_completeness）
+   - 票据有效：发票号、金额、日期、开票方等财税字段齐全
+   - 业务完整：出行人、路线、入住人、用途说明等场景字段齐全
+2. 字段缺失不等于直接驳回——缺辅助字段进入"附件补强/人工复核"
+3. 发票负责证明"花了钱"，附件负责证明"为什么能报"
 
-结论判断：命中REJECT规则→REJECT；命中REVIEW规则→REVIEW；否则→PASS
+## 输出格式（严格遵守，全部字段必须存在）
+{
+  "docType": "增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/其他",
+  "expenseCategory": "差旅-住宿/差旅-城际交通/差旅-市内交通/差旅-车辆相关/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/材料采购/其他",
+  "date": "YYYY-MM-DD",
+  "amount": 不含税金额数字,
+  "tax": 税额数字,
+  "party": "对方单位",
+  "docNo": "发票号或票号",
+  "taxNo": "对方税号",
+  "title": "购买方名称/发票抬头",
+  "traveler": "出行人/乘车人/入住人姓名（无则null）",
+  "origin": "出发地（无则null）",
+  "destination": "目的地（无则null）",
+  "invoiceValidity": "VALID或INVALID",
+  "businessCompleteness": "COMPLETE或PARTIAL或INSUFFICIENT",
+  "supportingDocStatus": "not_required或pending",
+  "conclusion": "PASS或REVIEW或REJECT",
+  "conclusionLabel": "通过或人工复核或驳回",
+  "riskLevel": "HIGH或MEDIUM或LOW",
+  "suggestedAccount": "建议会计科目，如660201 差旅费-交通",
+  "memo": "建议凭证摘要20字内",
+  "suggestedAction": "直接通过或补充附件或补充审批说明或转人工复核或驳回重提",
+  "manualReview": "需人工确认的具体说明，无则null",
+  "hitRules": [
+    {"ruleId": "规则编号如G003", "ruleName": "规则名称", "result": "PASS或REVIEW或REJECT", "riskLevel": "HIGH或MEDIUM或LOW", "message": "具体说明"}
+  ]
+}
 
-核心规则：
-G003 核心字段(日期/金额/开票方/票号)缺失→REJECT HIGH
-G002 图片严重模糊→REJECT HIGH；轻度→REVIEW MEDIUM
-G005 金额为负或0→REJECT HIGH；税额异常→REVIEW MEDIUM
-G009 费用类别明显冲突→REJECT HIGH；疑似→REVIEW MEDIUM
-T105 酒店单晚超1200元→REJECT HIGH；超800元→REVIEW MEDIUM
-T106 同城住宿无说明→REVIEW MEDIUM
-T202 出行人/乘车人信息缺失→REVIEW HIGH
-T205 商务座/商务舱→REVIEW MEDIUM
-E101 餐饮发票默认→REVIEW MEDIUM（需人工核查用途）
-E102 餐饮超2000元→REVIEW HIGH（需补接待信息）
-O102 发票抬头与购买方不符→REJECT HIGH；轻度不一致→REVIEW MEDIUM
-B102 银行回单核心字段缺失→REJECT HIGH
-D103 同金额+同商户+相近日期疑似重复→REVIEW HIGH
-增值税专项：税号格式错误→REVIEW MEDIUM；超3个月→REVIEW HIGH；已作废→REJECT HIGH；个体工商户→REVIEW LOW(进项税不可抵扣)
-M101 规则冲突兜底→REVIEW MEDIUM
-M102 分类不确定→REVIEW MEDIUM
+## 结论判断逻辑（严格顺序执行）
+Step1 票据有效性判断：
+- 发票号/金额/日期/开票方任一缺失 → invoiceValidity=INVALID → conclusion=REJECT → 终止
+- 图片严重模糊无法识别核心字段 → invoiceValidity=INVALID → conclusion=REJECT → 终止
+- 其余情况 → invoiceValidity=VALID → 继续
 
-注意：住宿费归类为"差旅-住宿"，不要归为餐饮招待。个体工商户开具的住宿、交通等票据属于正常业务，不要判定为个人消费。`;
+Step2 业务完整性判断：
+- 网约车/出租车：缺出行人+路线+订单号中2项以上 → PARTIAL或INSUFFICIENT
+- 酒店：缺入住人/日期/晚数 → PARTIAL
+- 餐饮：无用途说明 → PARTIAL
+- 飞机/火车：缺出行人姓名 → PARTIAL
+- 其他：核心场景字段齐全 → COMPLETE
+
+Step3 规则校验 → 合并结论：
+- 任一规则REJECT → conclusion=REJECT
+- 任一规则REVIEW → conclusion=REVIEW（同时检查是否需附件补强）
+- 全部PASS → conclusion=PASS
+
+## 规则集（按优先级执行）
+
+### 通用规则
+G003 核心字段缺失 → REJECT HIGH（已在Step1处理）
+G002 图片轻度模糊 → REVIEW MEDIUM，message:"票据清晰度不足，请人工复核"
+G005 金额为负或0 → REJECT HIGH；税额计算明显异常 → REVIEW MEDIUM
+G007 金额与报销单不一致 → REVIEW MEDIUM
+G009 费用类别与票据明显冲突（如酒店票归办公费）→ REJECT HIGH；疑似错分 → REVIEW MEDIUM
+D101 发票号/票号重复（已由前端检测）
+D103 同金额+同商户+相近日期疑似重复 → REVIEW HIGH，message:"疑似重复报销，请人工核查"
+
+### 差旅-城际交通规则（铁路客票/机票）
+T201 乘车人/乘机人姓名缺失 → REVIEW HIGH，hitRules message:"出行人信息缺失，无法确认报销人与乘车人一致"
+T202 路线与出差目的地明显冲突 → REJECT HIGH
+T203 商务座/商务舱/头等舱 → REVIEW MEDIUM，message:"席别超出普通标准，请确认是否有审批"
+T204 去返程链路严重断裂 → REVIEW MEDIUM
+
+### 差旅-市内交通规则（网约车/出租车）
+T301 出行人+路线+订单信息不足（businessCompleteness=PARTIAL）→ REVIEW MEDIUM，supportingDocStatus=pending，message:"行程字段不完整，请上传平台订单截图补强"
+T301 出行人+路线全部缺失（INSUFFICIENT）→ REVIEW HIGH，supportingDocStatus=pending，message:"缺少关键出行信息，必须补充订单详情截图"
+T302 当日市内交通合计明显偏高（如超500元）→ REVIEW MEDIUM
+
+### 住宿规则
+T401 酒店单晚超1200元 → REJECT HIGH；超800元 → REVIEW MEDIUM，message:"住宿费较高，请确认是否有审批"
+T402 入住人缺失 → REVIEW MEDIUM，supportingDocStatus=pending，message:"缺少入住人信息，请上传酒店订单或水单"
+T403 同城住宿无说明 → REVIEW MEDIUM
+
+### 餐饮规则
+E101 餐饮发票默认 → REVIEW MEDIUM，message:"餐饮票据需结合用途判断，请说明报销事由"，supportingDocStatus=pending
+E102 餐饮超2000元 → REVIEW HIGH，message:"大额餐饮需补充接待对象、事由和人数"
+
+### 增值税发票专项
+VAT01 税号格式错误（非15-20位）→ REVIEW MEDIUM
+VAT02 超3个月开票 → REVIEW HIGH，message:"发票已超报销期限，请说明原因"
+VAT03 已作废/红冲 → REJECT HIGH
+VAT04 个体工商户/小规模 → REVIEW LOW，message:"进项税不可抵扣，请财务确认税务处理"
+
+### 银行回单规则
+B101 付款日期/金额/付款方/收款方/流水号任一缺失 → REJECT HIGH
+
+### 兜底规则
+M101 多条规则冲突 → REVIEW MEDIUM，message:"系统判断存在冲突，请人工复核"
+M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，请人工确认"
+
+## 附件补强标识（supportingDocStatus）
+- 所有字段完整且无明显风险 → "not_required"
+- 任何规则命中 supportingDocStatus=pending → 输出 "pending"，并在suggestedAction中说明需要什么附件
+
+## 建议动作映射
+- PASS → "直接通过"
+- REVIEW + supportingDocStatus=pending + 网约车 → "上传平台订单截图"
+- REVIEW + supportingDocStatus=pending + 酒店 → "上传酒店订单或水单"
+- REVIEW + supportingDocStatus=pending + 餐饮 → "补充接待申请单或事由说明"
+- REVIEW + 超标准 → "补充审批说明"
+- REVIEW + 其他 → "转人工复核"
+- REJECT → "驳回重提"
+
+## 费用科目映射
+- 差旅-住宿 → 660201 差旅费-住宿
+- 差旅-城际交通 → 660201 差旅费-交通
+- 差旅-市内交通 → 660201 差旅费-市内交通
+- 餐饮招待 → 660202 业务招待费
+- 办公用品 → 660203 办公费
+- 银行付款凭证 → 应付账款/预付账款
+- 其他 → 660299 其他费用
+
+注意：住宿费归"差旅-住宿"；个体工商户住宿/交通属于正常业务；网约车发票业务字段天然不全，不因缺行程字段直接驳回，应进入附件补强。`;
 
   let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
   const results=[];
@@ -448,6 +549,9 @@ M102 分类不确定→REVIEW MEDIUM
   }
   if(!results.length)throw new Error("AI未返回有效结果");
   const best=results.reduce((a,b)=>{const sc=r=>Object.values(r).filter(v=>v&&v!=="null"&&v!==0).length;return sc(b)>sc(a)?b:a;},results[0]);
+  // 字段兼容：新框架用 expenseCategory，旧兼容 category
+  if(best.expenseCategory && !best.category) best.category = best.expenseCategory;
+  if(best.hitRules && !best.risks) best.risks = best.hitRules;
   return{...best,fileName:file.name,id:Date.now()+Math.random(),pages:images.length};
 }
 
@@ -516,34 +620,103 @@ function renderRes(){
       (item.conclusion==="REJECT"||item.conclusion==="驳回")?
       '<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;background:#FEF2F2;color:#DC2626;border:1px solid #FCA5A5">✗ 驳回</span>':
       '<span style="padding:3px 10px;border-radius:4px;font-size:11px;font-weight:700;background:#FFFBEB;color:#D97706;border:1px solid #FCD34D">⚑ 人工复核</span>';
+    // 票据图标
+    const docIcon=DI[item.docType]||"📄";
+    // 费用类别（兼容新旧字段）
+    const cat=item.expenseCategory||item.category||"其他";
+    const catAc=AM[cat]||AM["其他"];
+    const account=item.suggestedAccount||catAc[0];
+    // 状态标签
+    const ivTag=item.invoiceValidity==="INVALID"?
+      `<span style="font-size:11px;font-weight:600;color:#DC2626">✗ 无效</span>`:
+      `<span style="font-size:11px;font-weight:600;color:#16A34A">✓ 有效</span>`;
+    const bcMap={"COMPLETE":"完整","PARTIAL":"部分缺失","INSUFFICIENT":"严重缺失"};
+    const bcColor={"COMPLETE":"#16A34A","PARTIAL":"#D97706","INSUFFICIENT":"#DC2626"};
+    const bcTag=item.businessCompleteness?
+      `<span style="font-size:11px;font-weight:600;color:${bcColor[item.businessCompleteness]||"#475569"}">${bcMap[item.businessCompleteness]||item.businessCompleteness}</span>`:"—";
+    const sdMap={"not_required":"无需补强","pending":"待补充附件","matched":"补强成功","partial":"部分匹配","conflict":"存在冲突"};
+    const sdColor={"not_required":"#16A34A","pending":"#D97706","matched":"#16A34A","partial":"#D97706","conflict":"#DC2626"};
+    const sdTag=item.supportingDocStatus?
+      `<span style="font-size:11px;font-weight:600;color:${sdColor[item.supportingDocStatus]||"#475569"}">${sdMap[item.supportingDocStatus]||item.supportingDocStatus}</span>`:"—";
+    // 风险列表（兼容 hitRules 和 risks 两种格式）
+    const ruleList=item.hitRules||item.risks||[];
+    const risksHtml=ruleList.filter(r=>r.result!=="PASS"&&(r.message||r.msg)).map(r=>{
+      const lv=(r.riskLevel||r.level||"").toUpperCase();
+      const rl2=lv==="HIGH"?"h":lv==="MEDIUM"?"m":"l";
+      const lbl=lv==="HIGH"?"高风险":lv==="MEDIUM"?"需确认":"提示";
+      const rid=r.ruleId||r.rule_id||"";
+      return`<div class="rki rk${rl2}"><span class="tag t${rl2}">${lbl}</span><span>${rid?`[${rid}] `:""} ${r.message||r.msg}</span></div>`;
+    }).join("");
+    // 出行信息
+    const tripInfo=[];
+    if(item.traveler&&item.traveler!=="null") tripInfo.push(`出行人：${item.traveler}`);
+    if(item.origin&&item.origin!=="null") tripInfo.push(`${item.origin}`);
+    if(item.destination&&item.destination!=="null") tripInfo.push(`→ ${item.destination}`);
+
     return`<div class="rc${item.duplicate?' dup':''}">
 <div class="rh">
-  <div class="ri">${DI[item.docType]||"📄"}</div>
+  <div class="ri">${docIcon}</div>
   <div class="rm" onclick="openEdit(${item.id})">
     <div class="rn">${item.fileName}${item.pages>1?`<span style="font-size:10px;color:#2563EB;margin-left:6px">${item.pages}页</span>`:""}${item.edited?`<span style="font-size:10px;color:#94A3B8;margin-left:6px">已编辑</span>`:""}</div>
-    <div class="rt">${item.docType||"未知"} · ${item.date||"日期未知"}</div>
+    <div class="rt">${item.docType||"未知"} · ${cat} · ${item.date||"日期未知"}</div>
   </div>
   <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
-    ${tg(lvl)}${item.duplicate?`<span class="tag td">重复</span>`:""}
+    ${cTag}${item.duplicate?`<span class="tag td">重复</span>`:""}
     <button class="btn sm" onclick="openEdit(${item.id})">编辑</button>
     <button class="btn sm danger" onclick="if(confirm('确定删除？')){RS=RS.filter(r=>r.id!==${item.id});renderRes();}">删除</button>
   </div>
 </div>
 <div class="rb">
-  <div class="fg">${flds.map(([k,v])=>`<div class="fb"><div class="fl">${k}</div><div class="fv" title="${v}">${v}</div></div>`).join("")}</div>
-  ${risks?`<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">风险提示</p>${risks}</div>`:""}
+
+  <!-- 模块①：基本信息 -->
+  <div class="fg">
+    <div class="fb"><div class="fl">金额</div><div class="fv">${item.amount?`¥${Number(item.amount).toLocaleString("zh-CN")}`:"—"}</div></div>
+    <div class="fb"><div class="fl">税额</div><div class="fv">${item.tax?`¥${Number(item.tax).toLocaleString("zh-CN")}`:"—"}</div></div>
+    <div class="fb"><div class="fl">对方单位</div><div class="fv" title="${item.party||""}">${item.party||"—"}</div></div>
+    <div class="fb"><div class="fl">发票号</div><div class="fv" title="${item.docNo||""}">${item.docNo||"—"}</div></div>
+    <div class="fb"><div class="fl">税号</div><div class="fv" title="${item.taxNo||""}">${item.taxNo||"—"}</div></div>
+    <div class="fb"><div class="fl">抬头</div><div class="fv" title="${item.title||""}">${item.title||"—"}</div></div>
+    ${tripInfo.length?`<div class="fb" style="grid-column:span 2"><div class="fl">出行信息</div><div class="fv">${tripInfo.join(" ")}</div></div>`:""}
+  </div>
+
+  <!-- 模块②：审核状态（三个维度） -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
+    <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
+      <div style="font-size:10px;color:#94A3B8;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em">票据有效性</div>
+      ${ivTag}
+    </div>
+    <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
+      <div style="font-size:10px;color:#94A3B8;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em">业务完整性</div>
+      ${bcTag}
+    </div>
+    <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
+      <div style="font-size:10px;color:#94A3B8;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em">附件补强</div>
+      ${sdTag}
+    </div>
+  </div>
+
+  <!-- 模块③：风险提示 -->
+  ${risksHtml?`<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">风险提示</p>${risksHtml}</div>`:""}
+
+  <!-- 模块④⑤：凭证建议 + 建议动作 -->
   <div class="vb">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div class="vl" style="margin-bottom:0">审核结论</div>${cTag}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="vl" style="margin-bottom:0">凭证建议</div>${cTag}
     </div>
     <div class="vg">
-      <div><div class="vk">费用类别</div><div style="font-weight:600;font-size:12px">${item.category||"待确认"}</div></div>
-      <div><div class="vk">建议科目</div><div style="font-weight:600;font-size:11px;color:#2563EB">${ac[0]}</div></div>
+      <div><div class="vk">费用类别</div><div style="font-weight:600;font-size:12px">${cat}</div></div>
+      <div><div class="vk">建议科目</div><div style="font-weight:600;font-size:11px;color:#2563EB">${account}</div></div>
       <div><div class="vk">凭证编号</div><div style="font-weight:600;font-size:11px;color:#475569;font-family:monospace">${vNo}</div></div>
     </div>
-    ${item.suggestedAction?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;display:flex;align-items:center;gap:8px"><span style="font-size:10px;color:#94A3B8">建议动作</span><span style="font-size:12px;font-weight:600;color:#2563EB">${item.suggestedAction}</span></div>`:""}
-    ${item.memo?`<div style="margin-top:6px;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}
-    ${item.manualReview&&item.manualReview!=="null"?`<div style="margin-top:6px">${tg("mid","⚑ 需人工复核")}<span style="font-size:11px;color:#475569;margin-left:6px">${item.manualReview}</span></div>`:""}
+    ${item.memo?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}
+    ${(item.suggestedAction&&item.suggestedAction!=="直接通过")?
+      `<div style="margin-top:8px;padding:8px 10px;background:#FFFBEB;border-radius:6px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:18px">${item.supportingDocStatus==="pending"?"📎":"⚑"}</span>
+        <div><div style="font-size:10px;color:#92400E;margin-bottom:2px">建议动作</div><div style="font-size:12px;font-weight:600;color:#D97706">${item.suggestedAction}</div></div>
+      </div>`:
+      (item.conclusion==="PASS"||item.conclusion==="通过")?
+      `<div style="margin-top:8px;padding:6px 10px;background:#F0FDF4;border-radius:6px;font-size:12px;color:#166534;font-weight:600">✓ ${item.suggestedAction||"直接通过"}</div>`:""}
+    ${item.manualReview&&item.manualReview!=="null"?`<div style="margin-top:6px;font-size:11px;color:#475569"><span style="color:#D97706;font-weight:600">⚑ 复核说明：</span>${item.manualReview}</div>`:""}
   </div>
 </div>
 </div>`;
@@ -560,7 +733,10 @@ function renderEx(){
       const isREJECT=c=>(c==="REJECT"||c==="驳回");
       const lv=isREJECT(r.conclusion)?"驳回":isPASS(r.conclusion)?"通过":r.duplicate?"重复发票":"人工复核";
       const vNo=(isPASS(r.conclusion)&&!r.duplicate)?`JZ${yr}${String(vn++).padStart(4,"0")}`:"";
-      return{凭证编号:vNo,文件名:r.fileName,单据类型:r.docType||"",日期:r.date||"",不含税金额:Number(r.amount)||0,税额:Number(r.tax)||0,价税合计:(Number(r.amount)||0)+(Number(r.tax)||0),对方单位:r.party||"",发票号:r.docNo||"",对方税号:r.taxNo||"",购买方抬头:r.title||"",费用类别:r.category||"",建议科目:(AM[r.category]||AM["其他"])[0],建议摘要:r.memo||"",审核结论:lv,建议动作:r.suggestedAction||"",风险描述:(r.risks||[]).map(x=>x.message).join("；"),需人工复核:r.manualReview||""};
+      const cat2=r.expenseCategory||r.category||"其他";
+      const acct=r.suggestedAccount||(AM[cat2]||AM["其他"])[0];
+      const rules=r.hitRules||r.risks||[];
+      return{凭证编号:vNo,文件名:r.fileName,单据类型:r.docType||"",日期:r.date||"",不含税金额:Number(r.amount)||0,税额:Number(r.tax)||0,价税合计:(Number(r.amount)||0)+(Number(r.tax)||0),对方单位:r.party||"",发票号:r.docNo||"",出行人:r.traveler||"",对方税号:r.taxNo||"",购买方抬头:r.title||"",费用类别:cat2,建议科目:acct,建议摘要:r.memo||"",票据有效性:r.invoiceValidity||"",业务完整性:r.businessCompleteness||"",附件补强状态:r.supportingDocStatus||"",审核结论:lv,建议动作:r.suggestedAction||"",命中规则:rules.filter(x=>x.result!=="PASS").map(x=>`[${x.ruleId||""}]${x.message||""}`).join("；"),需人工复核:r.manualReview||""};
     });
   }
   const sets=[
