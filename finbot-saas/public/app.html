@@ -255,7 +255,7 @@ const AM={
   "材料采购":["5001 原材料","视业务类型"],
   "其他":["660299 其他费用","管理费用"]
 };
-const DI={"增值税发票":"🧾","银行回单":"🏦","报销单":"📋","收据":"🗒️","铁路电子客票":"🚄","机票行程单":"✈️","出租车票":"🚕","网约车发票":"🚗","酒店发票":"🏨","餐饮发票":"🍽️"};
+const DI={"增值税发票":"🧾","银行回单":"🏦","报销单":"📋","收据":"🗒️","铁路电子客票":"🚄","机票行程单":"✈️","出租车票":"🚕","网约车发票":"🚗","酒店发票":"🏨","餐饮发票":"🍽️","医疗发票":"🏥"};
 let RS=[],editId=null,USER=null;
 const TOKEN=localStorage.getItem("fb_token");
 if(!TOKEN){location.href="/";throw new Error();}
@@ -421,7 +421,7 @@ async function analyze(file){
 
 ## 输出格式（严格遵守，全部字段必须存在）
 {
-  "docType": "增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/其他",
+  "docType": "增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/医疗发票/其他",
   "expenseCategory": "差旅-住宿/差旅-城际交通/差旅-市内交通/差旅-车辆相关/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/材料采购/其他",
   "date": "YYYY-MM-DD",
   "amount": 不含税金额数字,
@@ -469,16 +469,17 @@ Step3 规则校验 → 合并结论：
 ## 规则集（按优先级执行）
 
 ### 通用规则
-G003 核心字段缺失 → REJECT HIGH（已在Step1处理）
+G003 核心字段（发票号/金额/日期/开票方）缺失 → REJECT HIGH（已在Step1处理）
+   重要：G003只检查财税核心4个字段，不检查业务明细（药品名/菜品名/商品名等不是核心字段）
 G002 图片轻度模糊 → REVIEW MEDIUM，message:"票据清晰度不足，请人工复核"
 G005 金额为负或0 → REJECT HIGH；税额计算明显异常 → REVIEW MEDIUM
 G007 金额与报销单不一致 → REVIEW MEDIUM
-G009 费用类别与票据明显冲突（如酒店票归办公费）→ REJECT HIGH；疑似错分 → REVIEW MEDIUM
+G009 费用类别与票据严重冲突（如酒店票明确归办公费、交通票归住宿费）→ REVIEW MEDIUM（注：不要REJECT，财务可人工调整；轻度不确定不触发此规则）
 D101 发票号/票号重复（已由前端检测）
 D103 同金额+同商户+相近日期疑似重复 → REVIEW HIGH，message:"疑似重复报销，请人工核查"
 
 ### 差旅-城际交通规则（铁路客票/机票）
-T201 乘车人/乘机人姓名缺失 → REVIEW HIGH，hitRules message:"出行人信息缺失，无法确认报销人与乘车人一致"
+T201 乘车人/乘机人姓名缺失 → REVIEW MEDIUM，message:"出行人信息缺失，建议确认乘车人与报销人一致"
 T202 路线与出差目的地明显冲突 → REJECT HIGH
 T203 商务座/商务舱/头等舱 → REVIEW MEDIUM，message:"席别超出普通标准，请确认是否有审批"
 T204 去返程链路严重断裂 → REVIEW MEDIUM
@@ -489,22 +490,29 @@ T301 出行人+路线全部缺失（INSUFFICIENT）→ REVIEW HIGH，supportingD
 T302 当日市内交通合计明显偏高（如超500元）→ REVIEW MEDIUM
 
 ### 住宿规则
-T401 酒店单晚超1200元 → REJECT HIGH；超800元 → REVIEW MEDIUM，message:"住宿费较高，请确认是否有审批"
-T402 入住人缺失 → REVIEW MEDIUM，supportingDocStatus=pending，message:"缺少入住人信息，请上传酒店订单或水单"
-T403 同城住宿无说明 → REVIEW MEDIUM
+T401 酒店单晚超1500元 → REJECT HIGH；超1000元 → REVIEW MEDIUM，message:"住宿费较高，请确认是否有审批"（注：一线城市1000元以下属正常范围）
+T402 入住人缺失 → REVIEW LOW，message:"酒店入住人信息缺失，建议确认报销人与入住人一致"（注：酒店发票常无入住人字段，不强制要求补附件）
+T403 同城住宿：仅在发票明确显示住宿城市与开票地相同时触发 → REVIEW LOW，message:"疑似同城住宿，请确认合理性"（注：AI无法判断用户常驻地，不确定时不触发此规则）
 
 ### 餐饮规则
-E101 餐饮发票默认 → REVIEW MEDIUM，message:"餐饮票据需结合用途判断，请说明报销事由"，supportingDocStatus=pending
+E101 餐饮发票分级处理：
+  - 金额≤200元（工作餐合理范围）→ PASS LOW，不要求补充说明
+  - 金额200-2000元 → REVIEW MEDIUM，message:"餐饮票据请说明用途（商务招待/工作餐/会议餐）"，supportingDocStatus=pending
+  - 注：不要对小额工作餐强制要求接待申请单
 E102 餐饮超2000元 → REVIEW HIGH，message:"大额餐饮需补充接待对象、事由和人数"
+
+### 医疗/体检发票专项
+MED01 医疗机构发票（医院/体检中心/诊所）→ docType=医疗发票，expenseCategory=其他
+MED02 体检单/医疗发票核心字段只需：发票号+金额+日期+医疗机构名称，字段完整即PASS LOW，不要因缺药品明细触发G003
 
 ### 增值税发票专项
 VAT01 税号格式错误（非15-20位）→ REVIEW MEDIUM
-VAT02 超3个月开票 → REVIEW HIGH，message:"发票已超报销期限，请说明原因"
+VAT02 超3个月开票 → REVIEW MEDIUM，message:"发票开票日期较久，请确认是否在公司允许的报销期限内"
 VAT03 已作废/红冲 → REJECT HIGH
 VAT04 个体工商户/小规模 → REVIEW LOW，message:"进项税不可抵扣，请财务确认税务处理"
 
 ### 银行回单规则
-B101 付款日期/金额/付款方/收款方/流水号任一缺失 → REJECT HIGH
+B101 银行回单必须字段（付款日期/金额/付款方/收款方）任一缺失 → REJECT HIGH；流水号缺失 → REVIEW MEDIUM（部分银行回单格式无独立流水号字段）
 
 ### 兜底规则
 M101 多条规则冲突 → REVIEW MEDIUM，message:"系统判断存在冲突，请人工复核"
@@ -532,7 +540,7 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
 - 银行付款凭证 → 应付账款/预付账款
 - 其他 → 660299 其他费用
 
-注意：住宿费归"差旅-住宿"；个体工商户住宿/交通属于正常业务；网约车发票业务字段天然不全，不因缺行程字段直接驳回，应进入附件补强。`;
+注意：住宿费归"差旅-住宿"；个体工商户住宿/交通属于正常业务；网约车发票业务字段天然不全，不因缺行程字段直接驳回，应进入附件补强。医疗/体检发票：发票号+金额+日期+医疗机构名称齐全即为有效，不要求药品明细，不触发G003，直接PASS。`;
 
   let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
   const results=[];
