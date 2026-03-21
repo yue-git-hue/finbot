@@ -669,13 +669,26 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
   const images = file.type==="application/pdf" ? await pdfToImages(file) : [await fileToB64(file)];
 
   // ── 第一轮：轻量字段抽取，只识别 docType/expenseCategory 和核心财税字段 ──
+  // 注入公司名到抽取prompt，帮助模型正确区分购买方/销售方
+  const companyHint = CRULES.company_name
+    ? `\n重要提示：本公司名称为"${CRULES.company_name}"，发票上出现此名称时归入title（购买方/抬头）字段，不要放入party（对方单位/销售方）字段。`
+    : "";
+
   const extractSys = `你是票据字段识别助手，只做字段抽取，不做审核判断，不输出解释。
 严格输出JSON，字段如下：
 {"docType":"增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/医疗发票/其他",
 "expenseCategory":"差旅-住宿/差旅-城际交通/差旅-市内交通/差旅-车辆相关/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/材料采购/其他",
-"date":"YYYY-MM-DD","amount":0,"tax":0,"party":"","docNo":"","taxNo":"","title":"",
+"date":"YYYY-MM-DD","amount":0,"tax":0,
+"party":"销售方/对方单位名称（增值税发票填销售方，铁路客票填铁路运营方如中国铁路/铁路局，机票填航空公司，酒店填酒店名称，餐饮填餐厅名称）",
+"docNo":"发票号码或电子客票号",
+"taxNo":"销售方/对方单位的税号，不是购买方税号",
+"title":"购买方名称/发票抬头（增值税发票填购买方名称，铁路客票填购买方名称，即买票的公司或个人）",
 "traveler":null,"origin":null,"destination":null,"checkIn":null,"checkOut":null,"nights":null}
-规则：只抽票面可见内容，看不清填null或0，全角字符按正常值识别，只输出JSON。`;
+字段规则：
+1. party=销售方（卖东西/提供服务的一方），title=购买方（花钱报销的一方），两者绝对不能填反
+2. 铁路客票：party填铁路运营方（可填"中国铁路"），title填购买方公司/个人名称，traveler填乘车人姓名
+3. 增值税发票：party填销售方名称，taxNo填销售方税号，title填购买方名称
+4. 只抽票面可见内容，看不清填null或0，全角字符按正常值识别，只输出JSON${companyHint}`;
 
   const extractResults=[];
   for(const img of images){
@@ -709,6 +722,27 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
     }
     return out;
   }, extractResults[0]);
+
+  // ── 用规则配置里的公司名自动修正 title/party 错位 ──
+  if(CRULES.company_name){
+    const co = CRULES.company_name.replace(/[（(）)\s]/g,"");
+    const titleNorm = (merged.title||"").replace(/[（(）)\s]/g,"");
+    const partyNorm = (merged.party||"").replace(/[（(）)\s]/g,"");
+    // 如果 party 被错填成本公司，自动交换
+    if(partyNorm.includes(co) && !titleNorm.includes(co)){
+      [merged.title, merged.party] = [merged.party, merged.title];
+      [merged.taxNo] = [""]; // 对方税号清空（原来填的是本公司税号）
+    }
+    // 如果 title 为空但 party 是本公司，移过来
+    if(!merged.title && partyNorm.includes(co)){
+      merged.title = merged.party;
+      merged.party = "";
+    }
+    // title 为空时用公司名补全
+    if(!merged.title && (merged.docType||"").includes("铁路")){
+      merged.title = CRULES.company_name;
+    }
+  }
 
   // ── 第二轮：根据 docType/expenseCategory 动态选规则，精准审核 ──
   const focusedSys = sys + buildFocusedPrompt(merged.docType, merged.expenseCategory);
@@ -1489,7 +1523,9 @@ function buildRulesPrompt(){ return buildFocusedPrompt("其他","其他"); }
 function buildFocusedPrompt(docType, expenseCategory){
   const R = CRULES;
   const ex = R.invoice_expire_months===0 ? "不限制" : R.invoice_expire_months+"个月";
-  const co = R.company_name ? `发票抬头应为"${R.company_name}"，不符则REVIEW MEDIUM` : "跳过抬头校验";
+  const co = R.company_name
+    ? `发票抬头（title字段）应为"${R.company_name}"。若title字段已与公司名匹配则无需触发；若title为空或明显不符则REVIEW MEDIUM，message:"发票抬头与公司名称不符，请核查"`
+    : "公司名称未配置，跳过抬头校验";
 
   // 通用规则——所有发票都注入
   const common = `
