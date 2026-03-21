@@ -449,33 +449,36 @@ async function pdfToImages(file){
   const texts=[];
   for(let i=1;i<=pdf.numPages;i++){
     const page=await pdf.getPage(i);
-    // 渲染图片
     const vp=page.getViewport({scale:3.0});
-    const canvas=document.createElement('canvas');
+    const canvas=document.createElement("canvas");
     canvas.width=vp.width;canvas.height=vp.height;
-    const ctx=canvas.getContext('2d');
+    const ctx=canvas.getContext("2d");
     ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,canvas.width,canvas.height);
     await page.render({canvasContext:ctx,viewport:vp,annotationMode:0}).promise;
-    imgs.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
-    // 提取文字内容（按行排序，去掉印章噪音）
+    imgs.push(canvas.toDataURL("image/jpeg",0.92).split(",")[1]);
     try{
       const tc=await page.getTextContent();
-      // 按Y坐标分行，再按X排序，得到阅读顺序文字
-      const itemsWithPos=tc.items.filter(it=>it.str.trim());
       const lineMap={};
-      itemsWithPos.forEach(it=>{
-        const y=Math.round(it.transform[5]/8)*8; // 8px行高容差
+      tc.items.filter(it=>it.str.trim()).forEach(it=>{
+        const y=Math.round(it.transform[5]/8)*8;
         if(!lineMap[y]) lineMap[y]=[];
         lineMap[y].push({x:it.transform[4],str:it.str});
       });
-      const lines=Object.keys(lineMap).sort((a,b)=>b-a).map(y=>
-        lineMap[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(' ')
-      );
-      const pageText=lines.join('\n').replace(/[ \t]+/g,' ').trim();
-      if(pageText) texts.push(pageText);
-    }catch(e){}
+      const normalize=s=>s
+        .replace(/[！-～]/g,c=>String.fromCharCode(c.charCodeAt(0)-0xfee0))
+        .replace(/　/g," ").replace(/：/g,":").replace(/（/g,"(").replace(/）/g,")")
+        .replace(/￥/g,"¥").replace(/[ 	]+/g," ").trim();
+      const isNoise=l=>(l.length<=2&&/^[一-鿿]+$/.test(l))||
+        /^(Tianjinxi|Suzhoubei|Kunshannan|Shanghaixi|Nanjingnan|Hangzhoudong)$/i.test(l.trim());
+      const cleanLines=Object.keys(lineMap).sort((a,b)=>b-a)
+        .map(y=>lineMap[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(""))
+        .map(normalize).filter(l=>l.length>0&&!isNoise(l));
+      const allText=cleanLines.join("\n");
+      const rFields=extractRailwayFields(allText);
+      texts.push(rFields?"[铁路电子客票结构化]\n"+rFields:allText);
+    }catch(e){ console.warn("text extract error",e); }
   }
-  return {imgs, pdfText: texts.join(" ")};
+  return {imgs, pdfText:texts.join("\n---\n")};
 }
 async function fileToB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});}
 
