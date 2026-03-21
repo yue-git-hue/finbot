@@ -535,35 +535,36 @@ async function analyze(file){
 2. 字段缺失不等于直接驳回——缺辅助字段进入"附件补强/人工复核"
 3. 发票负责证明"花了钱"，附件负责证明"为什么能报"
 
-## 输出格式（严格遵守，全部字段必须存在）
+## 输出格式（字段说明在括号内，输出时括号和说明文字不要包含在值里）
 {
-  "docType": "增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/医疗发票/其他",
-  "expenseCategory": "差旅-住宿/差旅-城际交通/差旅-市内交通/差旅-车辆相关/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/材料采购/其他",
-  "date": "YYYY-MM-DD",
+  "docType": "从以下选一：增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/医疗发票/其他",
+  "expenseCategory": "从以下选一：差旅-住宿/差旅-城际交通/差旅-市内交通/差旅-车辆相关/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/材料采购/其他",
+  "date": "（票据日期，格式YYYY-MM-DD，识别不到填null）",
   "amount": 0,
   "tax": 0,
-  "party": "对方单位",
-  "docNo": "发票号或票号",
-  "taxNo": "对方税号",
-  "title": "购买方名称/发票抬头",
-  "traveler": "出行人/乘车人/入住人姓名（无则null）",
-  "origin": "出发地（无则null）",
-  "destination": "目的地（无则null）",
-  "checkIn": "入住日期YYYY-MM-DD（无则null）",
-  "checkOut": "退房日期YYYY-MM-DD（无则null）",
-  "nights": null或数字（住宿晚数，从入住退房日期之差推算，或从文件名提取，无法确定填null）,
-  "invoiceValidity": "VALID或INVALID",
-  "businessCompleteness": "COMPLETE或PARTIAL或INSUFFICIENT",
-  "supportingDocStatus": "not_required或pending",
-  "conclusion": "PASS或REVIEW或REJECT",
-  "conclusionLabel": "通过或人工复核或驳回",
-  "riskLevel": "HIGH或MEDIUM或LOW",
-  "suggestedAccount": "建议会计科目，如660201 差旅费-交通",
-  "memo": "建议凭证摘要20字内",
-  "suggestedAction": "直接通过或补充附件或补充审批说明或转人工复核或驳回重提",
-  "manualReview": "需人工确认的具体说明，无则null",
-  "hitRules": [{"ruleId":"","ruleName":"","result":"PASS","riskLevel":"LOW","message":""}]
+  "party": "（销售方/开票方名称，识别不到填null）",
+  "docNo": "（发票号或票号，识别不到填null）",
+  "taxNo": "（对方税号，识别不到填null）",
+  "title": "（购买方名称即发票抬头，识别不到填null）",
+  "traveler": "（出行人/乘车人/入住人姓名，无则填null）",
+  "origin": "（出发地，无则填null）",
+  "destination": "（目的地，无则填null）",
+  "checkIn": "（入住日期YYYY-MM-DD，无则填null）",
+  "checkOut": "（退房日期YYYY-MM-DD，无则填null）",
+  "nights": null,
+  "invoiceValidity": "VALID",
+  "businessCompleteness": "COMPLETE",
+  "supportingDocStatus": "not_required",
+  "conclusion": "PASS",
+  "conclusionLabel": "通过",
+  "riskLevel": "LOW",
+  "suggestedAccount": "（建议会计科目）",
+  "memo": "（建议凭证摘要20字内）",
+  "suggestedAction": "直接通过",
+  "manualReview": null,
+  "hitRules": []
 }
+注意：party/docNo/taxNo/title/date/traveler/origin/destination等字段，识别不到时填null，不要把上面括号里的说明文字填进去
 
 ## 结论判断逻辑（严格顺序执行）
 Step1 票据有效性判断：
