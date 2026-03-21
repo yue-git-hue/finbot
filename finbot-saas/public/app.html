@@ -896,7 +896,7 @@ function __rules(r){
   return rules.filter(x=>x.result!=="PASS");
 }
 function __ruleIds(r){ return __rules(r).map(x=>x.ruleId||"").filter(Boolean).join("；"); }
-function __riskTypes(r){ return __rules(r).map(x=>x.ruleName||x.ruleId||"").join("；"); }
+function __riskTypes(r){ return __rules(r).map(x=>{const n=x.ruleName||x.rule_name||x.ruleId||"风险项";return n.split("（")[0].split("(")[0].trim();}).join("；"); }
 function __riskDesc(r){ return __rules(r).map(x=>`[${x.ruleId||""}]${x.message||""}`).join("；")||(r.manualReview&&r.manualReview!=="null"?r.manualReview:""); }
 function __topRisk(r){
   const rules=__rules(r);
@@ -931,11 +931,12 @@ function __deductible(r){
 // 表1：完整汇总表 — 全量台账
 // ─────────────────────────────────────────────
 function buildSummaryRows(data){
+  __exportVn=1;
   return data.map(r=>{
     const cat=r.expenseCategory||r.category||"其他";
     return {
       // 基础标识
-      单据ID:       r.id||"",
+      单据ID:       String(Math.floor(Number(r.id)||0)).slice(-10)||String(r.id||""),
       报销单号:     "",
       明细行号:     "",
       文件名:       r.fileName||"",
@@ -944,7 +945,7 @@ function buildSummaryRows(data){
       开票日期:     __clean(r.date),
       不含税金额:   Number(r.amount)||0,
       税额:         Number(r.tax)||0,
-      价税合计:     (Number(r.amount)||0)+(Number(r.tax)||0),
+      价税合计:     Math.round(((Number(r.amount)||0)+(Number(r.tax)||0))*100)/100,
       对方单位:     __clean(r.party),
       发票号:       __clean(r.docNo),
       对方税号:     __clean(r.taxNo),
@@ -964,7 +965,7 @@ function buildSummaryRows(data){
       目的地:       __clean(r.destination),
       // AI初审结论
       AI初审结论:   __lv(r),
-      AI风险等级:   __topRisk(r),
+      AI风险等级:   {"HIGH":"高","MEDIUM":"中","LOW":"低"}[__topRisk(r)]||__topRisk(r)||"",
       规则编码:     __ruleIds(r),
       风险类型:     __riskTypes(r),
       风险说明:     __riskDesc(r),
@@ -1016,7 +1017,7 @@ function buildSupplementRows(data){
     }
     return {
       补件任务ID:     `BC${__yr}${String(taskNo++).padStart(4,"0")}`,
-      单据ID:         r.id||"",
+      单据ID:         String(Math.floor(Number(r.id)||0)).slice(-10)||String(r.id||""),
       报销单号:       "",
       明细行号:       "",
       文件名:         r.fileName||"",
@@ -1026,7 +1027,7 @@ function buildSupplementRows(data){
       // 票据摘要
       票据类型:       r.docType||"",
       费用大类:       r.expenseCategory||r.category||"",
-      金额:           (Number(r.amount)||0)+(Number(r.tax)||0),
+      金额:           Math.round(((Number(r.amount)||0)+(Number(r.tax)||0))*100)/100,
       开票日期:       __clean(r.date),
       // 风险信息
       风险等级:       __topRisk(r),
@@ -1076,7 +1077,7 @@ function buildVoucherRows(data){
                   "[日期]+[对方单位]+[费用类型]+费用";
     return {
       凭证建议ID:     `PZ${__yr}${String(vNo++).padStart(4,"0")}`,
-      单据ID:         r.id||"",
+      单据ID:         String(Math.floor(Number(r.id)||0)).slice(-10)||String(r.id||""),
       报销单号:       "",
       明细行号:       "",
       // 人员与组织
@@ -1160,7 +1161,7 @@ function buildRejectRows(data){
     }
     return {
       驳回任务ID:     `BH${__yr}${String(taskNo++).padStart(4,"0")}`,
-      单据ID:         r.id||"",
+      单据ID:         String(Math.floor(Number(r.id)||0)).slice(-10)||String(r.id||""),
       报销单号:       "",
       明细行号:       "",
       文件名:         r.fileName||"",
@@ -1174,7 +1175,7 @@ function buildRejectRows(data){
       票据类型:       r.docType||"",
       费用大类:       r.expenseCategory||r.category||"",
       费用小类:       "",
-      金额:           (Number(r.amount)||0)+(Number(r.tax)||0),
+      金额:           Math.round(((Number(r.amount)||0)+(Number(r.tax)||0))*100)/100,
       开票日期:       __clean(r.date),
       // 结论
       AI初审结论:     __lv(r),
