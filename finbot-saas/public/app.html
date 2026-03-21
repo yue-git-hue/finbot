@@ -145,7 +145,8 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
     <div class="dz" id="dz" onclick="document.getElementById('fi').click()">
       <div style="font-size:44px;margin-bottom:12px">📁</div>
       <div style="font-size:15px;font-weight:600;margin-bottom:7px" id="dzt">拖拽上传 或 点击选择文件</div>
-      <div style="font-size:13px;color:#94A3B8;margin-bottom:18px">支持 PDF（多页）、JPG、PNG · 单文件最大 20MB · 可批量上传 · 上传后自动识别</div>
+      <div style="font-size:13px;color:#94A3B8;margin-bottom:10px">支持 PDF（多页）、JPG、PNG · 单文件最大 20MB · 可批量上传 · 上传后自动识别</div>
+      <div style="font-size:12px;color:#64748B;margin-bottom:16px">💡 若 PDF 中某张发票识别失败，请将其截图保存为 JPG 或 PNG 后重新上传</div>
       <button class="btn pri" onclick="event.stopPropagation();document.getElementById('fi').click()">选择文件</button>
     </div>
     <input type="file" id="fi" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="runF(this.files)">
