@@ -530,6 +530,9 @@ async function analyze(file){
   "traveler": "出行人/乘车人/入住人姓名（无则null）",
   "origin": "出发地（无则null）",
   "destination": "目的地（无则null）",
+  "checkIn": "入住日期YYYY-MM-DD（无则null）",
+  "checkOut": "退房日期YYYY-MM-DD（无则null）",
+  "nights": 住宿晚数数字（从入住退房日期推算，或从文件名/票面提取，无法确定则null）,
   "invoiceValidity": "VALID或INVALID",
   "businessCompleteness": "COMPLETE或PARTIAL或INSUFFICIENT",
   "supportingDocStatus": "not_required或pending",
@@ -601,7 +604,16 @@ T301 出行人+路线全部缺失（INSUFFICIENT）→ REVIEW HIGH，supportingD
 T302 当日市内交通合计明显偏高（如超500元）→ REVIEW MEDIUM
 
 ### 住宿规则
-T401 酒店单晚超1500元 → REJECT HIGH；超1000元 → REVIEW MEDIUM，message:"住宿费较高，请确认是否有审批"（注：一线城市1000元以下属正常范围）
+住宿晚数推算优先级：
+① 票面上明确的入住日期+退房日期之差（最优先）
+② 文件名中的日期范围（格式如"20251029-20251031"、"10月29日-10月31日"、"2025-10-29至2025-10-31"等），计算两个日期之差得到晚数
+③ 文件名中的晚数关键词（如"2晚""3nights""2night"）
+④ 无法确定则nights=null，不要猜测
+T401 住宿金额合理性校验：
+   - 若nights已知：单晚金额 = amount÷nights
+     单晚超¥${hotel_limit_reject} → REJECT HIGH；超¥${hotel_limit_warn} → REVIEW MEDIUM
+   - 若nights未知：仅凭总金额判断，超¥1500总额 → REVIEW MEDIUM（无法确认晚数，无法精确判断）
+   - 注：一线城市住宿成本较高，单晚¥1000以下通常属正常范围
 T402 入住人缺失 → 仅记录为低级提示，不改变结论（酒店发票字段完整时仍为PASS），message:"建议确认报销人与入住人一致"
 T403 同城住宿：仅在发票明确显示住宿城市与开票地相同时触发 → REVIEW LOW，message:"疑似同城住宿，请确认合理性"（注：AI无法判断用户常驻地，不确定时不触发此规则）
 
@@ -779,6 +791,9 @@ function renderRes(){
     if(item.traveler&&item.traveler!=="null") tripInfo.push(`出行人：${item.traveler}`);
     if(item.origin&&item.origin!=="null") tripInfo.push(`${item.origin}`);
     if(item.destination&&item.destination!=="null") tripInfo.push(`→ ${item.destination}`);
+    if(item.checkIn&&item.checkIn!=="null") tripInfo.push(`入住：${item.checkIn}`);
+    if(item.checkOut&&item.checkOut!=="null") tripInfo.push(`退房：${item.checkOut}`);
+    if(item.nights&&item.nights!=="null") tripInfo.push(`共${item.nights}晚`);
 
     return`<div class="rc${item.duplicate?' dup':''}">
 <div class="rh">
@@ -861,6 +876,7 @@ function renderEx(){
       const lv=isREJECT(r.conclusion)?"驳回":isPASS(r.conclusion)?"通过":r.duplicate?"重复发票":"人工复核";
       const vNo=(isPASS(r.conclusion)&&!r.duplicate)?`JZ${yr}${String(vn++).padStart(4,"0")}`:"";
       const cat2=r.expenseCategory||r.category||"其他";
+      const travelerClean2=(r.traveler&&!/[零一二三四五六七八九十百千万圆元角分]/u.test(r.traveler)&&r.traveler!=="null")?r.traveler:"";
       const acct=r.suggestedAccount||(AM[cat2]||AM["其他"])[0];
       const rules=r.hitRules||r.risks||[];
       // 中文化状态值
@@ -888,7 +904,11 @@ function renderEx(){
         价税合计:(Number(r.amount)||0)+(Number(r.tax)||0),
         对方单位:r.party||"",
         发票号:r.docNo||"",
-        出行人:travelerClean,
+        出行人_乘车人:travelerClean2,
+        入住人:(r.docType==="酒店发票"?travelerClean2:""),
+        入住日期:(r.checkIn&&r.checkIn!=="null"?r.checkIn:""),
+        退房日期:(r.checkOut&&r.checkOut!=="null"?r.checkOut:""),
+        住宿晚数:(r.nights&&r.nights!=="null"?r.nights:""),
         购买方抬头:r.title||"",
         对方税号:taxNoClean,
         票据有效性:ivLabel,
@@ -915,7 +935,7 @@ function renderEx(){
 function doXlsx(i){
   const{rows,title}=window.__ed[i];if(!rows?.length){alert("没有数据");return;}
   const ws=XLSX.utils.json_to_sheet(rows);
-  ws['!cols']=[{wch:10},{wch:30},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:20},{wch:22},{wch:20},{wch:20},{wch:12},{wch:16},{wch:20},{wch:8},{wch:10},{wch:30},{wch:20}];
+  ws['!cols']=[{wch:10},{wch:30},{wch:12},{wch:12},{wch:12},{wch:10},{wch:12},{wch:20},{wch:22},{wch:12},{wch:12},{wch:10},{wch:8},{wch:20},{wch:20},{wch:12},{wch:16},{wch:20},{wch:8},{wch:10},{wch:30},{wch:20}];
   const range=XLSX.utils.decode_range(ws['!ref']);
   for(let R=1;R<=range.e.r;R++){['E','F','G'].forEach(col=>{const cell=ws[col+(R+1)];if(cell&&typeof cell.v==='number'){cell.t='n';cell.z='#,##0.00';}});}
   const wb=XLSX.utils.book_new();
