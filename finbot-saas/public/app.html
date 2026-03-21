@@ -1,3 +1,62 @@
+function extractRailwayFields(text){
+  const isRailway=/铁路电子客票|电子发票.*客票|12306/.test(text);
+  if(!isRailway) return null;
+  const get=(pats,t)=>{for(const p of pats){const m=t.match(p);if(m)return (m[1]||m[0]).trim();}return null;};
+
+  const invoiceNo   = get([/发票号码[:：](\d{18,25})/], text);
+  const invoiceDate = get([/开票日期[:：](\d{4}年\d{1,2}月\d{1,2}日)/], text);
+  // 乘车日期：格式 "2026年01月22日09:23开" 或 "2026年01月22日 09:23开"
+  const rideDate    = get([/(\d{4}年\d{1,2}月\d{1,2}日)\s*\d{2}:\d{2}开/], text);
+  const amount      = get([/票价[:：]\s*[¥￥]([\d.]+)/, /[¥￥]([\d.]+)/], text);
+  const trainNo     = get([/([GDKTZC]\d{2,4})/], text);
+  const seat        = get([/(商务座|一等座|二等座|硬卧|软卧|硬座)/], text);
+  // 乘车人：身份证后4位紧接姓名，中间可能无空格
+  const traveler    = get([/\*{4}\d{4}\s*([一-鿿]{2,4})(?:\s|$)/,
+                           /\d{4}\s*([一-鿿]{2,4})(?:\s|$)/], text);
+  const ticketNo    = get([/电子客票号[:：](\d{18,})/], text);
+  const buyer       = get([/购买方名称[:：]([^\s统]+)/], text);
+  const taxNo       = get([/统一社会信用代码[:：](\w{18})/], text);
+  const isChanged   = /始发改签|改签/.test(text);
+
+  // 出发/到达站：从 "天津西苏州北
+站G263站" 或 "天津西 G263 苏州北" 两种格式提取
+  let fromSt=null, toSt=null;
+  // 格式1: 出发地 车次 目的地（同行，有空格）
+  const routeM=text.match(/([一-鿿]{2,5})\s+([GDKTZC]\d{2,4})\s+([一-鿿]{2,5})/);
+  if(routeM){ fromSt=routeM[1]; toSt=routeM[3]; }
+  else {
+    // 格式2: 两个城市紧接在一行，然后下一行是"站G车次站"
+    const stationLineM=text.match(/([一-鿿]{2,5})([一-鿿]{2,5})
+站[A-Z\d]+站/);
+    if(stationLineM){ fromSt=stationLineM[1]; toSt=stationLineM[2]; }
+    else {
+      // 格式3: 各种拼接情况，从整行提取两个车站
+      const allStations=text.match(/[一-鿿]{2,4}(?:西|东|南|北|站)?(?=站|[A-Z]|\s|[一-鿿]{2,4}(?:西|东|南|北))/g);
+      if(allStations&&allStations.length>=2){ fromSt=allStations[0]; toSt=allStations[1]; }
+    }
+  }
+
+  if(!invoiceNo||!amount) return null;
+
+  return [
+    "票据类型: 铁路电子客票",
+    "发票号码: "+(invoiceNo||""),
+    "开票日期: "+(invoiceDate||"")+"（注：开票日期可能晚于乘车日期）",
+    "乘车日期: "+(rideDate||"")+"（此为出行日期，date字段应填此值）",
+    "票价(金额): "+(amount||""),
+    "出发站: "+(fromSt||""),
+    "到达站: "+(toSt||""),
+    "车次: "+(trainNo||""),
+    "席别: "+(seat||""),
+    "乘车人: "+(traveler||""),
+    "是否改签: "+(isChanged?"是（始发改签，乘车日期可能与原票不同）":"否"),
+    "电子客票号: "+(ticketNo||""),
+    "购买方名称: "+(buyer||""),
+    "统一社会信用代码: "+(taxNo||""),
+    "开票方: 中国铁路（固定值，印章遮挡不影响此字段）",
+    "注意事项: 乘车日期是实际出行日期，date字段填乘车日期而非开票日期",
+  ].join("\n");
+}
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
