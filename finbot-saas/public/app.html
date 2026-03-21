@@ -669,7 +669,7 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
 
   // 注入企业规则配置
   const rulesPrompt = buildRulesPrompt();
-  const sysWithRules = sys + rulesPrompt;
+  const fullSys = sys + (rulesPrompt ? rulesPrompt : "");
   let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
   const results=[];
   for(const img of images){
