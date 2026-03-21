@@ -521,8 +521,8 @@ async function analyze(file){
   "docType": "增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/医疗发票/其他",
   "expenseCategory": "差旅-住宿/差旅-城际交通/差旅-市内交通/差旅-车辆相关/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/材料采购/其他",
   "date": "YYYY-MM-DD",
-  "amount": 不含税金额数字,
-  "tax": 税额数字,
+  "amount": 0,
+  "tax": 0,
   "party": "对方单位",
   "docNo": "发票号或票号",
   "taxNo": "对方税号",
@@ -532,7 +532,7 @@ async function analyze(file){
   "destination": "目的地（无则null）",
   "checkIn": "入住日期YYYY-MM-DD（无则null）",
   "checkOut": "退房日期YYYY-MM-DD（无则null）",
-  "nights": 住宿晚数数字（从入住退房日期推算，或从文件名/票面提取，无法确定则null）,
+  "nights": null或数字（住宿晚数，从入住退房日期之差推算，或从文件名提取，无法确定填null）,
   "invoiceValidity": "VALID或INVALID",
   "businessCompleteness": "COMPLETE或PARTIAL或INSUFFICIENT",
   "supportingDocStatus": "not_required或pending",
@@ -543,9 +543,7 @@ async function analyze(file){
   "memo": "建议凭证摘要20字内",
   "suggestedAction": "直接通过或补充附件或补充审批说明或转人工复核或驳回重提",
   "manualReview": "需人工确认的具体说明，无则null",
-  "hitRules": [
-    {"ruleId": "规则编号如G003", "ruleName": "规则名称", "result": "PASS或REVIEW或REJECT", "riskLevel": "HIGH或MEDIUM或LOW", "message": "具体说明"}
-  ]
+  "hitRules": [{"ruleId":"","ruleName":"","result":"PASS","riskLevel":"LOW","message":""}]
 }
 
 ## 结论判断逻辑（严格顺序执行）
@@ -611,7 +609,7 @@ T302 当日市内交通合计明显偏高（如超500元）→ REVIEW MEDIUM
 ④ 无法确定则nights=null，不要猜测
 T401 住宿金额合理性校验：
    - 若nights已知：单晚金额 = amount÷nights
-     单晚超¥${hotel_limit_reject} → REJECT HIGH；超¥${hotel_limit_warn} → REVIEW MEDIUM
+     单晚超¥1500 → REJECT HIGH；超¥800 → REVIEW MEDIUM（具体阈值以企业规则配置为准）
    - 若nights未知：仅凭总金额判断，超¥1500总额 → REVIEW MEDIUM（无法确认晚数，无法精确判断）
    - 注：一线城市住宿成本较高，单晚¥1000以下通常属正常范围
 T402 入住人缺失 → 仅记录为低级提示，不改变结论（酒店发票字段完整时仍为PASS），message:"建议确认报销人与入住人一致"
@@ -676,7 +674,7 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
     const resp=await fetch("/api/ai/recognize",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
-      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1200,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据输出JSON"}]}]})
+      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:2500,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据输出JSON"}]}]})
     });
     if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
     const d=await resp.json();
