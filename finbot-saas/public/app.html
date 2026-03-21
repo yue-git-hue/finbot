@@ -443,23 +443,225 @@ async function checkActive(){
   go(3);return false;
 }
 
+// ── 归一化 helpers ──────────────────────────────────────
+function normalizeFullWidth(str){
+  if(str==null) return str;
+  return String(str)
+    .replace(/[\uFF01-\uFF5E]/g,ch=>String.fromCharCode(ch.charCodeAt(0)-0xFEE0))
+    .replace(/\u3000/g," ")
+    .replace(/：/g,":").replace(/（/g,"(").replace(/）/g,")")
+    .replace(/，/g,",").replace(/。/g,".").replace(/；/g,";")
+    .replace(/【/g,"[").replace(/】/g,"]")
+    .trim();
+}
+function normalizeNumber(val){
+  if(val==null||val===""||val==="null") return 0;
+  if(typeof val==="number") return isFinite(val)?val:0;
+  const s=normalizeFullWidth(val).replace(/[¥￥,\s]/g,"").replace(/[^\d.-]/g,"");
+  const n=parseFloat(s);
+  return isFinite(n)?n:0;
+}
+function normalizeDate(val){
+  if(!val||val==="null") return null;
+  let s=normalizeFullWidth(val)
+    .replace(/[年/.]/g,"-").replace(/月/g,"-").replace(/日/g,"")
+    .replace(/\//g,"-").replace(/\./g,"-").replace(/\s+/g,"").trim();
+  const m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(!m) return null;
+  return `${m[1]}-${String(m[2]).padStart(2,"0")}-${String(m[3]).padStart(2,"0")}`;
+}
+function normalizeStringField(v){
+  if(v==null||v==="null"||v==="") return null;
+  const s=normalizeFullWidth(v).replace(/\s+/g," ").trim();
+  return s||null;
+}
+function normalizeDocNo(v){const s=normalizeStringField(v);return s?s.replace(/\s+/g,""):null;}
+function normalizeTaxNo(v){const s=normalizeStringField(v);return s?s.replace(/\s+/g,""):null;}
+function safeJsonParse(raw){
+  if(!raw) return null;
+  let s=String(raw).replace(/```json|```/g,"").trim();
+  const first=s.indexOf("{");const last=s.lastIndexOf("}");
+  if(first>=0&&last>first) s=s.slice(first,last+1);
+  s=s.replace(/:\s*"null"/g,": null").replace(/:\s*"None"/g,": null").replace(/:\s*None/g,": null");
+  s=s.replace(/,\s*}/g,"}").replace(/,\s*]/g,"]");
+  try{return JSON.parse(s);}catch(e){return null;}
+}
+function normalizeRule(rule){
+  return{
+    ruleId:normalizeStringField(rule?.ruleId)||"",
+    ruleName:normalizeStringField(rule?.ruleName)||"",
+    result:normalizeStringField(rule?.result)||"PASS",
+    riskLevel:normalizeStringField(rule?.riskLevel)||"LOW",
+    message:normalizeStringField(rule?.message)||""
+  };
+}
+function normalizeRecognition(obj){
+  const out={...(obj||{})};
+  out.docType=normalizeStringField(out.docType)||"其他";
+  out.expenseCategory=normalizeStringField(out.expenseCategory)||normalizeStringField(out.category)||"其他";
+  out.category=out.expenseCategory;
+  out.date=normalizeDate(out.date);
+  out.amount=normalizeNumber(out.amount);
+  out.tax=normalizeNumber(out.tax);
+  out.party=normalizeStringField(out.party);
+  out.docNo=normalizeDocNo(out.docNo);
+  out.taxNo=normalizeTaxNo(out.taxNo);
+  out.title=normalizeStringField(out.title);
+  out.traveler=normalizeStringField(out.traveler);
+  out.origin=normalizeStringField(out.origin);
+  out.destination=normalizeStringField(out.destination);
+  out.checkIn=normalizeDate(out.checkIn);
+  out.checkOut=normalizeDate(out.checkOut);
+  if(out.nights==null||out.nights===""||out.nights==="null"){out.nights=null;}
+  else{const n=parseInt(normalizeFullWidth(out.nights),10);out.nights=isFinite(n)?n:null;}
+  out.invoiceValidity=normalizeStringField(out.invoiceValidity)||"VALID";
+  out.businessCompleteness=normalizeStringField(out.businessCompleteness)||"PARTIAL";
+  out.supportingDocStatus=normalizeStringField(out.supportingDocStatus)||"not_required";
+  out.conclusion=normalizeStringField(out.conclusion)||"REVIEW";
+  out.conclusionLabel=normalizeStringField(out.conclusionLabel)||"人工复核";
+  out.riskLevel=normalizeStringField(out.riskLevel)||"MEDIUM";
+  out.suggestedAccount=normalizeStringField(out.suggestedAccount)||"";
+  out.memo=normalizeStringField(out.memo)||"";
+  out.suggestedAction=normalizeStringField(out.suggestedAction)||"转人工复核";
+  out.manualReview=normalizeStringField(out.manualReview);
+  if(Array.isArray(out.hitRules)){
+    out.hitRules=out.hitRules.map(normalizeRule);
+  }else if(Array.isArray(out.risks)){
+    out.hitRules=out.risks.map(r=>normalizeRule({ruleId:r.ruleId,ruleName:r.ruleName,result:r.result||r.level||"REVIEW",riskLevel:r.riskLevel||r.level||"MEDIUM",message:r.message||""}));
+  }else{out.hitRules=[];}
+  out.risks=out.hitRules.map(r=>({ruleId:r.ruleId,ruleName:r.ruleName,level:r.riskLevel,riskLevel:r.riskLevel,result:r.result,message:r.message}));
+  return out;
+}
+function scoreRecognition(r){
+  if(!r) return 0;
+  let score=0;
+  if(r.docType&&r.docType!=="其他") score+=2;
+  if(r.docNo) score+=3;
+  if(r.amount>0) score+=3;
+  if(r.date) score+=2;
+  if(r.party) score+=2;
+  if(r.title) score+=1;
+  if(r.taxNo) score+=1;
+  if(r.traveler) score+=1;
+  if(r.origin) score+=1;
+  if(r.destination) score+=1;
+  if(r.checkIn) score+=1;
+  if(r.checkOut) score+=1;
+  return score;
+}
+function pickBetterValue(a,b,key){
+  const va=a?.[key];const vb=b?.[key];
+  if((va==null||va===""||va===0)&&(vb!=null&&vb!==""&&vb!==0)) return vb;
+  if((vb==null||vb===""||vb===0)&&(va!=null&&va!==""&&va!==0)) return va;
+  if((va==null||va===""||va===0)&&(vb==null||vb===""||vb===0)) return va??vb;
+  if(["amount","tax"].includes(key)) return (Number(vb)||0)>0?vb:va;
+  if(["date","checkIn","checkOut"].includes(key)) return normalizeDate(va)||normalizeDate(vb)||va||vb;
+  if(["party","title","traveler","origin","destination","docNo","taxNo","docType","expenseCategory"].includes(key))
+    return String(vb).length>String(va).length?vb:va;
+  return va??vb;
+}
+function dedupeRules(rules){
+  const seen=new Set();const out=[];
+  for(const r of rules||[]){
+    const key=`${r.ruleId}|${r.message}|${r.riskLevel}`;
+    if(seen.has(key)) continue;
+    seen.add(key);out.push(r);
+  }
+  return out;
+}
+function mergeRecognitionResults(results){
+  const keys=["docType","expenseCategory","date","amount","tax","party","docNo","taxNo","title","traveler","origin","destination","checkIn","checkOut","nights","invoiceValidity","businessCompleteness","supportingDocStatus","conclusion","conclusionLabel","riskLevel","suggestedAccount","memo","suggestedAction","manualReview"];
+  const merged={};
+  for(const r of results){for(const k of keys){merged[k]=pickBetterValue(merged,r,k);}}
+  const allRules=[];
+  results.forEach(r=>{if(Array.isArray(r.hitRules)) allRules.push(...r.hitRules);});
+  merged.hitRules=dedupeRules(allRules);
+  return normalizeRecognition(merged);
+}
+function isWeakRecognition(r){
+  if(!r) return true;
+  const coreCount=[r.docType&&r.docType!=="其他",!!r.docNo,!!r.date,(Number(r.amount)||0)>0,!!r.party||!!r.title].filter(Boolean).length;
+  return coreCount<3||!r.docNo||!r.date||!(Number(r.amount)>0);
+}
+function enhanceCanvas(canvas){
+  const out=document.createElement("canvas");
+  out.width=canvas.width;out.height=canvas.height;
+  const ctx=out.getContext("2d");
+  ctx.drawImage(canvas,0,0);
+  const img=ctx.getImageData(0,0,out.width,out.height);const d=img.data;
+  for(let i=0;i<d.length;i+=4){
+    const r=d[i],g=d[i+1],b=d[i+2];
+    let gray=0.299*r+0.587*g+0.114*b;
+    gray=gray>210?255:gray<85?0:gray;
+    d[i]=d[i+1]=d[i+2]=gray;
+  }
+  ctx.putImageData(img,0,0);return out;
+}
+async function imageElementToVariants(imgEl){
+  const maxSide=2200;
+  let w=imgEl.width,h=imgEl.height;
+  const ratio=Math.min(1,maxSide/Math.max(w,h));
+  w=Math.max(1,Math.round(w*ratio));h=Math.max(1,Math.round(h*ratio));
+  const canvas=document.createElement("canvas");
+  canvas.width=w;canvas.height=h;
+  const ctx=canvas.getContext("2d");
+  ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,w,h);
+  ctx.drawImage(imgEl,0,0,w,h);
+  const raw=canvas.toDataURL("image/jpeg",0.95).split(",")[1];
+  const enhanced=enhanceCanvas(canvas).toDataURL("image/jpeg",0.95).split(",")[1];
+  return[{page:1,variant:"raw",data:raw},{page:1,variant:"enhanced",data:enhanced}];
+}
+async function callVisionJSON(systemPrompt,imageBase64,userText,maxTokens=1800){
+  const resp=await fetch("/api/ai/recognize",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
+    body:JSON.stringify({
+      model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:maxTokens,
+      messages:[
+        {role:"system",content:systemPrompt},
+        {role:"user",content:[
+          {type:"image_url",image_url:{url:`data:image/jpeg;base64,${imageBase64}`}},
+          {type:"text",text:userText||"识别此票据，输出JSON"}
+        ]}
+      ]
+    })
+  });
+  if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
+  const d=await resp.json();
+  const raw=(d?.choices?.[0]?.message?.content||"").trim();
+  return safeJsonParse(raw);
+}
+
+// ── PDF渲染（双版本：原图+增强）──────────────────────────
 async function pdfToImages(file){
   const buf=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
   const imgs=[];
   for(let i=1;i<=pdf.numPages;i++){
     const page=await pdf.getPage(i);
-    const vp=page.getViewport({scale:3.0});
-    const canvas=document.createElement('canvas');
+    const vp=page.getViewport({scale:3.8});
+    const canvas=document.createElement("canvas");
     canvas.width=vp.width;canvas.height=vp.height;
-    const ctx=canvas.getContext('2d');
+    const ctx=canvas.getContext("2d");
     ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,canvas.width,canvas.height);
     await page.render({canvasContext:ctx,viewport:vp,annotationMode:0}).promise;
-    imgs.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
+    const raw=canvas.toDataURL("image/jpeg",0.95).split(",")[1];
+    const enhanced=enhanceCanvas(canvas).toDataURL("image/jpeg",0.95).split(",")[1];
+    imgs.push({page:i,variant:"raw",data:raw});
+    imgs.push({page:i,variant:"enhanced",data:enhanced});
   }
   return imgs;
 }
-async function fileToB64(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(file);});}
+async function fileToB64(file){
+  const img=await new Promise((res,rej)=>{
+    const url=URL.createObjectURL(file);
+    const image=new Image();
+    image.onload=()=>{URL.revokeObjectURL(url);res(image);};
+    image.onerror=(e)=>{URL.revokeObjectURL(url);rej(e);};
+    image.src=url;
+  });
+  return imageElementToVariants(img);
+}
 
 function rl(item){
   if(item.duplicate)return"dup";
@@ -508,7 +710,34 @@ async function runF(files){
 }
 
 async function analyze(file){
-  const sys=`你是专业财务票据初审Agent。严格按照以下框架执行审核，只输出JSON，不要任何其他内容。
+  const extractPrompt=`你是票据字段识别助手。你的任务是只做"字段抽取"，不要做审核结论，不要做业务推理，不要输出解释。
+
+严格输出JSON，字段固定如下：
+{
+  "docType": "增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/医疗发票/其他",
+  "expenseCategory": "差旅-住宿/差旅-城际交通/差旅-市内交通/差旅-车辆相关/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/材料采购/其他",
+  "date": "YYYY-MM-DD",
+  "amount": 0,
+  "tax": 0,
+  "party": "对方单位",
+  "docNo": "发票号或票号",
+  "taxNo": "对方税号",
+  "title": "购买方名称/发票抬头",
+  "traveler": null,
+  "origin": null,
+  "destination": null,
+  "checkIn": null,
+  "checkOut": null,
+  "nights": null
+}
+规则：
+1. 只抽取票面可见字段，不要猜。
+2. 看不清的字段填null或0。
+3. 全角字符按正常含义识别，如Ｇ119识别为G119，１５．００识别为15.00。
+4. 铁路票、机票、酒店、增值税发票优先识别号码、金额、日期、单位名称。
+5. 不要输出Markdown，不要输出解释，只输出JSON对象。`;
+
+  const reviewSys=`你是专业财务票据初审Agent。严格按照以下框架执行审核，只输出JSON，不要任何其他内容。
 
 ## 核心原则
 1. 票据有效性（invoice_validity）≠ 业务完整性（business_completeness）
@@ -666,28 +895,73 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
 
 注意：住宿费归"差旅-住宿"；个体工商户住宿/交通属于正常业务；网约车发票业务字段天然不全，不因缺行程字段直接驳回，应进入附件补强。医疗/体检发票：发票号+金额+日期+医疗机构名称齐全即为有效，businessCompleteness=COMPLETE，不要求药品明细，不触发G003，直接PASS LOW。`;
 
-  // 注入企业规则配置
-  const rulesPrompt = buildRulesPrompt();
-  const fullSys = sys + (rulesPrompt ? rulesPrompt : "");
-  const images = file.type==="application/pdf" ? await pdfToImages(file) : [await fileToB64(file)];
-  const results=[];
-  for(const img of images){
-    const resp=await fetch("/api/ai/recognize",{
-      method:"POST",
-      headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
-      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:2500,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据，输出JSON"}]}]})
-    });
-    if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
-    const d=await resp.json();
-    const raw=(d.choices[0].message.content||"").trim();
-    try{results.push(JSON.parse(raw.replace(/```json|```/g,"").trim()));}catch(e){}
+  const rulesPrompt=buildRulesPrompt();
+  const fullReviewSys=reviewSys+(rulesPrompt?rulesPrompt:"");
+  const variants=file.type==="application/pdf"?await pdfToImages(file):await fileToB64(file);
+
+  // 第一轮：字段抽取
+  const extractResults=[];
+  for(const v of variants){
+    try{
+      const r=await callVisionJSON(extractPrompt,v.data,"只做字段抽取，输出JSON，不要解释",1200);
+      if(r) extractResults.push(normalizeRecognition(r));
+    }catch(e){}
   }
-  if(!results.length)throw new Error("AI未返回有效结果");
-  const best=results.reduce((a,b)=>{const sc=r=>Object.values(r).filter(v=>v&&v!=="null"&&v!==0).length;return sc(b)>sc(a)?b:a;},results[0]);
-  // 字段兼容：新框架用 expenseCategory，旧兼容 category
-  if(best.expenseCategory && !best.category) best.category = best.expenseCategory;
-  if(best.hitRules && !best.risks) best.risks = best.hitRules;
-  return{...best,fileName:file.name,id:Date.now()+Math.random(),pages:images.length};
+  if(!extractResults.length) throw new Error("AI未返回有效识别结果");
+  let mergedExtract=mergeRecognitionResults(extractResults);
+
+  // 弱识别自动补救
+  if(isWeakRecognition(mergedExtract)){
+    const retryPrompt=`你是票据核心字段提取助手。只提取以下字段并输出JSON：
+{"docType":"","date":"","amount":0,"party":"","docNo":"","taxNo":"","title":""}
+规则：1.不要猜。2.全角数字、字母、符号按正常值识别。3.只输出JSON。`;
+    const retryResults=[];
+    for(const v of variants){
+      try{
+        const r=await callVisionJSON(retryPrompt,v.data,"只提取核心字段",800);
+        if(r) retryResults.push(normalizeRecognition(r));
+      }catch(e){}
+    }
+    if(retryResults.length) mergedExtract=mergeRecognitionResults([...extractResults,...retryResults]);
+  }
+
+  // 第二轮：审核判断（只送文本，不再送图）
+  const reviewResp=await fetch("/api/ai/recognize",{
+    method:"POST",
+    headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
+    body:JSON.stringify({
+      model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:2200,
+      messages:[
+        {role:"system",content:fullReviewSys},
+        {role:"user",content:[{type:"text",text:"以下是第一轮已识别的核心字段，请基于这些字段做审核判断，并补全最终JSON。不要随意推翻已经识别出的核心字段："+JSON.stringify(mergedExtract)}]}
+      ]
+    })
+  });
+  if(!reviewResp.ok){const t=await reviewResp.text();let msg="审核失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
+  const reviewData=await reviewResp.json();
+  const reviewRaw=(reviewData?.choices?.[0]?.message?.content||"").trim();
+  const reviewed=safeJsonParse(reviewRaw)||{};
+
+  const finalResult=normalizeRecognition({
+    ...reviewed,...mergedExtract,
+    conclusion:reviewed.conclusion||"REVIEW",
+    conclusionLabel:reviewed.conclusionLabel||"人工复核",
+    riskLevel:reviewed.riskLevel||"MEDIUM",
+    invoiceValidity:reviewed.invoiceValidity||"VALID",
+    businessCompleteness:reviewed.businessCompleteness||"PARTIAL",
+    supportingDocStatus:reviewed.supportingDocStatus||"not_required",
+    suggestedAccount:reviewed.suggestedAccount||"",
+    memo:reviewed.memo||"",
+    suggestedAction:reviewed.suggestedAction||"转人工复核",
+    manualReview:reviewed.manualReview||null,
+    hitRules:Array.isArray(reviewed.hitRules)?reviewed.hitRules:[]
+  });
+  return{
+    ...finalResult,
+    fileName:file.name,
+    id:Date.now()+Math.random(),
+    pages:file.type==="application/pdf"?Math.max(...variants.map(v=>v.page)):1
+  };
 }
 
 function openEdit(id){
