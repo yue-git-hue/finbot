@@ -383,47 +383,6 @@ app.post("/api/admin/record-payment", authAdmin, async (req, res) => {
   res.json({ ok: true });
 });
 
-const DEFAULT_RULES = {
-  // 交通
-  train_second_class: true,         // 二等座：全员可报
-  train_first_class: "manager",     // 一等座：经理级及以上
-  train_business_class: "director", // 商务座：总监级及以上
-  flight_economy: true,             // 经济舱：全员可报
-  flight_business: "director",      // 商务舱：总监级及以上
-  // 住宿
-  hotel_limit_tier1: 1000,          // 一线城市单晚上限（元）
-  hotel_limit_default: 600,         // 其他城市单晚上限（元）
-  hotel_limit_reject: 1500,         // 超过此金额直接驳回
-  // 餐饮
-  meal_auto_pass_limit: 200,        // 低于此金额工作餐自动通过
-  meal_review_limit: 2000,          // 高于此金额需补充接待信息
-  // 报销期限
-  expense_deadline_days: 90,        // 报销有效期（天），0=不限制
-  // 差旅补贴
-  daily_transport_limit: 300,       // 市内交通日限额（元）
-};
-
-
-// ── 企业规则配置 ──────────────────────────────────────
-app.get("/api/rules", authUser, (req, res) => {
-  const row = db.prepare("SELECT rules_json FROM company_rules WHERE user_id=?").get(req.user.id);
-  const rules = row ? JSON.parse(row.rules_json) : DEFAULT_RULES;
-  res.json({ ...DEFAULT_RULES, ...rules });
-});
-
-app.post("/api/rules", authUser, (req, res) => {
-  const rules = req.body;
-  const existing = db.prepare("SELECT id FROM company_rules WHERE user_id=?").get(req.user.id);
-  if (existing) {
-    db.prepare("UPDATE company_rules SET rules_json=?, updated_at=datetime('now','localtime') WHERE user_id=?")
-      .run(JSON.stringify(rules), req.user.id);
-  } else {
-    db.prepare("INSERT INTO company_rules(user_id, rules_json) VALUES(?,?)")
-      .run(req.user.id, JSON.stringify(rules));
-  }
-  res.json({ ok: true });
-});
-
 // ── 管理后台 API ─────────────────────────────────────
 app.get("/api/admin/users", authAdmin, (req, res) => {
   const users = db.prepare("SELECT id,email,name,company,status,plan,expires,free_uses,created,last_login FROM users ORDER BY created DESC").all();
