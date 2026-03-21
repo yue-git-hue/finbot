@@ -241,111 +241,6 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   </div>
   <!-- 规则配置页 -->
   <div class="page" id="p4">
-    <div class="ptitle">企业规则配置</div>
-    <div class="psub">根据贵公司差旅报销政策设置审核标准，AI 将按照您的规则执行审核</div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="rules-form">
-
-      <!-- 交通标准 -->
-      <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px">
-        <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#0F172A">🚄 交通报销标准</div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">高铁一等座报销级别</label>
-          <select class="fs" id="r-train_first_class">
-            <option value="all">所有人员均可报销</option>
-            <option value="manager">经理级及以上</option>
-            <option value="director">总监级及以上</option>
-            <option value="none">不允许报销（只报二等座）</option>
-          </select>
-        </div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">高铁商务座报销级别</label>
-          <select class="fs" id="r-train_business_class">
-            <option value="manager">经理级及以上</option>
-            <option value="director">总监级及以上</option>
-            <option value="none">不允许报销</option>
-          </select>
-        </div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">飞机商务舱报销级别</label>
-          <select class="fs" id="r-flight_business">
-            <option value="director">总监级及以上</option>
-            <option value="manager">经理级及以上</option>
-            <option value="none">不允许报销</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">市内交通日限额（元）</label>
-          <input class="fi" id="r-daily_transport_limit" type="number" placeholder="300">
-          <div style="font-size:11px;color:#94A3B8;margin-top:4px">单日市内交通合计超过此金额提示复核</div>
-        </div>
-      </div>
-
-      <!-- 住宿标准 -->
-      <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px">
-        <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#0F172A">🏨 住宿报销标准</div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">一线城市单晚上限（元）</label>
-          <input class="fi" id="r-hotel_limit_tier1" type="number" placeholder="1000">
-          <div style="font-size:11px;color:#94A3B8;margin-top:4px">北京/上海/广州/深圳/杭州等</div>
-        </div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">其他城市单晚上限（元）</label>
-          <input class="fi" id="r-hotel_limit_default" type="number" placeholder="600">
-        </div>
-        <div>
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">超过此金额直接驳回（元）</label>
-          <input class="fi" id="r-hotel_limit_reject" type="number" placeholder="1500">
-        </div>
-      </div>
-
-      <!-- 餐饮标准 -->
-      <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px">
-        <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#0F172A">🍽️ 餐饮报销标准</div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">工作餐自动通过上限（元）</label>
-          <input class="fi" id="r-meal_auto_pass_limit" type="number" placeholder="200">
-          <div style="font-size:11px;color:#94A3B8;margin-top:4px">低于此金额的餐饮票直接通过，无需说明</div>
-        </div>
-        <div>
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">需补充接待信息的金额（元）</label>
-          <input class="fi" id="r-meal_review_limit" type="number" placeholder="2000">
-          <div style="font-size:11px;color:#94A3B8;margin-top:4px">超过此金额需填写接待对象、事由和人数</div>
-        </div>
-      </div>
-
-      <!-- 报销期限 -->
-      <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px">
-        <div style="font-size:14px;font-weight:700;margin-bottom:16px;color:#0F172A">📅 报销期限与其他</div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:6px">发票报销有效期（天）</label>
-          <select class="fs" id="r-expense_deadline_days">
-            <option value="0">不限制</option>
-            <option value="30">30天</option>
-            <option value="60">60天</option>
-            <option value="90">90天（3个月）</option>
-            <option value="180">180天（6个月）</option>
-            <option value="365">365天（12个月）</option>
-          </select>
-          <div style="font-size:11px;color:#94A3B8;margin-top:4px">超过有效期的发票标记提示复核</div>
-        </div>
-      </div>
-
-    </div>
-
-    <div style="margin-top:20px;display:flex;gap:12px;align-items:center">
-      <button class="btn pri" onclick="saveRules()" id="save-rules-btn">保存配置</button>
-      <button class="btn" onclick="resetRules()">恢复默认</button>
-      <span id="rules-save-msg" style="font-size:13px;color:#16A34A;display:none">✓ 已保存，下次识别生效</span>
-    </div>
-
-    <div style="background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:14px 16px;margin-top:16px;font-size:13px;color:#92400E;line-height:1.7">
-      ⚑ 配置说明：以上规则仅影响 AI 审核时的判断标准，不影响已审核的历史记录。修改后上传的新票据将按新规则执行。
-    </div>
-  </div>
-
-  <!-- 规则配置页 -->
-  <div class="page" id="p4">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px">
       <div>
         <div class="ptitle">企业报销规则配置</div>
@@ -353,131 +248,90 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn danger sm" onclick="resetRules()">恢复默认</button>
-        <button class="btn pri" onclick="saveRules()">保存配置</button>
+        <button class="btn pri" onclick="saveRules()">💾 保存配置</button>
       </div>
     </div>
-
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="rules-form">
-
-      <!-- 住宿标准 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
       <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px">
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">🏨 住宿标准</div>
-        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">单晚费用上限设置</div>
+        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">单晚费用上限</div>
         <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">提示阈值（超过此金额提示复核）</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;color:#94A3B8">¥</span>
-            <input class="rule-input" id="r-hotel-warn" type="number" value="800" style="flex:1">
-            <span style="font-size:12px;color:#94A3B8">/晚</span>
-          </div>
+          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">提示复核阈值（元/晚）</label>
+          <input class="rule-input" id="rc-hotel-warn" type="number" placeholder="800">
         </div>
         <div>
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">驳回阈值（超过此金额直接驳回）</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;color:#94A3B8">¥</span>
-            <input class="rule-input" id="r-hotel-reject" type="number" value="1500" style="flex:1">
-            <span style="font-size:12px;color:#94A3B8">/晚</span>
-          </div>
+          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">驳回阈值（元/晚）</label>
+          <input class="rule-input" id="rc-hotel-reject" type="number" placeholder="1500">
         </div>
       </div>
-
-      <!-- 交通标准 -->
       <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px">
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">🚄 交通标准</div>
-        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">高铁和机票报销级别</div>
+        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">高铁席别报销级别</div>
         <div style="margin-bottom:14px">
           <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">普通员工高铁标准</label>
-          <select class="rule-input" id="r-train-staff">
-            <option value="二等座">二等座（不高于此标准可通过）</option>
-            <option value="一等座">一等座（不高于此标准可通过）</option>
-            <option value="商务座">商务座（任意席别可通过）</option>
+          <select class="rule-input" id="rc-train-staff">
+            <option value="二等座">二等座（超一等座需复核）</option>
+            <option value="一等座">一等座（超商务座需复核）</option>
+            <option value="商务座">商务座（任意席别通过）</option>
           </select>
         </div>
         <div style="margin-bottom:14px">
           <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">经理级及以上高铁标准</label>
-          <select class="rule-input" id="r-train-manager">
+          <select class="rule-input" id="rc-train-manager">
             <option value="二等座">二等座</option>
-            <option value="一等座">一等座（不高于此标准可通过）</option>
-            <option value="商务座">商务座（任意席别可通过）</option>
+            <option value="一等座">一等座（超商务座需复核）</option>
+            <option value="商务座">商务座（任意席别通过）</option>
           </select>
         </div>
         <div>
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">市内交通日限额</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;color:#94A3B8">¥</span>
-            <input class="rule-input" id="r-transport-limit" type="number" value="500" style="flex:1">
-            <span style="font-size:12px;color:#94A3B8">/天</span>
-          </div>
+          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">市内交通日限额（元）</label>
+          <input class="rule-input" id="rc-transport-limit" type="number" placeholder="500">
         </div>
       </div>
-
-      <!-- 餐饮标准 -->
       <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px">
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">🍽️ 餐饮标准</div>
         <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">餐饮报销审核规则</div>
         <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">工作餐免审阈值（低于此金额直接通过）</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;color:#94A3B8">¥</span>
-            <input class="rule-input" id="r-meal-pass" type="number" value="200" style="flex:1">
-          </div>
-        </div>
-        <div style="margin-bottom:14px">
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">高风险阈值（超过此金额需提供接待信息）</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;color:#94A3B8">¥</span>
-            <input class="rule-input" id="r-meal-review" type="number" value="2000" style="flex:1">
-          </div>
+          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">工作餐免审阈值（元，低于此直接通过）</label>
+          <input class="rule-input" id="rc-meal-pass" type="number" placeholder="200">
         </div>
         <div>
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">餐饮是否必须填写用途说明</label>
-          <select class="rule-input" id="r-meal-reason">
-            <option value="true">是（所有餐饮需说明用途）</option>
-            <option value="false">否（低于免审阈值可免填）</option>
-          </select>
+          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">高风险阈值（元，超过需补接待信息）</label>
+          <input class="rule-input" id="rc-meal-review" type="number" placeholder="2000">
         </div>
       </div>
-
-      <!-- 发票有效期 -->
       <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px">
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">📅 报销有效期</div>
-        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">发票开具到报销的最长时限</div>
+        <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">发票开具到提交的最长时限</div>
         <div style="margin-bottom:14px">
           <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">发票报销有效期</label>
-          <select class="rule-input" id="r-expire-months">
-            <option value="1">1个月内</option>
-            <option value="3">3个月内（常见）</option>
-            <option value="6">6个月内</option>
-            <option value="12">12个月内（当年内）</option>
+          <select class="rule-input" id="rc-expire-months">
+            <option value="1">1个月</option>
+            <option value="3">3个月（常见）</option>
+            <option value="6">6个月</option>
+            <option value="12">12个月（当年内）</option>
             <option value="0">不限制</option>
           </select>
         </div>
         <div>
           <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">是否允许同城住宿报销</label>
-          <select class="rule-input" id="r-same-city">
+          <select class="rule-input" id="rc-same-city">
             <option value="false">否（同城住宿标记复核）</option>
-            <option value="true">是（允许同城住宿报销）</option>
+            <option value="true">是（允许）</option>
           </select>
         </div>
       </div>
-
-      <!-- 公司信息 -->
       <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:20px;grid-column:span 2">
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">🏢 公司信息</div>
         <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">用于发票抬头校验</div>
-        <div>
-          <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">公司名称（发票抬头应与此一致）</label>
-          <input class="rule-input" id="r-company-name" type="text" placeholder="如：海构智眼（宁波）检测科技有限公司" style="width:100%">
-        </div>
+        <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">公司全称（发票抬头应与此一致）</label>
+        <input class="rule-input" id="rc-company-name" type="text" placeholder="如：海构智眼（宁波）检测科技有限公司" style="width:100%">
       </div>
-
     </div>
-
-    <div id="rules-toast" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:13px;color:#166534">
+    <div id="rules-saved-tip" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:13px;color:#166534;font-weight:600">
       ✓ 配置已保存，下次识别将按新规则执行
     </div>
   </div>
-
 </div>
 
 <script>
@@ -802,7 +656,7 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
 注意：住宿费归"差旅-住宿"；个体工商户住宿/交通属于正常业务；网约车发票业务字段天然不全，不因缺行程字段直接驳回，应进入附件补强。医疗/体检发票：发票号+金额+日期+医疗机构名称齐全即为有效，businessCompleteness=COMPLETE，不要求药品明细，不触发G003，直接PASS LOW。`;
 
   // 注入企业规则配置
-  const rulesPrompt = buildRulesPrompt(window.__rules);
+  const rulesPrompt = buildRulesPrompt();
   const sysWithRules = sys + rulesPrompt;
   let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
   const results=[];
@@ -1080,164 +934,87 @@ dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("drag")})
 dz.addEventListener("dragleave",()=>dz.classList.remove("drag"));
 dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("drag");runF(e.dataTransfer.files)});
 
-// ── 企业规则 ─────────────────────────────────────────
-let COMPANY_RULES = null;
+// ── 企业规则配置 ─────────────────────────────────────
+const DEFAULT_RULES_CLIENT = {
+  hotel_limit_warn: 800, hotel_limit_reject: 1500,
+  train_seat_policy: "二等座", train_seat_manager: "一等座",
+  transport_daily_limit: 500, meal_pass_limit: 200, meal_review_limit: 2000,
+  invoice_expire_months: 3, allow_same_city_hotel: false, company_name: ""
+};
+let CRULES = {...DEFAULT_RULES_CLIENT};
 
 async function loadRules(){
   try{
     const r=await fetch("/api/rules",{headers:{Authorization:"Bearer "+TOKEN}});
-    COMPANY_RULES=await r.json();
-    // 填入表单
-    const map={
-      'train_first_class':'r-train_first_class',
-      'train_business_class':'r-train_business_class',
-      'flight_business':'r-flight_business',
-      'daily_transport_limit':'r-daily_transport_limit',
-      'hotel_limit_tier1':'r-hotel_limit_tier1',
-      'hotel_limit_default':'r-hotel_limit_default',
-      'hotel_limit_reject':'r-hotel_limit_reject',
-      'meal_auto_pass_limit':'r-meal_auto_pass_limit',
-      'meal_review_limit':'r-meal_review_limit',
-      'expense_deadline_days':'r-expense_deadline_days',
-    };
-    for(const[key,id] of Object.entries(map)){
-      const el=document.getElementById(id);
-      if(el&&COMPANY_RULES[key]!==undefined) el.value=COMPANY_RULES[key];
-    }
+    if(r.ok){ CRULES={...DEFAULT_RULES_CLIENT,...await r.json()}; applyRulesToForm(); }
   }catch(e){}
 }
 
+function applyRulesToForm(){
+  const s=(id,v)=>{const el=document.getElementById(id);if(el&&v!==undefined)el.value=v;};
+  s("rc-hotel-warn", CRULES.hotel_limit_warn);
+  s("rc-hotel-reject", CRULES.hotel_limit_reject);
+  s("rc-train-staff", CRULES.train_seat_policy);
+  s("rc-train-manager", CRULES.train_seat_manager);
+  s("rc-transport-limit", CRULES.transport_daily_limit);
+  s("rc-meal-pass", CRULES.meal_pass_limit);
+  s("rc-meal-review", CRULES.meal_review_limit);
+  s("rc-expire-months", CRULES.invoice_expire_months);
+  s("rc-same-city", String(CRULES.allow_same_city_hotel));
+  s("rc-company-name", CRULES.company_name);
+}
+
 async function saveRules(){
-  const rules={
-    train_first_class: document.getElementById('r-train_first_class').value,
-    train_business_class: document.getElementById('r-train_business_class').value,
-    flight_business: document.getElementById('r-flight_business').value,
-    daily_transport_limit: Number(document.getElementById('r-daily_transport_limit').value)||300,
-    hotel_limit_tier1: Number(document.getElementById('r-hotel_limit_tier1').value)||1000,
-    hotel_limit_default: Number(document.getElementById('r-hotel_limit_default').value)||600,
-    hotel_limit_reject: Number(document.getElementById('r-hotel_limit_reject').value)||1500,
-    meal_auto_pass_limit: Number(document.getElementById('r-meal_auto_pass_limit').value)||200,
-    meal_review_limit: Number(document.getElementById('r-meal_review_limit').value)||2000,
-    expense_deadline_days: Number(document.getElementById('r-expense_deadline_days').value)||90,
+  const g=(id,def)=>{const el=document.getElementById(id);return el?el.value:def;};
+  CRULES={
+    hotel_limit_warn: Number(g("rc-hotel-warn",800))||800,
+    hotel_limit_reject: Number(g("rc-hotel-reject",1500))||1500,
+    train_seat_policy: g("rc-train-staff","二等座"),
+    train_seat_manager: g("rc-train-manager","一等座"),
+    transport_daily_limit: Number(g("rc-transport-limit",500))||500,
+    meal_pass_limit: Number(g("rc-meal-pass",200))||200,
+    meal_review_limit: Number(g("rc-meal-review",2000))||2000,
+    invoice_expire_months: Number(g("rc-expire-months",3)),
+    allow_same_city_hotel: g("rc-same-city","false")==="true",
+    company_name: g("rc-company-name","").trim(),
   };
-  await fetch("/api/rules",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify(rules)});
-  COMPANY_RULES=rules;
-  const msg=document.getElementById('rules-save-msg');
-  msg.style.display="inline";
-  setTimeout(()=>msg.style.display="none",3000);
+  try{
+    await fetch("/api/rules",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify(CRULES)});
+    const tip=document.getElementById("rules-saved-tip");
+    if(tip){tip.style.display="block";setTimeout(()=>tip.style.display="none",3000);}
+  }catch(e){alert("保存失败，请重试");}
 }
 
 async function resetRules(){
-  if(!confirm("恢复默认配置？"))return;
-  const defaults={train_first_class:"manager",train_business_class:"director",flight_business:"director",daily_transport_limit:300,hotel_limit_tier1:1000,hotel_limit_default:600,hotel_limit_reject:1500,meal_auto_pass_limit:200,meal_review_limit:2000,expense_deadline_days:90};
-  await fetch("/api/rules",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},body:JSON.stringify(defaults)});
-  COMPANY_RULES=defaults;
-  location.reload();
+  if(!confirm("恢复所有规则为默认值？"))return;
+  try{
+    await fetch("/api/rules",{method:"DELETE",headers:{Authorization:"Bearer "+TOKEN}});
+    CRULES={...DEFAULT_RULES_CLIENT};
+    applyRulesToForm();
+    alert("已恢复默认配置");
+  }catch(e){alert("重置失败");}
 }
 
 function buildRulesPrompt(){
-  if(!COMPANY_RULES) return "";
-  const R=COMPANY_RULES;
-  const seatMap={"all":"全员可报","manager":"经理级及以上","director":"总监级及以上","none":"不允许报销"};
-  const deadlineText=R.expense_deadline_days===0?"不限制":R.expense_deadline_days+"天";
-  return `
-## 本企业规则配置（优先级高于默认规则）
-交通标准：
-- 高铁二等座：全员可报，无需审批
-- 高铁一等座：${seatMap[R.train_first_class]||"经理级及以上"}可报，其他人员 → REVIEW MEDIUM，message:"一等座需${seatMap[R.train_first_class]}方可报销"
-- 高铁商务座：${seatMap[R.train_business_class]||"总监级及以上"}可报，其他人员 → REVIEW MEDIUM
-- 飞机商务舱/头等舱：${seatMap[R.flight_business]||"总监级及以上"}可报，其他人员 → REVIEW MEDIUM
-- 市内交通日限额：${R.daily_transport_limit}元，超过 → REVIEW MEDIUM
-
-住宿标准：
-- 一线城市单晚上限：${R.hotel_limit_tier1}元，超过 → REVIEW MEDIUM；超过${R.hotel_limit_reject}元 → REJECT HIGH
-- 其他城市单晚上限：${R.hotel_limit_default}元，超过 → REVIEW MEDIUM；超过${R.hotel_limit_reject}元 → REJECT HIGH
-
-餐饮标准：
-- 低于${R.meal_auto_pass_limit}元的餐饮发票 → PASS LOW（工作餐无需说明）
-- ${R.meal_auto_pass_limit}元至${R.meal_review_limit}元 → REVIEW MEDIUM，需说明用途
-- 超过${R.meal_review_limit}元 → REVIEW HIGH，需补充接待对象、事由和人数
-
-报销期限：
-- 发票有效期：${deadlineText}${R.expense_deadline_days>0?`，超过${deadlineText}开票的发票 → REVIEW MEDIUM，message:"发票超出公司报销有效期"`:""  }
-`;
-}
-
-// 全局规则配置缓存
-window.__rules = null;
-
-async function loadRules(){
-  try{
-    const r = await fetch("/api/rules", {headers:{Authorization:"Bearer "+TOKEN}});
-    window.__rules = await r.json();
-    applyRulesToForm(window.__rules);
-  }catch(e){}
-}
-
-function applyRulesToForm(rules){
-  if(!rules) return;
-  const set = (id, val) => { const el=document.getElementById(id); if(el&&val!==undefined) el.value=val; };
-  set("r-hotel-warn",    rules.hotel_limit_warn);
-  set("r-hotel-reject",  rules.hotel_limit_reject);
-  set("r-train-staff",   rules.train_seat_policy);
-  set("r-train-manager", rules.train_seat_manager);
-  set("r-transport-limit", rules.transport_daily_limit);
-  set("r-meal-pass",     rules.meal_pass_limit);
-  set("r-meal-review",   rules.meal_review_limit);
-  set("r-meal-reason",   String(rules.require_meal_reason));
-  set("r-expire-months", rules.invoice_expire_months);
-  set("r-same-city",     String(rules.allow_same_city_hotel));
-  set("r-company-name",  rules.company_name);
-}
-
-async function saveRules(){
-  const rules = {
-    hotel_limit_warn:      Number(document.getElementById("r-hotel-warn").value)||800,
-    hotel_limit_reject:    Number(document.getElementById("r-hotel-reject").value)||1500,
-    train_seat_policy:     document.getElementById("r-train-staff").value,
-    train_seat_manager:    document.getElementById("r-train-manager").value,
-    transport_daily_limit: Number(document.getElementById("r-transport-limit").value)||500,
-    meal_pass_limit:       Number(document.getElementById("r-meal-pass").value)||200,
-    meal_review_limit:     Number(document.getElementById("r-meal-review").value)||2000,
-    require_meal_reason:   document.getElementById("r-meal-reason").value==="true",
-    invoice_expire_months: Number(document.getElementById("r-expire-months").value),
-    allow_same_city_hotel: document.getElementById("r-same-city").value==="true",
-    company_name:          document.getElementById("r-company-name").value.trim(),
-  };
-  await fetch("/api/rules", {method:"POST", headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN}, body:JSON.stringify(rules)});
-  window.__rules = rules;
-  const t = document.getElementById("rules-toast");
-  if(t){t.style.display="block"; setTimeout(()=>t.style.display="none", 3000);}
-}
-
-async function resetRules(){
-  if(!confirm("恢复默认配置？")) return;
-  await fetch("/api/rules", {method:"DELETE", headers:{Authorization:"Bearer "+TOKEN}});
-  const r = await fetch("/api/rules", {headers:{Authorization:"Bearer "+TOKEN}});
-  window.__rules = await r.json();
-  applyRulesToForm(window.__rules);
-  alert("已恢复默认配置");
-}
-
-function buildRulesPrompt(rules){
-  if(!rules) return "";
-  const seatMap = {"二等座":"二等座（一等座及以上需复核）","一等座":"一等座及以下（商务座需复核）","商务座":"商务座及以下（任意席别通过）"};
-  const expireText = rules.invoice_expire_months===0 ? "不限制" : `${rules.invoice_expire_months}个月`;
+  const R=CRULES;
+  const ex=R.invoice_expire_months===0?"不限制":R.invoice_expire_months+"个月";
   return `
 
-## 本企业报销规则配置（优先级高于默认规则）
-- 公司名称：${rules.company_name||"（未设置，跳过抬头校验）"}
-- 住宿：单晚超¥${rules.hotel_limit_warn}提示复核，超¥${rules.hotel_limit_reject}驳回
-- 高铁席别：普通员工标准=${rules.train_seat_policy}，经理级标准=${rules.train_seat_manager}
-  ${seatMap[rules.train_seat_policy]||""}
-- 市内交通：日合计超¥${rules.transport_daily_limit}提示
-- 餐饮：低于¥${rules.meal_pass_limit}直接通过；超¥${rules.meal_review_limit}高风险需接待信息；${rules.require_meal_reason?"所有餐饮需说明用途":"低于免审阈值可免填用途"}
-- 发票有效期：开票日期在${expireText}内有效${rules.invoice_expire_months===0?"":"，超期提示MEDIUM"}
-- 同城住宿：${rules.allow_same_city_hotel?"允许":"不允许，触发复核"}
-严格按照以上企业规则覆盖默认规则执行审核。`;
+## 本企业报销规则（优先级最高，覆盖默认规则）
+- 公司名称：${R.company_name||"未设置，跳过抬头校验"}
+- 住宿：单晚超¥${R.hotel_limit_warn}元提示复核，超¥${R.hotel_limit_reject}元驳回
+- 高铁：普通员工标准=${R.train_seat_policy}，经理级标准=${R.train_seat_manager}
+  （${R.train_seat_policy==="二等座"?"一等座及商务座需复核":R.train_seat_policy==="一等座"?"商务座需复核":"任意席别通过"}）
+- 市内交通：日合计超¥${R.transport_daily_limit}元提示
+- 餐饮：低于¥${R.meal_pass_limit}元直接通过无需说明；超¥${R.meal_review_limit}元需补接待信息
+- 发票有效期：${ex}内有效${R.invoice_expire_months>0?"，超期标记REVIEW MEDIUM":""}
+- 同城住宿：${R.allow_same_city_hotel?"允许":"不允许，触发REVIEW MEDIUM"}
+请严格按照以上企业规则执行，忽略与此冲突的默认规则。`;
 }
+
 
 loadUser();
+loadRules();
 loadRules();
 loadRules();
 </script>
