@@ -317,6 +317,52 @@ app.put("/api/records/:id", authUser, (req, res) => {
   res.json({ ok: true });
 });
 
+
+// ── 企业规则配置 ──────────────────────────────────────
+
+// 默认规则配置
+const DEFAULT_RULES = {
+  hotel_limit_warn: 800,        // 住宿单晚超此值提示
+  hotel_limit_reject: 1500,     // 住宿单晚超此值驳回
+  meal_pass_limit: 200,         // 餐饮低于此值直接通过
+  meal_review_limit: 2000,      // 餐饮超此值高风险
+  transport_daily_limit: 500,   // 市内交通日限额
+  invoice_expire_months: 3,     // 发票报销有效期（月）
+  train_seat_policy: "二等座",   // 普通员工高铁标准：二等座/一等座/商务座
+  train_seat_manager: "一等座",  // 经理级高铁标准
+  flight_seat_policy: "经济舱",  // 普通员工机票标准
+  flight_seat_manager: "经济舱", // 经理级机票标准
+  require_meal_reason: true,    // 餐饮是否必须说明用途
+  allow_same_city_hotel: false, // 是否允许同城住宿
+  company_name: "",             // 公司名称（用于抬头校验）
+};
+
+// 获取规则配置
+app.get("/api/rules", authUser, (req, res) => {
+  const row = db.prepare("SELECT rules_json FROM company_rules WHERE user_id=?").get(req.user.id);
+  const rules = row ? { ...DEFAULT_RULES, ...JSON.parse(row.rules_json) } : DEFAULT_RULES;
+  res.json(rules);
+});
+
+// 保存规则配置
+app.post("/api/rules", authUser, (req, res) => {
+  const rules = req.body;
+  const json = JSON.stringify(rules);
+  const exists = db.prepare("SELECT id FROM company_rules WHERE user_id=?").get(req.user.id);
+  if (exists) {
+    db.prepare("UPDATE company_rules SET rules_json=?, updated_at=datetime('now','localtime') WHERE user_id=?").run(json, req.user.id);
+  } else {
+    db.prepare("INSERT INTO company_rules(user_id, rules_json) VALUES(?,?)").run(req.user.id, json);
+  }
+  res.json({ ok: true });
+});
+
+// 重置为默认规则
+app.delete("/api/rules", authUser, (req, res) => {
+  db.prepare("DELETE FROM company_rules WHERE user_id=?").run(req.user.id);
+  res.json({ ok: true });
+});
+
 // ── 重置免费次数 ─────────────────────────────────────
 app.post("/api/admin/reset-trial", authAdmin, (req, res) => {
   const { id } = req.body;
@@ -334,6 +380,47 @@ app.post("/api/admin/record-payment", authAdmin, async (req, res) => {
   db.prepare("INSERT INTO orders(user_id,out_trade_no,plan,amount,days,status,paid_at) VALUES(?,?,?,?,?,?,datetime('now','localtime'))")
     .run(userId, outTradeNo, note||"手动收款", Number(amount), 0, "paid");
   db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(userId||0, email, "manual_payment:¥"+amount);
+  res.json({ ok: true });
+});
+
+const DEFAULT_RULES = {
+  // 交通
+  train_second_class: true,         // 二等座：全员可报
+  train_first_class: "manager",     // 一等座：经理级及以上
+  train_business_class: "director", // 商务座：总监级及以上
+  flight_economy: true,             // 经济舱：全员可报
+  flight_business: "director",      // 商务舱：总监级及以上
+  // 住宿
+  hotel_limit_tier1: 1000,          // 一线城市单晚上限（元）
+  hotel_limit_default: 600,         // 其他城市单晚上限（元）
+  hotel_limit_reject: 1500,         // 超过此金额直接驳回
+  // 餐饮
+  meal_auto_pass_limit: 200,        // 低于此金额工作餐自动通过
+  meal_review_limit: 2000,          // 高于此金额需补充接待信息
+  // 报销期限
+  expense_deadline_days: 90,        // 报销有效期（天），0=不限制
+  // 差旅补贴
+  daily_transport_limit: 300,       // 市内交通日限额（元）
+};
+
+
+// ── 企业规则配置 ──────────────────────────────────────
+app.get("/api/rules", authUser, (req, res) => {
+  const row = db.prepare("SELECT rules_json FROM company_rules WHERE user_id=?").get(req.user.id);
+  const rules = row ? JSON.parse(row.rules_json) : DEFAULT_RULES;
+  res.json({ ...DEFAULT_RULES, ...rules });
+});
+
+app.post("/api/rules", authUser, (req, res) => {
+  const rules = req.body;
+  const existing = db.prepare("SELECT id FROM company_rules WHERE user_id=?").get(req.user.id);
+  if (existing) {
+    db.prepare("UPDATE company_rules SET rules_json=?, updated_at=datetime('now','localtime') WHERE user_id=?")
+      .run(JSON.stringify(rules), req.user.id);
+  } else {
+    db.prepare("INSERT INTO company_rules(user_id, rules_json) VALUES(?,?)")
+      .run(req.user.id, JSON.stringify(rules));
+  }
   res.json({ ok: true });
 });
 
