@@ -1246,12 +1246,6 @@ function applyXlsxFormat(ws, rows){
       if(dateHeaders.some(k=>h.includes(k))&&cell.v){
         cell.t="s";
       }
-      // 长文本列自动换行
-      const wrapHeaders=["原因","说明","摘要","条件","明细","方式","依据","建议","风险","规则","模板","反馈","意见"];
-      if(wrapHeaders.some(k=>h.includes(k))){
-        if(!cell.s) cell.s={};
-        cell.s.alignment={wrapText:true,vertical:"top"};
-      }
     });
   }
 }
