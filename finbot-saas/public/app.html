@@ -454,7 +454,7 @@ async function pdfToImages(file){
     canvas.width=vp.width;canvas.height=vp.height;
     const ctx=canvas.getContext('2d');
     ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,canvas.width,canvas.height);
-    await page.render({canvasContext:ctx,viewport:vp}).promise;
+    await page.render({canvasContext:ctx,viewport:vp,annotationMode:0}).promise;
     imgs.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
   }
   return imgs;
@@ -669,13 +669,13 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
   // 注入企业规则配置
   const rulesPrompt = buildRulesPrompt();
   const fullSys = sys + (rulesPrompt ? rulesPrompt : "");
-  let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
+  const images = file.type==="application/pdf" ? await pdfToImages(file) : [await fileToB64(file)];
   const results=[];
   for(const img of images){
     const resp=await fetch("/api/ai/recognize",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
-      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:2500,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据输出JSON"}]}]})
+      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:2500,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据，输出JSON"}]}]})
     });
     if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
     const d=await resp.json();
