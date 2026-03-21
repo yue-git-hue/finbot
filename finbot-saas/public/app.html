@@ -673,10 +673,7 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
   let images=file.type==="application/pdf"?await pdfToImages(file):[await fileToB64(file)];
   const results=[];
   for(const img of images){
-    // 动态注入企业规则
-  const rulesPrompt=buildRulesPrompt();
-  const fullSys=sys+(rulesPrompt?rulesPrompt:"");
-  const resp=await fetch("/api/ai/recognize",{
+    const resp=await fetch("/api/ai/recognize",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
       body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1200,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据输出JSON"}]}]})
