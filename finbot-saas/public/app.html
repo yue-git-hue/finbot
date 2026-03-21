@@ -607,8 +607,8 @@ async function imageElementToVariants(imgEl){
   const ctx=canvas.getContext("2d");
   ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,w,h);
   ctx.drawImage(imgEl,0,0,w,h);
-  const raw=canvas.toDataURL("image/jpeg",0.95).split(",")[1];
-  const enhanced=enhanceCanvas(canvas).toDataURL("image/jpeg",0.95).split(",")[1];
+  const raw=guardB64Size(canvas);
+  const enhanced=guardB64Size(enhanceCanvas(canvas));
   return[{page:1,variant:"raw",data:raw},{page:1,variant:"enhanced",data:enhanced}];
 }
 async function callVisionJSON(systemPrompt,imageBase64,userText,maxTokens=1800){
@@ -632,21 +632,43 @@ async function callVisionJSON(systemPrompt,imageBase64,userText,maxTokens=1800){
   return safeJsonParse(raw);
 }
 
-// ── PDF渲染（双版本：原图+增强）──────────────────────────
+// ── base64 大小检查（超 1.2MB 则降质压缩）────────────────
+function guardB64Size(canvas, maxBytes=1200000){
+  // 先试 0.92 质量
+  let b64=canvas.toDataURL("image/jpeg",0.92).split(",")[1];
+  if(b64.length*0.75<=maxBytes) return b64;
+  // 超限：缩小到 2000px 以内再试
+  const maxSide=2000;
+  const ratio=Math.min(1,maxSide/Math.max(canvas.width,canvas.height));
+  if(ratio<1){
+    const c2=document.createElement("canvas");
+    c2.width=Math.round(canvas.width*ratio);
+    c2.height=Math.round(canvas.height*ratio);
+    const ctx=c2.getContext("2d");
+    ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,c2.width,c2.height);
+    ctx.drawImage(canvas,0,0,c2.width,c2.height);
+    b64=c2.toDataURL("image/jpeg",0.88).split(",")[1];
+  } else {
+    b64=canvas.toDataURL("image/jpeg",0.80).split(",")[1];
+  }
+  return b64;
+}
+
+// ── PDF渲染（双版本：原图+增强，带大小保护）────────────────
 async function pdfToImages(file){
   const buf=await file.arrayBuffer();
   const pdf=await pdfjsLib.getDocument({data:buf}).promise;
   const imgs=[];
   for(let i=1;i<=pdf.numPages;i++){
     const page=await pdf.getPage(i);
-    const vp=page.getViewport({scale:3.8});
+    const vp=page.getViewport({scale:3.0});   // 3.0 足够清晰且不超限
     const canvas=document.createElement("canvas");
     canvas.width=vp.width;canvas.height=vp.height;
     const ctx=canvas.getContext("2d");
     ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,canvas.width,canvas.height);
     await page.render({canvasContext:ctx,viewport:vp,annotationMode:0}).promise;
-    const raw=canvas.toDataURL("image/jpeg",0.95).split(",")[1];
-    const enhanced=enhanceCanvas(canvas).toDataURL("image/jpeg",0.95).split(",")[1];
+    const raw=guardB64Size(canvas);
+    const enhanced=guardB64Size(enhanceCanvas(canvas));
     imgs.push({page:i,variant:"raw",data:raw});
     imgs.push({page:i,variant:"enhanced",data:enhanced});
   }
