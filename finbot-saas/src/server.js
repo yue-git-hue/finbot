@@ -23,9 +23,14 @@ const BASE_URL    = process.env.BASE_URL    || "http://localhost:3723";
 
 // ── 套餐配置 ─────────────────────────────────────────
 const PLANS = {
-  monthly:   { name: "月付套餐", price: 49900, days: 30  },  // 单位：分
-  quarterly: { name: "季付套餐", price: 129900, days: 90  },
-  yearly:    { name: "年付套餐", price: 499900, days: 365 },
+  // 基础版（硅基 Qwen）
+  monthly:       { name: "基础版·月付", price: 49900,  days: 30,  pro: false },
+  quarterly:     { name: "基础版·季付", price: 129900, days: 90,  pro: false },
+  yearly:        { name: "基础版·年付", price: 499900, days: 365, pro: false },
+  // 强化版（OpenAI GPT-4o），每月多 ¥300
+  monthly_pro:   { name: "强化版·月付", price: 79900,  days: 30,  pro: true  },
+  quarterly_pro: { name: "强化版·季付", price: 219900, days: 90,  pro: true  },
+  yearly_pro:    { name: "强化版·年付", price: 859900, days: 365, pro: true  },
 };
 
 // ── 中间件 ───────────────────────────────────────────
@@ -229,30 +234,58 @@ function activateOrder(outTradeNo) {
   const base = user.expires && user.expires > new Date().toISOString().slice(0,10) ? new Date(user.expires) : new Date();
   base.setDate(base.getDate() + order.days);
   const expires = base.toISOString().slice(0,10);
-  db.prepare("UPDATE users SET status='active', plan=?, expires=? WHERE id=?").run(order.plan, expires, order.user_id);
+  const isPro = PLANS[order.plan]?.pro ? 1 : 0;
+  db.prepare("UPDATE users SET status='active', plan=?, expires=?, is_pro=? WHERE id=?").run(order.plan, expires, isPro, order.user_id);
   db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(user.id, user.email, "paid:" + order.plan);
 }
 
 
 // ── AI 识别代理（客户无需填Key）────────────────────────
 app.post("/api/ai/recognize", authUser, async (req, res) => {
-  const sfKey = process.env.SF_KEY;
-  if (!sfKey) return res.status(500).json({ error: "AI服务未配置，请联系管理员" });
+  // 查用户是否是强化版
+  const user = db.prepare("SELECT plan, is_pro FROM users WHERE id=?").get(req.user.id);
+  const isPro = user?.is_pro === 1 || PLANS[user?.plan]?.pro === true;
 
-  try {
-    const r = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sfKey },
-      body: JSON.stringify(req.body),
-    });
-    if (!r.ok) {
-      const t = await r.text();
-      return res.status(r.status).json({ error: "AI服务错误: " + t.slice(0, 200) });
+  if (isPro) {
+    // 强化版：路由到 OpenAI GPT-4o
+    const openaiKey = process.env.OPENAI_KEY;
+    if (!openaiKey) return res.status(500).json({ error: "强化版AI服务未配置，请联系管理员" });
+    try {
+      // 将硅基格式的 image_url 转换为 OpenAI 格式（兼容）
+      const body = { ...req.body, model: "gpt-4o" };
+      const r = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + openaiKey },
+        body: JSON.stringify(body),
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        return res.status(r.status).json({ error: "强化版AI服务错误: " + t.slice(0, 200) });
+      }
+      const d = await r.json();
+      res.json(d);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
     }
-    const d = await r.json();
-    res.json(d);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+  } else {
+    // 基础版：路由到硅基 Qwen
+    const sfKey = process.env.SF_KEY;
+    if (!sfKey) return res.status(500).json({ error: "AI服务未配置，请联系管理员" });
+    try {
+      const r = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sfKey },
+        body: JSON.stringify(req.body),
+      });
+      if (!r.ok) {
+        const t = await r.text();
+        return res.status(r.status).json({ error: "AI服务错误: " + t.slice(0, 200) });
+      }
+      const d = await r.json();
+      res.json(d);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
   }
 });
 
