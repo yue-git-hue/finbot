@@ -81,17 +81,41 @@ app.post("/api/login", async (req, res) => {
 });
 
 // ── 免费试用 ──────────────────────────────────────────
-const FREE_LIMIT = 3;
+const FREE_LIMIT = 10;
+
+const MONTHLY_LIMIT = 3000;
 
 app.get("/api/trial", authUser, (req, res) => {
-  const user = db.prepare("SELECT free_uses, status FROM users WHERE id=?").get(req.user.id);
+  const user = db.prepare("SELECT free_uses, status, month_uses, month_year FROM users WHERE id=?").get(req.user.id);
   const remaining = Math.max(0, FREE_LIMIT - (user?.free_uses || 0));
-  res.json({ remaining, limit: FREE_LIMIT, isActive: user?.status === "active" });
+  // 月用量：当月已用张数
+  const curMonth = new Date().toISOString().slice(0,7);
+  const monthUses = (user?.month_year === curMonth) ? (user?.month_uses || 0) : 0;
+  const monthRemaining = Math.max(0, MONTHLY_LIMIT - monthUses);
+  res.json({ remaining, limit: FREE_LIMIT, isActive: user?.status === "active", monthUses, monthRemaining, monthLimit: MONTHLY_LIMIT });
 });
 
 app.post("/api/trial/use", authUser, (req, res) => {
-  const user = db.prepare("SELECT free_uses, status FROM users WHERE id=?").get(req.user.id);
-  if (user?.status === "active") return res.json({ ok: true, remaining: FREE_LIMIT });
+  const user = db.prepare("SELECT free_uses, status, month_uses, month_year FROM users WHERE id=?").get(req.user.id);
+  const curMonth = new Date().toISOString().slice(0,7);
+
+  if (user?.status === "active") {
+    // 订阅用户：检查月用量
+    const monthUses = (user?.month_year === curMonth) ? (user?.month_uses || 0) : 0;
+    if (monthUses >= MONTHLY_LIMIT) {
+      return res.status(403).json({ error: `本月识别次数已达上限（${MONTHLY_LIMIT}张），下月自动重置` });
+    }
+    // 更新月用量（跨月自动重置）
+    if (user?.month_year !== curMonth) {
+      db.prepare("UPDATE users SET month_uses=1, month_year=? WHERE id=?").run(curMonth, req.user.id);
+    } else {
+      db.prepare("UPDATE users SET month_uses=month_uses+1 WHERE id=?").run(req.user.id);
+    }
+    db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(req.user.id, req.user.email, "recognize");
+    return res.json({ ok: true, remaining: FREE_LIMIT, monthRemaining: MONTHLY_LIMIT - monthUses - 1 });
+  }
+
+  // 免费试用用户
   const used = user?.free_uses || 0;
   if (used >= FREE_LIMIT) return res.status(403).json({ error: "免费次数已用完，请订阅后继续使用" });
   db.prepare("UPDATE users SET free_uses=free_uses+1 WHERE id=?").run(req.user.id);
