@@ -141,15 +141,15 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 
   <div class="page on" id="p0">
     <div class="ptitle">上传票据</div>
-    <div class="psub">支持增值税发票、铁路客票、银行回单、报销单，多页PDF，可批量</div>
+    <div class="psub">仅支持JPG、PNG图片，可批量上传</div>
     <div class="dz" id="dz" onclick="document.getElementById('fi').click()">
       <div style="font-size:44px;margin-bottom:12px">📁</div>
       <div style="font-size:15px;font-weight:600;margin-bottom:7px" id="dzt">拖拽上传 或 点击选择文件</div>
-      <div style="font-size:13px;color:#94A3B8;margin-bottom:10px">支持 PDF（多页）、JPG、PNG · 单文件最大 20MB · 可批量上传 · 上传后自动识别</div>
-      <div style="font-size:12px;color:#64748B;margin-bottom:16px">💡 若 PDF 中某张发票识别失败，请将其截图保存为 JPG 或 PNG 后重新上传</div>
+      <div style="font-size:13px;color:#94A3B8;margin-bottom:10px">支持 JPG、PNG · 单文件最大 20MB · 可批量上传 · 上传后自动识别</div>
+      <div style="font-size:12px;color:#64748B;margin-bottom:16px">💡 建议使用清晰截图上传，识别效果更佳</div>
       <button class="btn pri" onclick="event.stopPropagation();document.getElementById('fi').click()">选择文件</button>
     </div>
-    <input type="file" id="fi" multiple accept=".pdf,.jpg,.jpeg,.png" style="display:none" onchange="runF(this.files)">
+    <input type="file" id="fi" multiple accept=".jpg,.jpeg,.png" style="display:none" onchange="runF(this.files)">
     <div class="qbox" id="qb"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">处理队列</p><div id="ql"></div></div>
     <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;font-size:13px;color:#DC2626;margin-top:12px;display:none" id="eb"></div>
   </div>
@@ -666,120 +666,27 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
 
 注意：住宿费归"差旅-住宿"；个体工商户住宿/交通属于正常业务；网约车发票业务字段天然不全，不因缺行程字段直接驳回，应进入附件补强。医疗/体检发票：发票号+金额+日期+医疗机构名称齐全即为有效，businessCompleteness=COMPLETE，不要求药品明细，不触发G003，直接PASS LOW。`;
 
+  // 注入企业规则配置
+  const rulesPrompt = buildRulesPrompt();
+  const fullSys = sys + (rulesPrompt ? rulesPrompt : "");
   const images = file.type==="application/pdf" ? await pdfToImages(file) : [await fileToB64(file)];
-
-  // ── 第一轮：轻量字段抽取，只识别 docType/expenseCategory 和核心财税字段 ──
-  // 注入公司名到抽取prompt，帮助模型正确区分购买方/销售方
-  const companyHint = CRULES.company_name
-    ? `\n重要提示：本公司名称为"${CRULES.company_name}"，发票上出现此名称时归入title（购买方/抬头）字段，不要放入party（对方单位/销售方）字段。`
-    : "";
-
-  const extractSys = `你是票据字段识别助手，只做字段抽取，不做审核判断，不输出解释。
-严格输出JSON，字段如下：
-{"docType":"增值税发票/银行回单/报销单/收据/铁路电子客票/机票行程单/出租车票/网约车发票/酒店发票/餐饮发票/医疗发票/其他",
-"expenseCategory":"差旅-住宿/差旅-城际交通/差旅-市内交通/差旅-车辆相关/餐饮招待/办公用品/银行付款凭证/服务费/租金/水电费/材料采购/其他",
-"date":"YYYY-MM-DD","amount":0,"tax":0,
-"party":"销售方/对方单位名称（增值税发票填销售方，铁路客票填铁路运营方如中国铁路/铁路局，机票填航空公司，酒店填酒店名称，餐饮填餐厅名称）",
-"docNo":"发票号码或电子客票号",
-"taxNo":"销售方/对方单位的税号，不是购买方税号",
-"title":"购买方名称/发票抬头（增值税发票填购买方名称，铁路客票填购买方名称，即买票的公司或个人）",
-"traveler":null,"origin":null,"destination":null,"checkIn":null,"checkOut":null,"nights":null}
-字段规则：
-1. party=销售方（卖东西/提供服务的一方），title=购买方（花钱报销的一方），两者绝对不能填反
-2. 铁路客票：party填铁路运营方（可填"中国铁路"），title填购买方公司/个人名称，traveler填乘车人姓名
-3. 增值税发票：party填销售方名称，taxNo填销售方税号，title填购买方名称
-4. 只抽票面可见内容，看不清填null或0，全角字符按正常值识别，只输出JSON${companyHint}`;
-
-  const extractResults=[];
+  const results=[];
   for(const img of images){
-    try{
-      const resp=await fetch("/api/ai/recognize",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
-        body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1000,
-          messages:[{role:"system",content:extractSys},
-            {role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"抽取字段，输出JSON"}]}]})
-      });
-      if(!resp.ok) continue;
-      const d=await resp.json();
-      const raw=(d.choices[0].message.content||"").trim();
-      const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
-      if(parsed) extractResults.push(parsed);
-    }catch(e){}
+    const resp=await fetch("/api/ai/recognize",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
+      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:2500,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据，输出JSON"}]}]})
+    });
+    if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
+    const d=await resp.json();
+    const raw=(d.choices[0].message.content||"").trim();
+    try{results.push(JSON.parse(raw.replace(/```json|```/g,"").trim()));}catch(e){}
   }
-  if(!extractResults.length) throw new Error("AI未返回有效识别结果");
-
-  // 合并多页结果（取字段最丰富的，字符串字段取最长的）
-  const merged = extractResults.reduce((a,b)=>{
-    const out={...a};
-    for(const k of Object.keys(b)){
-      const va=a[k], vb=b[k];
-      if(vb==null||vb===""||vb===0) continue;
-      if(va==null||va===""||va===0){out[k]=vb;continue;}
-      if(typeof vb==="string"&&typeof va==="string") out[k]=vb.length>va.length?vb:va;
-      else if(k==="amount"||k==="tax") out[k]=Number(vb)>0?vb:va;
-      else out[k]=va;
-    }
-    return out;
-  }, extractResults[0]);
-
-  // ── 用规则配置里的公司名自动修正 title/party 错位 ──
-  if(CRULES.company_name){
-    const co = CRULES.company_name.replace(/[（(）)\s]/g,"");
-    const titleNorm = (merged.title||"").replace(/[（(）)\s]/g,"");
-    const partyNorm = (merged.party||"").replace(/[（(）)\s]/g,"");
-    // 如果 party 被错填成本公司，自动交换
-    if(partyNorm.includes(co) && !titleNorm.includes(co)){
-      [merged.title, merged.party] = [merged.party, merged.title];
-      [merged.taxNo] = [""]; // 对方税号清空（原来填的是本公司税号）
-    }
-    // 如果 title 为空但 party 是本公司，移过来
-    if(!merged.title && partyNorm.includes(co)){
-      merged.title = merged.party;
-      merged.party = "";
-    }
-    // title 为空时用公司名补全
-    if(!merged.title && (merged.docType||"").includes("铁路")){
-      merged.title = CRULES.company_name;
-    }
-  }
-
-  // ── 第二轮：根据 docType/expenseCategory 动态选规则，精准审核 ──
-  const focusedSys = sys + buildFocusedPrompt(merged.docType, merged.expenseCategory);
-  
-  const reviewResults=[];
-  for(const img of images){
-    try{
-      const resp=await fetch("/api/ai/recognize",{
-        method:"POST",
-        headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
-        body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1800,
-          messages:[{role:"system",content:focusedSys},
-            {role:"user",content:[
-              {type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},
-              {type:"text",text:"已知字段："+JSON.stringify(merged)+"\n请基于以上字段和图片做审核，输出完整JSON"}
-            ]}]})
-      });
-      if(!resp.ok){const t=await resp.text();let msg="审核失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
-      const d=await resp.json();
-      const raw=(d.choices[0].message.content||"").trim();
-      const parsed=JSON.parse(raw.replace(/```json|```/g,"").trim());
-      if(parsed) reviewResults.push(parsed);
-    }catch(e){}
-  }
-  if(!reviewResults.length) throw new Error("AI未返回审核结果");
-
-  const best=reviewResults.reduce((a,b)=>{
-    const sc=r=>Object.values(r).filter(v=>v&&v!=="null"&&v!==0).length;
-    return sc(b)>sc(a)?b:a;
-  }, reviewResults[0]);
-
-  // 字段兼容
+  if(!results.length)throw new Error("AI未返回有效结果");
+  const best=results.reduce((a,b)=>{const sc=r=>Object.values(r).filter(v=>v&&v!=="null"&&v!==0).length;return sc(b)>sc(a)?b:a;},results[0]);
+  // 字段兼容：新框架用 expenseCategory，旧兼容 category
   if(best.expenseCategory && !best.category) best.category = best.expenseCategory;
   if(best.hitRules && !best.risks) best.risks = best.hitRules;
-  // 第一轮抽到的核心财税字段优先保留（不被审核轮覆盖）
-  const coreFields=["docType","date","amount","tax","party","docNo","taxNo","title","traveler","origin","destination","checkIn","checkOut","nights"];
-  for(const k of coreFields){if(merged[k]!=null&&merged[k]!==""&&merged[k]!==0) best[k]=merged[k];}
   return{...best,fileName:file.name,id:Date.now()+Math.random(),pages:images.length};
 }
 
@@ -1516,99 +1423,21 @@ async function resetRules(){
   }catch(e){alert("重置失败");}
 }
 
-// 保留原函数名供老代码兼容（实际不再使用）
-function buildRulesPrompt(){ return buildFocusedPrompt("其他","其他"); }
+function buildRulesPrompt(){
+  const R=CRULES;
+  const ex=R.invoice_expire_months===0?"不限制":R.invoice_expire_months+"个月";
+  return `
 
-// 核心：根据发票类型动态选规则 + 配置，只注入相关内容
-function buildFocusedPrompt(docType, expenseCategory){
-  const R = CRULES;
-  const ex = R.invoice_expire_months===0 ? "不限制" : R.invoice_expire_months+"个月";
-  const co = R.company_name
-    ? `发票抬头（title字段）应为"${R.company_name}"。若title字段已与公司名匹配则无需触发；若title为空或明显不符则REVIEW MEDIUM，message:"发票抬头与公司名称不符，请核查"`
-    : "公司名称未配置，跳过抬头校验";
-
-  // 通用规则——所有发票都注入
-  const common = `
-## 适用规则
-### 通用规则（所有发票必须执行）
-G003 发票号/金额/日期/开票方任一缺失 → REJECT HIGH
-G002 图片模糊无法识别核心字段 → REVIEW MEDIUM，message:"票据清晰度不足"
-G005 金额为0或负数 → REJECT HIGH
-D103 同金额+同商户+相近日期疑似重复 → REVIEW HIGH，message:"疑似重复报销"
-
-## 企业配置
-- 抬头校验：${co}
-- 发票有效期：${ex}内有效${R.invoice_expire_months>0?"，超期标记REVIEW MEDIUM":""}`;
-
-  // 判断类型
-  const cat = expenseCategory || "";
-  const doc = docType || "";
-  const isHotel     = doc.includes("酒店") || cat.includes("住宿");
-  const isIntercity = doc.includes("铁路") || doc.includes("机票") || cat.includes("城际交通");
-  const isLocal     = doc.includes("网约车") || doc.includes("出租") || cat.includes("市内交通");
-  const isMeal      = doc.includes("餐饮") || cat.includes("餐饮");
-  const isBank      = doc.includes("银行回单") || cat.includes("银行付款");
-  const isMed       = doc.includes("医疗");
-  const isVAT       = doc.includes("增值税") || (!isHotel&&!isIntercity&&!isLocal&&!isMeal&&!isBank&&!isMed);
-
-  let specific = "";
-
-  if(isHotel){
-    specific = `
-### 住宿规则
-T401 单晚超¥${R.hotel_limit_warn}元 → REVIEW MEDIUM；超¥${R.hotel_limit_reject}元 → REJECT HIGH
-     若nights未知仅凭总额判断：总额超¥${R.hotel_limit_reject}元 → REVIEW MEDIUM
-T402 入住人缺失 → 低级提示，不改变结论，message:"建议确认入住人与报销人一致"
-T403 同城住宿：${R.allow_same_city_hotel?"允许，不触发":"→ REVIEW LOW，message:疑似同城住宿"}
-住宿晚数推算：优先用入住/退房日期之差，其次看文件名日期范围，无法确定填null。`;
-  } else if(isIntercity){
-    specific = `
-### 城际交通规则（铁路/机票）
-T201 traveler字段为空 → REVIEW MEDIUM，message:"出行人信息缺失，建议确认乘车人与报销人一致"
-T202 路线与出差目的地明显冲突 → REJECT HIGH
-T203 高铁席别：普通员工标准=${R.train_seat_policy}，经理级=${R.train_seat_manager}
-     超标 → REVIEW MEDIUM，message:"席别超标，请确认报销人级别或附审批说明"
-     飞机头等/商务舱 → REVIEW MEDIUM，message:"舱位费用较高，请确认符合报销政策"
-- 企业配置：${R.train_seat_policy==="二等座"?"一等座及商务座需复核":R.train_seat_policy==="一等座"?"商务座需复核":"任意席别通过"}`;
-  } else if(isLocal){
-    specific = `
-### 市内交通规则（网约车/出租车）
-T301 出行人+路线字段不完整 → REVIEW MEDIUM，supportingDocStatus=pending，message:"行程信息不完整，请上传平台订单截图"
-     出行人+路线全部缺失 → REVIEW HIGH，supportingDocStatus=pending
-T302 当日市内交通合计超¥${R.transport_daily_limit}元 → REVIEW MEDIUM
-注意：网约车发票行程字段天然不全，不因此直接REJECT，应进入附件补强。`;
-  } else if(isMeal){
-    specific = `
-### 餐饮规则
-E101 金额≤¥${R.meal_pass_limit}元 → PASS LOW，无需补充说明
-     金额¥${R.meal_pass_limit}~¥${R.meal_review_limit}元 → REVIEW MEDIUM，supportingDocStatus=pending，message:"请说明用途（商务招待/工作餐/会议餐）"
-E102 金额超¥${R.meal_review_limit}元 → REVIEW HIGH，message:"大额餐饮需补充接待对象、事由和人数"`;
-  } else if(isBank){
-    specific = `
-### 银行回单规则
-B101 付款日期/金额/付款方/收款方任一缺失 → REJECT HIGH
-     流水号缺失 → REVIEW MEDIUM（部分银行格式无独立流水号，可接受）`;
-  } else if(isMed){
-    specific = `
-### 医疗发票规则
-MED01 docType=医疗发票，expenseCategory=其他
-MED02 发票号+金额+日期+医疗机构名称齐全 → PASS LOW，businessCompleteness=COMPLETE
-      不需要药品明细/诊疗项目，缺失不影响判断，不触发G003`;
-  } else if(isVAT){
-    specific = `
-### 增值税发票规则
-VAT01 税号格式错误（非15-20位）→ REVIEW MEDIUM
-VAT02 开票日期超${ex}前 → REVIEW MEDIUM，message:"发票超期，请确认是否在报销有效期内"
-VAT03 已作废/红冲 → REJECT HIGH
-VAT04 个体工商户/小规模纳税人 → REVIEW LOW，message:"进项税不可抵扣，请财务确认税务处理"
-注意：不含税金额+税额=价税合计是正常发票结构，绝对不因内部金额校验触发任何规则。`;
-  }
-
-  return common + specific + `
-
-## 兜底规则
-M101 多条规则冲突 → REVIEW MEDIUM，message:"系统判断存在冲突，请人工复核"
-M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，请人工确认"`;
+## 本企业报销规则（优先级最高，覆盖默认规则）
+- 公司名称：${R.company_name||"未设置，跳过抬头校验"}
+- 住宿：单晚超¥${R.hotel_limit_warn}元提示复核，超¥${R.hotel_limit_reject}元驳回
+- 高铁：普通员工标准=${R.train_seat_policy}，经理级标准=${R.train_seat_manager}
+  （${R.train_seat_policy==="二等座"?"一等座及商务座需复核":R.train_seat_policy==="一等座"?"商务座需复核":"任意席别通过"}）
+- 市内交通：日合计超¥${R.transport_daily_limit}元提示
+- 餐饮：低于¥${R.meal_pass_limit}元直接通过无需说明；超¥${R.meal_review_limit}元需补接待信息
+- 发票有效期：${ex}内有效${R.invoice_expire_months>0?"，超期标记REVIEW MEDIUM":""}
+- 同城住宿：${R.allow_same_city_hotel?"允许":"不允许，触发REVIEW MEDIUM"}
+请严格按照以上企业规则执行，忽略与此冲突的默认规则。`;
 }
 
 
