@@ -124,12 +124,12 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 <div class="main">
   <div id="bar-active" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">✅</span>
-    <span style="font-size:14px;color:#166534;flex:1">专业版已开通，无限次识别已解锁 · 到期时间：<b id="bar-expires">—</b></span>
+    <span style="font-size:14px;color:#166534;flex:1">专业版已开通，每月最多识别 <b id="bar-month-remaining">3000</b> 张 · 到期时间：<b id="bar-expires">—</b></span>
     <button class="btn sm" style="border-color:#86EFAC;color:#166534;background:#DCFCE7" onclick="go(3)">管理订阅</button>
   </div>
   <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">🎁</span>
-    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">3</b> 次识别机会，用完后需订阅</span>
+    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">10</b> 次识别机会，用完后需订阅</span>
     <button class="btn pri sm" onclick="go(3)">立即订阅 →</button>
   </div>
   <div id="paywall" style="display:none;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:40px;text-align:center;margin-bottom:20px">
@@ -186,7 +186,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
         <div><div style="font-size:11px;color:#94A3B8;margin-bottom:4px">账号</div><div style="font-weight:600;font-size:12px" id="sub-email-detail">—</div></div>
       </div>
       <div style="background:#DCFCE7;border-radius:8px;padding:10px 14px;font-size:13px;color:#166534">
-        权益：无限次票据识别 · 批量上传 · Excel/CSV报告导出 · 优先客服响应
+        权益：每月最多3000张识别 · 次月自动重置 · 批量上传 · Excel/CSV报告导出 · 优先客服响应
       </div>
       <div style="margin-top:14px;font-size:13px;color:#475569">续费请联系客服：<a href="tel:17661369798" style="color:#2563EB;font-weight:600">17661369798</a></div>
     </div>
@@ -382,6 +382,9 @@ async function loadUser(){
     const td=await tr.json();
     window.__trialRemaining=td.remaining;
     window.__isActive=(USER.status==="active");
+    window.__monthRemaining=td.monthRemaining!==undefined?td.monthRemaining:3000;
+    const mrEl=document.getElementById("bar-month-remaining");
+    if(mrEl) mrEl.textContent=window.__monthRemaining;
     ["bar-active","trial-bar","paywall"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display="none";});
     if(USER.status==="active"){
       const bar=document.getElementById("bar-active");
@@ -427,7 +430,16 @@ function go(i){
 }
 
 async function checkActive(){
-  if(USER?.status==="active")return true;
+  if(USER?.status==="active"){
+    if(window.__monthRemaining<=0){
+      alert("本月识别次数已达上限（3000张），下月1日自动重置");
+      return false;
+    }
+    window.__monthRemaining=Math.max(0,(window.__monthRemaining||3000)-1);
+    const mrEl=document.getElementById("bar-month-remaining");
+    if(mrEl) mrEl.textContent=window.__monthRemaining;
+    return true;
+  }
   if(window.__trialRemaining>0){
     const r=await fetch("/api/trial/use",{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"}});
     const d=await r.json();
