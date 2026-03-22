@@ -18,7 +18,9 @@ db.exec(`
     expires    TEXT,                       -- YYYY-MM-DD, null=永久
     created    TEXT DEFAULT (datetime('now','localtime')),
     last_login TEXT,
-    free_uses  INTEGER DEFAULT 0          -- 免费试用次数（最多3次）
+    free_uses  INTEGER DEFAULT 0,         -- 免费试用次数（最多10次）
+    month_uses INTEGER DEFAULT 0,         -- 本月已识别张数
+    month_year TEXT DEFAULT ''            -- 当前计费月份，格式 YYYY-MM
   );
 
   CREATE TABLE IF NOT EXISTS orders (
@@ -42,9 +44,10 @@ db.exec(`
   );
 `);
 
-
 // 兼容旧数据库：自动添加字段
 try { db.exec("ALTER TABLE users ADD COLUMN free_uses INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN month_uses INTEGER DEFAULT 0"); } catch(e) {}
+try { db.exec("ALTER TABLE users ADD COLUMN month_year TEXT DEFAULT ''"); } catch(e) {}
 
 // 审核记录表
 db.exec(`
@@ -68,6 +71,16 @@ db.exec(`
     edited      INTEGER DEFAULT 0,
     pages       INTEGER DEFAULT 1,
     created_at  TEXT DEFAULT (datetime('now','localtime'))
+  );
+`);
+
+// 企业规则配置表
+db.exec(`
+  CREATE TABLE IF NOT EXISTS company_rules (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER UNIQUE NOT NULL,
+    rules_json TEXT NOT NULL,
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
   );
 `);
 
