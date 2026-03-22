@@ -179,7 +179,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 
     <!-- 已订阅状态 -->
     <div id="sub-status-box" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:12px;padding:24px;margin-bottom:20px">
-      <div style="font-size:16px;font-weight:700;color:#166534;margin-bottom:12px">✅ 专业版订阅中</div>
+      <div style="font-size:16px;font-weight:700;color:#166534;margin-bottom:12px" id="sub-version-label">✅ 专业版订阅中</div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
         <div><div style="font-size:11px;color:#94A3B8;margin-bottom:4px">当前套餐</div><div style="font-weight:600" id="sub-plan-name">—</div></div>
         <div><div style="font-size:11px;color:#94A3B8;margin-bottom:4px">到期时间</div><div style="font-weight:600" id="sub-expires-detail">—</div></div>
@@ -193,25 +193,59 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 
     <!-- 未订阅：套餐选择 + 收款码 -->
     <div id="sub-plans-section">
-      <div class="plans" style="margin-bottom:24px">
-        <div class="plan" onclick="selectPlan('monthly',this)" id="plan-monthly">
-          <div class="plan-name">月付套餐</div>
-          <div class="plan-price">¥499<span>/月</span></div>
-          <div class="plan-save">按月订阅，随时取消</div>
-          <button class="btn full" onclick="event.stopPropagation();selectPlan('monthly',document.getElementById('plan-monthly'))">选择此套餐</button>
+
+      <!-- 版本说明 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+        <div style="background:#F8FAFC;border:2px solid #E2E8F0;border-radius:12px;padding:16px">
+          <div style="font-size:15px;font-weight:800;margin-bottom:6px">🤖 基础版</div>
+          <div style="font-size:12px;color:#475569;line-height:1.8">· 硅基 Qwen2.5-VL-72B 模型<br>· 每月3000张识别<br>· 适合常规发票场景</div>
         </div>
-        <div class="plan hot" onclick="selectPlan('quarterly',this)" id="plan-quarterly">
-          <div style="font-size:11px;color:#2563EB;font-weight:700;margin-bottom:6px">⭐ 推荐</div>
-          <div class="plan-name">季付套餐</div>
-          <div class="plan-price">¥1299<span>/季</span></div>
-          <div class="plan-save">相当于266元/月</div>
-          <button class="btn pri full" onclick="event.stopPropagation();selectPlan('quarterly',document.getElementById('plan-quarterly'))">选择此套餐</button>
+        <div style="background:#EFF6FF;border:2px solid #2563EB;border-radius:12px;padding:16px">
+          <div style="font-size:15px;font-weight:800;margin-bottom:6px;color:#2563EB">⚡ 强化版</div>
+          <div style="font-size:12px;color:#1E40AF;line-height:1.8">· OpenAI GPT-4o 模型<br>· 每月3000张识别<br>· 识别更准，边角料问题自动解决</div>
         </div>
-        <div class="plan" onclick="selectPlan('yearly',this)" id="plan-yearly">
-          <div class="plan-name">年付套餐</div>
-          <div class="plan-price">¥4999<span>/年</span></div>
-          <div class="plan-save">相当于250元/月，省17%</div>
-          <button class="btn full" onclick="event.stopPropagation();selectPlan('yearly',document.getElementById('plan-yearly'))">选择此套餐</button>
+      </div>
+
+      <!-- 套餐表格 -->
+      <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;margin-bottom:20px">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:#F8FAFC;padding:10px 16px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em">
+          <div>套餐</div><div style="text-align:center">月付</div><div style="text-align:center">季付</div><div style="text-align:center">年付</div>
+        </div>
+        <!-- 基础版行 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:14px 16px;border-top:1px solid #F1F5F9;align-items:center">
+          <div style="font-weight:700;font-size:13px">🤖 基础版</div>
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800;color:#0F172A">¥499</div>
+            <button class="btn sm full" style="margin-top:6px" onclick="selectPlan('monthly',this)">选择</button>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800;color:#0F172A">¥1299</div>
+            <div style="font-size:10px;color:#16A34A;font-weight:600">≈¥433/月</div>
+            <button class="btn sm full" style="margin-top:6px" onclick="selectPlan('quarterly',this)">选择</button>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800;color:#0F172A">¥4999</div>
+            <div style="font-size:10px;color:#16A34A;font-weight:600">≈¥417/月</div>
+            <button class="btn sm full" style="margin-top:6px" onclick="selectPlan('yearly',this)">选择</button>
+          </div>
+        </div>
+        <!-- 强化版行 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:14px 16px;border-top:1px solid #F1F5F9;align-items:center;background:#F8FBFF">
+          <div style="font-weight:700;font-size:13px;color:#2563EB">⚡ 强化版</div>
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800;color:#2563EB">¥799</div>
+            <button class="btn pri sm full" style="margin-top:6px" onclick="selectPlan('monthly_pro',this)">选择</button>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800;color:#2563EB">¥2199</div>
+            <div style="font-size:10px;color:#16A34A;font-weight:600">≈¥733/月</div>
+            <button class="btn pri sm full" style="margin-top:6px" onclick="selectPlan('quarterly_pro',this)">选择</button>
+          </div>
+          <div style="text-align:center">
+            <div style="font-size:16px;font-weight:800;color:#2563EB">¥8599</div>
+            <div style="font-size:10px;color:#16A34A;font-weight:600">≈¥717/月</div>
+            <button class="btn pri sm full" style="margin-top:6px" onclick="selectPlan('yearly_pro',this)">选择</button>
+          </div>
         </div>
       </div>
 
@@ -373,7 +407,14 @@ async function loadUser(){
       const planName=document.getElementById("sub-plan-name");
       const expiresDetail=document.getElementById("sub-expires-detail");
       const emailDetail=document.getElementById("sub-email-detail");
-      if(planName) planName.textContent=USER.plan||"月付套餐";
+      if(planName) planName.textContent=PLANS_INFO[USER.plan]?.name||USER.plan||"月付套餐";
+      // 显示基础/强化版标签
+      const versionLabel=document.getElementById("sub-version-label");
+      if(versionLabel){
+        const isPro=(USER.plan||"").includes("pro");
+        versionLabel.textContent=isPro?"⚡ 强化版订阅中（GPT-4o）":"✅ 基础版订阅中（Qwen）";
+        versionLabel.style.color=isPro?"#1D4ED8":"#166534";
+      }
       if(expiresDetail) expiresDetail.textContent=USER.expires?"到期："+USER.expires:"长期有效（无截止日）";
       if(emailDetail) emailDetail.textContent=USER.email;
     }
@@ -401,9 +442,12 @@ async function loadUser(){
 }
 
 const PLANS_INFO={
-  monthly:{name:"月付套餐",amount:"¥499"},
-  quarterly:{name:"季付套餐",amount:"¥1299"},
-  yearly:{name:"年付套餐",amount:"¥4999"}
+  monthly:       {name:"基础版·月付", amount:"¥499"},
+  quarterly:     {name:"基础版·季付", amount:"¥1299"},
+  yearly:        {name:"基础版·年付", amount:"¥4999"},
+  monthly_pro:   {name:"强化版·月付", amount:"¥799"},
+  quarterly_pro: {name:"强化版·季付", amount:"¥2199"},
+  yearly_pro:    {name:"强化版·年付", amount:"¥8599"},
 };
 // 收款码图片URL（替换为你的真实收款码）
 const QR_WECHAT="YOUR_WECHAT_QR_URL";
