@@ -66,6 +66,17 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 .plan-btn-pro:hover{background:#DBEAFE}
 .plan-btn-active{background:#0F172A;color:#fff;border-color:#0F172A}
 .plan-btn-pro-active{background:#2563EB;color:#fff;border-color:#2563EB}
+.ie{width:100%;border:none;background:transparent;font-size:12px;font-weight:500;color:#0F172A;font-family:inherit;padding:0;outline:none;cursor:text}
+.ie:hover{background:#F1F5F9;border-radius:3px}
+.ie:focus{background:#EFF6FF;border-radius:3px;color:#1E40AF}
+.ie-sel{width:100%;border:none;background:transparent;font-size:12px;font-weight:500;color:#0F172A;font-family:inherit;padding:0;outline:none;cursor:pointer}
+.ie-sel:hover,.ie-sel:focus{background:#F1F5F9;border-radius:3px}
+.override-bar{display:flex;align-items:center;gap:6px;padding:8px 10px;background:#F8FAFC;border-radius:7px;margin-bottom:8px}
+.ob-btn{padding:3px 10px;border-radius:4px;border:1px solid #E2E8F0;background:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.ob-pass{border-color:#86EFAC;color:#166534}.ob-pass:hover,.ob-pass.on{background:#F0FDF4;border-color:#16A34A}
+.ob-review{border-color:#FCD34D;color:#D97706}.ob-review:hover,.ob-review.on{background:#FFFBEB;border-color:#D97706}
+.ob-reject{border-color:#FCA5A5;color:#DC2626}.ob-reject:hover,.ob-reject.on{background:#FEF2F2;border-color:#DC2626}
+.manual-badge{display:inline-flex;align-items:center;padding:1px 6px;border-radius:3px;font-size:10px;font-weight:600;background:#FEF3C7;color:#92400E;border:1px solid #FCD34D;margin-left:6px}
 .modal{background:#fff;border-radius:14px;padding:28px;width:460px;max-width:92vw;max-height:85vh;overflow-y:auto}
 .modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
 .fi{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A}
@@ -861,33 +872,43 @@ function renderRes(){
     if(item.checkOut&&item.checkOut!=="null") tripInfo.push(`退房：${item.checkOut}`);
     if(item.nights&&item.nights!=="null") tripInfo.push(`共${item.nights}晚`);
 
+    const manualBadge=item.manualOverride?`<span class="manual-badge">✏️ 人工修正</span>`:"";
+    const obPass=item.conclusion==="PASS"||item.conclusion==="通过"?"on":"";
+    const obReview=(!obPass&&item.conclusion!=="REJECT"&&item.conclusion!=="驳回")?"on":"";
+    const obReject=item.conclusion==="REJECT"||item.conclusion==="驳回"?"on":"";
+    const sid=String(item.id).replace(/\./g,"_");
     return`<div class="rc${item.duplicate?' dup':''}">
 <div class="rh">
   <div class="ri">${docIcon}</div>
-  <div class="rm" onclick="openEdit(${item.id})">
-    <div class="rn">${item.fileName}${item.pages>1?`<span style="font-size:10px;color:#2563EB;margin-left:6px">${item.pages}页</span>`:""}${item.edited?`<span style="font-size:10px;color:#94A3B8;margin-left:6px">已编辑</span>`:""}</div>
+  <div class="rm">
+    <div class="rn">${item.fileName}${item.pages>1?`<span style="font-size:10px;color:#2563EB;margin-left:6px">${item.pages}页</span>`:""}${manualBadge}</div>
     <div class="rt">${item.docType||"未知"} · ${cat} · ${item.date||"日期未知"}</div>
   </div>
   <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
     ${cTag}${item.duplicate?`<span class="tag td">重复</span>`:""}
-    <button class="btn sm" onclick="openEdit(${item.id})">编辑</button>
     <button class="btn sm danger" onclick="if(confirm('确定删除？')){RS=RS.filter(r=>r.id!==${item.id});renderRes();}">删除</button>
   </div>
 </div>
 <div class="rb">
 
-  <!-- 模块①：基本信息 -->
+  <!-- 模块①：内联可编辑字段 -->
   <div class="fg">
-    <div class="fb"><div class="fl">金额</div><div class="fv">${item.amount?`¥${Number(item.amount).toLocaleString("zh-CN")}`:"—"}</div></div>
-    <div class="fb"><div class="fl">税额</div><div class="fv">${item.tax?`¥${Number(item.tax).toLocaleString("zh-CN")}`:"—"}</div></div>
-    <div class="fb"><div class="fl">对方单位</div><div class="fv" title="${item.party||""}">${item.party||"—"}</div></div>
-    <div class="fb"><div class="fl">发票号</div><div class="fv" title="${item.docNo||""}">${item.docNo||"—"}</div></div>
-    <div class="fb"><div class="fl">税号</div><div class="fv" title="${item.taxNo||""}">${item.taxNo||"—"}</div></div>
-    <div class="fb"><div class="fl">抬头</div><div class="fv" title="${item.title||""}">${item.title||"—"}</div></div>
+    <div class="fb"><div class="fl">金额</div><input class="ie" type="number" step="0.01" value="${item.amount||""}" placeholder="—" onchange="ieSet(${item.id},'amount',parseFloat(this.value)||0)"></div>
+    <div class="fb"><div class="fl">税额</div><input class="ie" type="number" step="0.01" value="${item.tax||""}" placeholder="—" onchange="ieSet(${item.id},'tax',parseFloat(this.value)||0)"></div>
+    <div class="fb"><div class="fl">对方单位</div><input class="ie" value="${(item.party||"").replace(/"/g,'&quot;')}" placeholder="—" onchange="ieSet(${item.id},'party',this.value)"></div>
+    <div class="fb"><div class="fl">发票号</div><input class="ie" value="${(item.docNo||"").replace(/"/g,'&quot;')}" placeholder="—" onchange="ieSet(${item.id},'docNo',this.value)"></div>
+    <div class="fb"><div class="fl">税号</div><input class="ie" value="${(item.taxNo||"").replace(/"/g,'&quot;')}" placeholder="—" onchange="ieSet(${item.id},'taxNo',this.value)"></div>
+    <div class="fb"><div class="fl">抬头</div><input class="ie" value="${(item.title||"").replace(/"/g,'&quot;')}" placeholder="—" onchange="ieSet(${item.id},'title',this.value)"></div>
+    <div class="fb"><div class="fl">日期</div><input class="ie" type="date" value="${item.date||""}" onchange="ieSet(${item.id},'date',this.value)"></div>
+    <div class="fb"><div class="fl">费用类别</div>
+      <select class="ie-sel" onchange="ieSet(${item.id},'category',this.value)">
+        ${["差旅-住宿","差旅-城际交通","差旅-市内交通","餐饮招待","办公用品","服务费","租金","水电费","银行付款凭证","材料采购","其他"].map(o=>`<option${o===cat?' selected':''}>${o}</option>`).join("")}
+      </select>
+    </div>
     ${tripInfo.length?`<div class="fb" style="grid-column:span 2"><div class="fl">出行信息</div><div class="fv">${tripInfo.join(" ")}</div></div>`:""}
   </div>
 
-  <!-- 模块②：审核状态（三个维度） -->
+  <!-- 模块②：审核状态 -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
       <div style="font-size:10px;color:#94A3B8;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em">票据有效性</div>
@@ -906,7 +927,16 @@ function renderRes(){
   <!-- 模块③：风险提示 -->
   ${risksHtml?`<div style="margin-bottom:10px"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px">风险提示</p>${risksHtml}</div>`:""}
 
-  <!-- 模块④⑤：凭证建议 + 建议动作 -->
+  <!-- 模块④：人工结论覆盖 -->
+  <div class="override-bar">
+    <span style="font-size:11px;color:#64748B;font-weight:600;margin-right:4px">人工定结论：</span>
+    <button class="ob-btn ob-pass ${obPass}" onclick="overrideConclusion(${item.id},'PASS')">✓ 通过</button>
+    <button class="ob-btn ob-review ${obReview}" onclick="overrideConclusion(${item.id},'REVIEW')">⚑ 复核</button>
+    <button class="ob-btn ob-reject ${obReject}" onclick="overrideConclusion(${item.id},'REJECT')">✗ 驳回</button>
+    ${item.manualOverride?`<span style="font-size:10px;color:#92400E;margin-left:6px">已人工修正</span>`:`<span style="font-size:10px;color:#94A3B8;margin-left:6px">点击可覆盖AI结论</span>`}
+  </div>
+
+  <!-- 模块⑤：凭证建议 -->
   <div class="vb">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="vl" style="margin-bottom:0">凭证建议</div>${cTag}
@@ -930,6 +960,55 @@ function renderRes(){
 </div>`;
   }).join("");
   document.getElementById("t1").textContent=RS.length>0?`② 审核结果 (${RS.length})`:"② 审核结果";
+}
+
+// ── 内联编辑 ──────────────────────────────────────────
+function ieSet(id, field, val){
+  RS=RS.map(r=>{
+    if(r.id!==id) return r;
+    const updated={...r,[field]:val,edited:true};
+    // 同步 category/expenseCategory
+    if(field==="category") updated.expenseCategory=val;
+    if(field==="expenseCategory") updated.category=val;
+    return updated;
+  });
+  // 局部更新头部副标题（日期/类型）
+  const item=RS.find(r=>r.id===id);
+  if(item){
+    const cat=item.expenseCategory||item.category||"其他";
+    const rt=document.querySelector(`[data-rid="${id}"] .rt`);
+    if(rt) rt.textContent=`${item.docType||"未知"} · ${cat} · ${item.date||"日期未知"}`;
+  }
+  // 重新渲染统计KPI
+  renderKpis();
+}
+
+function overrideConclusion(id, conclusion){
+  const labelMap={PASS:"通过",REVIEW:"人工复核",REJECT:"驳回"};
+  RS=RS.map(r=>r.id!==id?r:{...r,
+    conclusion,
+    conclusionLabel:labelMap[conclusion]||conclusion,
+    manualOverride:true,
+    edited:true
+  });
+  renderRes();
+}
+
+function renderKpis(){
+  const isPASS=c=>(c==="PASS"||c==="通过");
+  const isREJECT=c=>(c==="REJECT"||c==="驳回");
+  const passed=RS.filter(r=>!r.duplicate&&isPASS(r.conclusion)).length;
+  const rejected=RS.filter(r=>!r.duplicate&&isREJECT(r.conclusion)).length;
+  const review=RS.filter(r=>!r.duplicate&&!isPASS(r.conclusion)&&!isREJECT(r.conclusion)).length;
+  const dups=RS.filter(r=>r.duplicate).length;
+  const amt=RS.reduce((s,r)=>s+(Number(r.amount)||0),0);
+  document.getElementById("kpis").innerHTML=[
+    ["单据总数",RS.length,"#2563EB","#EFF6FF"],
+    ["金额合计","¥"+amt.toLocaleString("zh-CN"),"#0F172A","#F8FAFC"],
+    ["✓ 通过",passed,"#16A34A","#F0FDF4"],
+    ["⚑ 复核",review,"#D97706","#FFFBEB"],
+    ["✗ 驳回/重复",rejected+dups,"#DC2626","#FEF2F2"],
+  ].map(([l,v,c,bg])=>`<div class="kpi" style="background:${bg};border:1px solid ${c}22"><div class="kl">${l}</div><div class="kv" style="color:${c}">${v}</div></div>`).join("");
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1036,6 +1115,7 @@ function buildSummaryRows(data){
       目的地:       __clean(r.destination),
       // AI初审结论
       AI初审结论:   __lv(r),
+      是否人工修正:  r.manualOverride?"是":"否",
       AI风险等级:   {"HIGH":"高","MEDIUM":"中","LOW":"低"}[__topRisk(r)]||__topRisk(r)||"",
       规则编码:     __ruleIds(r),
       风险类型:     __riskTypes(r),
