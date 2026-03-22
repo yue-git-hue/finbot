@@ -60,6 +60,12 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 .notice{background:#FFFBEB;border:1px solid #FCD34D;border-radius:10px;padding:12px 14px;font-size:13px;line-height:1.7;margin-top:14px}
 .modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.4);z-index:100;align-items:center;justify-content:center}
 .modal-bg.on{display:flex}
+.plan-btn{display:block;width:90%;margin:6px auto 0;padding:6px 0;border-radius:6px;border:1px solid #CBD5E1;background:#fff;color:#475569;cursor:pointer;font-size:12px;font-weight:600;font-family:inherit;transition:all 0.15s}
+.plan-btn:hover{background:#F1F5F9;border-color:#94A3B8}
+.plan-btn-pro{border-color:#BFDBFE;color:#2563EB;background:#EFF6FF}
+.plan-btn-pro:hover{background:#DBEAFE}
+.plan-btn-active{background:#0F172A;color:#fff;border-color:#0F172A}
+.plan-btn-pro-active{background:#2563EB;color:#fff;border-color:#2563EB}
 .modal{background:#fff;border-radius:14px;padding:28px;width:460px;max-width:92vw;max-height:85vh;overflow-y:auto}
 .modal h3{font-size:16px;font-weight:700;margin-bottom:16px}
 .fi{width:100%;padding:8px 12px;border:1px solid #E2E8F0;border-radius:8px;font-size:13px;font-family:inherit;outline:none;color:#0F172A}
@@ -208,43 +214,47 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 
       <!-- 套餐表格 -->
       <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden;margin-bottom:20px">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;background:#F8FAFC;padding:10px 16px;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em">
-          <div>套餐</div><div style="text-align:center">月付</div><div style="text-align:center">季付</div><div style="text-align:center">年付</div>
+        <!-- 表头 -->
+        <div style="display:flex;background:#F8FAFC;padding:10px 0;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em">
+          <div style="width:22%;padding:0 14px">套餐</div>
+          <div style="width:26%;text-align:center">月付</div>
+          <div style="width:26%;text-align:center">季付</div>
+          <div style="width:26%;text-align:center">年付</div>
         </div>
         <!-- 基础版行 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:14px 16px;border-top:1px solid #F1F5F9;align-items:center">
-          <div style="font-weight:700;font-size:13px">🤖 基础版</div>
-          <div style="text-align:center">
+        <div style="display:flex;padding:14px 0;border-top:1px solid #F1F5F9;align-items:center">
+          <div style="width:22%;padding:0 14px;font-weight:700;font-size:13px">🤖 基础版</div>
+          <div style="width:26%;text-align:center;padding:0 8px">
             <div style="font-size:16px;font-weight:800;color:#0F172A">¥499</div>
-            <button class="btn sm full" style="margin-top:6px" onclick="selectPlan('monthly',this)">选择</button>
+            <button class="plan-btn" id="pb-monthly" onclick="selectPlan('monthly')">选择</button>
           </div>
-          <div style="text-align:center">
+          <div style="width:26%;text-align:center;padding:0 8px">
             <div style="font-size:16px;font-weight:800;color:#0F172A">¥1299</div>
             <div style="font-size:10px;color:#16A34A;font-weight:600">≈¥433/月</div>
-            <button class="btn sm full" style="margin-top:6px" onclick="selectPlan('quarterly',this)">选择</button>
+            <button class="plan-btn" id="pb-quarterly" onclick="selectPlan('quarterly')">选择</button>
           </div>
-          <div style="text-align:center">
+          <div style="width:26%;text-align:center;padding:0 8px">
             <div style="font-size:16px;font-weight:800;color:#0F172A">¥4999</div>
             <div style="font-size:10px;color:#16A34A;font-weight:600">≈¥417/月</div>
-            <button class="btn sm full" style="margin-top:6px" onclick="selectPlan('yearly',this)">选择</button>
+            <button class="plan-btn" id="pb-yearly" onclick="selectPlan('yearly')">选择</button>
           </div>
         </div>
         <!-- 强化版行 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;padding:14px 16px;border-top:1px solid #F1F5F9;align-items:center;background:#F8FBFF">
-          <div style="font-weight:700;font-size:13px;color:#2563EB">⚡ 强化版</div>
-          <div style="text-align:center">
+        <div style="display:flex;padding:14px 0;border-top:1px solid #F1F5F9;align-items:center;background:#F8FBFF">
+          <div style="width:22%;padding:0 14px;font-weight:700;font-size:13px;color:#2563EB">⚡ 强化版</div>
+          <div style="width:26%;text-align:center;padding:0 8px">
             <div style="font-size:16px;font-weight:800;color:#2563EB">¥799</div>
-            <button class="btn pri sm full" style="margin-top:6px" onclick="selectPlan('monthly_pro',this)">选择</button>
+            <button class="plan-btn plan-btn-pro" id="pb-monthly_pro" onclick="selectPlan('monthly_pro')">选择</button>
           </div>
-          <div style="text-align:center">
+          <div style="width:26%;text-align:center;padding:0 8px">
             <div style="font-size:16px;font-weight:800;color:#2563EB">¥2199</div>
             <div style="font-size:10px;color:#16A34A;font-weight:600">≈¥733/月</div>
-            <button class="btn pri sm full" style="margin-top:6px" onclick="selectPlan('quarterly_pro',this)">选择</button>
+            <button class="plan-btn plan-btn-pro" id="pb-quarterly_pro" onclick="selectPlan('quarterly_pro')">选择</button>
           </div>
-          <div style="text-align:center">
+          <div style="width:26%;text-align:center;padding:0 8px">
             <div style="font-size:16px;font-weight:800;color:#2563EB">¥8599</div>
             <div style="font-size:10px;color:#16A34A;font-weight:600">≈¥717/月</div>
-            <button class="btn pri sm full" style="margin-top:6px" onclick="selectPlan('yearly_pro',this)">选择</button>
+            <button class="plan-btn plan-btn-pro" id="pb-yearly_pro" onclick="selectPlan('yearly_pro')">选择</button>
           </div>
         </div>
       </div>
@@ -453,9 +463,14 @@ const PLANS_INFO={
 const QR_WECHAT="YOUR_WECHAT_QR_URL";
 const QR_ALIPAY="YOUR_ALIPAY_QR_URL";
 
-function selectPlan(key,el){
-  document.querySelectorAll(".plan").forEach(p=>p.style.boxShadow="");
-  if(el) el.style.boxShadow="0 0 0 3px #2563EB";
+function selectPlan(key){
+  // 清除所有按钮高亮
+  document.querySelectorAll(".plan-btn").forEach(b=>{
+    b.classList.remove("plan-btn-active","plan-btn-pro-active");
+  });
+  // 高亮选中按钮
+  const btn=document.getElementById("pb-"+key);
+  if(btn) btn.classList.add(key.includes("pro")?"plan-btn-pro-active":"plan-btn-active");
   const p=PLANS_INFO[key];
   document.getElementById("pay-title").textContent=p.name;
   document.getElementById("pay-amount").textContent=p.amount;
