@@ -856,12 +856,15 @@ function renderRes(){
       `<span style="font-size:11px;font-weight:600;color:${sdColor[item.supportingDocStatus]||"#475569"}">${sdMap[item.supportingDocStatus]||item.supportingDocStatus}</span>`:"—";
     // 风险列表（兼容 hitRules 和 risks 两种格式）
     const ruleList=item.hitRules||item.risks||[];
-    const risksHtml=ruleList.filter(r=>r.result!=="PASS"&&(r.message||r.msg)).map(r=>{
+    const risksHtml=ruleList.filter(r=>r.result!=="PASS"&&(r.message||r.msg)).map((r,ri)=>{
       const lv=(r.riskLevel||r.level||"").toUpperCase();
       const rl2=lv==="HIGH"?"h":lv==="MEDIUM"?"m":"l";
       const lbl=lv==="HIGH"?"高风险":lv==="MEDIUM"?"需确认":"提示";
       const rid=r.ruleId||r.rule_id||"";
-      return`<div class="rki rk${rl2}"><span class="tag t${rl2}">${lbl}</span><span>${rid?`[${rid}] `:""} ${r.message||r.msg}</span></div>`;
+      const ignored=r.ignored;
+      const ignoredStyle=ignored?"opacity:0.4;text-decoration:line-through":"";
+      const ignoreBtn=`<button onclick="ignoreRisk(${item.id},${ri})" style="margin-left:auto;padding:1px 7px;border-radius:3px;border:1px solid #E2E8F0;background:#fff;font-size:10px;cursor:pointer;font-family:inherit;color:${ignored?'#16A34A':'#94A3B8'};flex-shrink:0">${ignored?'已忽略':'忽略'}</button>`;
+      return`<div class="rki rk${rl2}" style="${ignoredStyle}"><span class="tag t${rl2}">${lbl}</span><span style="flex:1">${rid?`[${rid}] `:""} ${r.message||r.msg}</span>${ignoreBtn}</div>`;
     }).join("");
     // 出行信息
     const tripInfo=[];
@@ -908,19 +911,30 @@ function renderRes(){
     ${tripInfo.length?`<div class="fb" style="grid-column:span 2"><div class="fl">出行信息</div><div class="fv">${tripInfo.join(" ")}</div></div>`:""}
   </div>
 
-  <!-- 模块②：审核状态 -->
+  <!-- 模块②：审核状态（可编辑） -->
   <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
     <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#94A3B8;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em">票据有效性</div>
-      ${ivTag}
+      <div style="font-size:10px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">票据有效性</div>
+      <select class="ie-sel" style="font-size:11px;font-weight:600;color:${item.invoiceValidity==='INVALID'?'#DC2626':'#16A34A'}" onchange="ieSet(${item.id},'invoiceValidity',this.value)">
+        <option value="VALID"${item.invoiceValidity!=='INVALID'?' selected':''}>✓ 有效</option>
+        <option value="INVALID"${item.invoiceValidity==='INVALID'?' selected':''}>✗ 无效</option>
+      </select>
     </div>
     <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#94A3B8;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em">业务完整性</div>
-      ${bcTag}
+      <div style="font-size:10px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">业务完整性</div>
+      <select class="ie-sel" style="font-size:11px;font-weight:600;color:${bcColor[item.businessCompleteness]||'#475569'}" onchange="ieSet(${item.id},'businessCompleteness',this.value)">
+        <option value="COMPLETE"${item.businessCompleteness==='COMPLETE'?' selected':''}>完整</option>
+        <option value="PARTIAL"${item.businessCompleteness==='PARTIAL'?' selected':''}>部分缺失</option>
+        <option value="INSUFFICIENT"${item.businessCompleteness==='INSUFFICIENT'?' selected':''}>严重缺失</option>
+      </select>
     </div>
     <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#94A3B8;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.05em">附件补强</div>
-      ${sdTag}
+      <div style="font-size:10px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">附件补强</div>
+      <select class="ie-sel" style="font-size:11px;font-weight:600;color:${sdColor[item.supportingDocStatus]||'#475569'}" onchange="ieSet(${item.id},'supportingDocStatus',this.value)">
+        <option value="not_required"${item.supportingDocStatus==='not_required'?' selected':''}>无需补强</option>
+        <option value="pending"${item.supportingDocStatus==='pending'?' selected':''}>待补充附件</option>
+        <option value="matched"${item.supportingDocStatus==='matched'?' selected':''}>补强成功</option>
+      </select>
     </div>
   </div>
 
@@ -943,7 +957,11 @@ function renderRes(){
     </div>
     <div class="vg">
       <div><div class="vk">费用类别</div><div style="font-weight:600;font-size:12px">${cat}</div></div>
-      <div><div class="vk">建议科目</div><div style="font-weight:600;font-size:11px;color:#2563EB">${account}</div></div>
+      <div><div class="vk">建议科目</div>
+        <select style="border:none;background:transparent;font-weight:600;font-size:11px;color:#2563EB;font-family:inherit;outline:none;cursor:pointer;max-width:130px" onchange="ieSet(${item.id},'suggestedAccount',this.value)">
+          ${["660201 差旅费-住宿","660201 差旅费-交通","660201 差旅费-市内交通","660202 业务招待费","660203 办公费","660210 服务费","660205 租赁费","660206 水电费","应付账款/预付账款","660299 其他费用"].map(o=>`<option${o===account?' selected':''}>${o}</option>`).join("")}
+        </select>
+      </div>
       <div><div class="vk">凭证编号</div><div style="font-weight:600;font-size:11px;color:#475569;font-family:monospace">${vNo}</div></div>
     </div>
     ${item.memo?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}
@@ -985,11 +1003,32 @@ function ieSet(id, field, val){
 
 function overrideConclusion(id, conclusion){
   const labelMap={PASS:"通过",REVIEW:"人工复核",REJECT:"驳回"};
-  RS=RS.map(r=>r.id!==id?r:{...r,
-    conclusion,
-    conclusionLabel:labelMap[conclusion]||conclusion,
-    manualOverride:true,
-    edited:true
+  RS=RS.map(r=>{
+    if(r.id!==id) return r;
+    const base={...r, conclusion, conclusionLabel:labelMap[conclusion]||conclusion, manualOverride:true, edited:true};
+    if(conclusion==="PASS"){
+      // 通过：联动所有相关字段
+      base.invoiceValidity="VALID";
+      base.businessCompleteness="COMPLETE";
+      base.supportingDocStatus="not_required";
+      base.suggestedAction="直接通过";
+      base.manualReview=null;
+    } else if(conclusion==="REJECT"){
+      base.suggestedAction="驳回重提";
+    } else {
+      base.suggestedAction="转人工复核";
+    }
+    return base;
+  });
+  renderRes();
+}
+
+function ignoreRisk(id, riskIndex){
+  RS=RS.map(r=>{
+    if(r.id!==id) return r;
+    const rules=[...(r.hitRules||r.risks||[])];
+    if(rules[riskIndex]) rules[riskIndex]={...rules[riskIndex], ignored:!rules[riskIndex].ignored};
+    return {...r, hitRules:rules, risks:rules, edited:true};
   });
   renderRes();
 }
