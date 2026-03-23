@@ -499,29 +499,45 @@ function go(i){
   if(i===2)renderEx();
 }
 
+// 权限检查（不扣量，只验证是否有资格识别）
 async function checkActive(){
   if(USER?.status==="active"){
     if(window.__monthRemaining<=0){
       alert("本月识别次数已达上限（3000张），下月1日自动重置");
       return false;
     }
-    window.__monthRemaining=Math.max(0,(window.__monthRemaining||3000)-1);
-    const mrEl=document.getElementById("bar-month-remaining");
-    if(mrEl) mrEl.textContent=window.__monthRemaining;
     return true;
   }
-  if(window.__trialRemaining>0){
-    const r=await fetch("/api/trial/use",{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"}});
-    const d=await r.json();
-    if(!r.ok){document.getElementById("paywall").style.display="block";document.getElementById("trial-bar").style.display="none";go(3);return false;}
-    window.__trialRemaining=d.remaining;
-    const cnt=document.getElementById("trial-count");if(cnt)cnt.textContent=d.remaining;
-    if(d.remaining===0)document.getElementById("trial-bar").style.display="none";
-    return true;
-  }
+  if(window.__trialRemaining>0) return true;
   document.getElementById("paywall").style.display="block";
   document.getElementById("trial-bar").style.display="none";
   go(3);return false;
+}
+
+// 识别完成后按实际张数扣量
+async function deductUsage(count){
+  count=Math.max(1,count||1);
+  const r=await fetch("/api/trial/use",{method:"POST",headers:{Authorization:"Bearer "+TOKEN,"Content-Type":"application/json"},body:JSON.stringify({count})});
+  const d=await r.json();
+  if(!r.ok){
+    if(r.status===403){
+      document.getElementById("paywall").style.display="block";
+      document.getElementById("trial-bar").style.display="none";
+      go(3);
+    }
+    return false;
+  }
+  if(USER?.status==="active"){
+    window.__monthRemaining=d.monthRemaining??window.__monthRemaining;
+    const mrEl=document.getElementById("bar-month-remaining");
+    if(mrEl) mrEl.textContent=window.__monthRemaining;
+  } else {
+    window.__trialRemaining=d.remaining??window.__trialRemaining;
+    const cnt=document.getElementById("trial-count");
+    if(cnt) cnt.textContent=window.__trialRemaining;
+    if(window.__trialRemaining===0) document.getElementById("trial-bar").style.display="none";
+  }
+  return true;
 }
 
 async function pdfToImages(file){
@@ -574,6 +590,8 @@ async function runF(files){
       if(r.docNo&&(RS.some(ex=>ex.docNo===r.docNo)||out.some(ex=>ex.docNo===r.docNo))){
         if(sel)sel.textContent="⊘ 重复跳过";continue;
       }
+      // 识别成功，按实际页数（发票张数）扣量
+      await deductUsage(r.pages||1);
       out.push(r);if(sel)sel.textContent="✓ 完成";
     }catch(e){
       if(sel)sel.textContent="✗ 失败";
