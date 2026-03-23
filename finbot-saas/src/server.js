@@ -101,31 +101,34 @@ app.get("/api/trial", authUser, (req, res) => {
 });
 
 app.post("/api/trial/use", authUser, (req, res) => {
+  // count: 本次识别的发票张数（单张图片=1，多页PDF按实际页数）
+  const count = Math.max(1, parseInt(req.body?.count) || 1);
   const user = db.prepare("SELECT free_uses, status, month_uses, month_year FROM users WHERE id=?").get(req.user.id);
   const curMonth = new Date().toISOString().slice(0,7);
 
   if (user?.status === "active") {
-    // 订阅用户：检查月用量
+    // 订阅用户：按发票张数扣月用量
     const monthUses = (user?.month_year === curMonth) ? (user?.month_uses || 0) : 0;
     if (monthUses >= MONTHLY_LIMIT) {
       return res.status(403).json({ error: `本月识别次数已达上限（${MONTHLY_LIMIT}张），下月自动重置` });
     }
-    // 更新月用量（跨月自动重置）
+    const newUses = monthUses + count;
     if (user?.month_year !== curMonth) {
-      db.prepare("UPDATE users SET month_uses=1, month_year=? WHERE id=?").run(curMonth, req.user.id);
+      db.prepare("UPDATE users SET month_uses=?, month_year=? WHERE id=?").run(count, curMonth, req.user.id);
     } else {
-      db.prepare("UPDATE users SET month_uses=month_uses+1 WHERE id=?").run(req.user.id);
+      db.prepare("UPDATE users SET month_uses=month_uses+? WHERE id=?").run(count, req.user.id);
     }
-    db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(req.user.id, req.user.email, "recognize");
-    return res.json({ ok: true, remaining: FREE_LIMIT, monthRemaining: MONTHLY_LIMIT - monthUses - 1 });
+    db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(req.user.id, req.user.email, `recognize:${count}张`);
+    return res.json({ ok: true, remaining: FREE_LIMIT, monthRemaining: Math.max(0, MONTHLY_LIMIT - newUses) });
   }
 
-  // 免费试用用户
+  // 免费试用用户：按张数扣（每张扣1次）
   const used = user?.free_uses || 0;
   if (used >= FREE_LIMIT) return res.status(403).json({ error: "免费次数已用完，请订阅后继续使用" });
-  db.prepare("UPDATE users SET free_uses=free_uses+1 WHERE id=?").run(req.user.id);
-  db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(req.user.id, req.user.email, "free_trial");
-  res.json({ ok: true, remaining: FREE_LIMIT - used - 1 });
+  const deduct = Math.min(count, FREE_LIMIT - used); // 不超过上限
+  db.prepare("UPDATE users SET free_uses=free_uses+? WHERE id=?").run(deduct, req.user.id);
+  db.prepare("INSERT INTO usage_log(user_id,email,action) VALUES(?,?,?)").run(req.user.id, req.user.email, `free_trial:${deduct}张`);
+  res.json({ ok: true, remaining: FREE_LIMIT - used - deduct });
 });
 
 // ── 获取用户信息 ─────────────────────────────────────
