@@ -935,7 +935,25 @@ function renderRes(){
         ${["差旅-住宿","差旅-城际交通","差旅-市内交通","餐饮招待","办公用品","服务费","租金","水电费","银行付款凭证","材料采购","其他"].map(o=>`<option${o===cat?' selected':''}>${o}</option>`).join("")}
       </select>
     </div>
-    ${tripInfo.length?`<div class="fb" style="grid-column:span 2"><div class="fl">出行信息</div><div class="fv">${tripInfo.join(" ")}</div></div>`:""}
+    ${(()=>{
+      const isHotel=item.docType==="酒店发票"||cat==="差旅-住宿";
+      const isTaxi=item.docType==="网约车发票"||item.docType==="出租车票"||cat==="差旅-市内交通";
+      const isTransit=item.docType==="铁路电子客票"||item.docType==="机票行程单"||cat==="差旅-城际交通";
+      if(isHotel) return `
+    <div class="fb"><div class="fl">入住人</div><input class="ie" value="${(item.traveler||"").replace(/"/g,'&quot;')}" placeholder="填写入住人姓名" onchange="ieSet(${item.id},'traveler',this.value)"></div>
+    <div class="fb"><div class="fl">入住日期</div><input class="ie" type="date" value="${item.checkIn||""}" onchange="ieSet(${item.id},'checkIn',this.value)"></div>
+    <div class="fb"><div class="fl">离店日期</div><input class="ie" type="date" value="${item.checkOut||""}" onchange="ieSet(${item.id},'checkOut',this.value)"></div>
+    <div class="fb"><div class="fl">住宿晚数</div><input class="ie" type="number" value="${item.nights||""}" placeholder="自动推算或手填" onchange="ieSet(${item.id},'nights',parseInt(this.value)||null)"></div>`;
+      if(isTaxi) return `
+    <div class="fb"><div class="fl">出行人</div><input class="ie" value="${(item.traveler||"").replace(/"/g,'&quot;')}" placeholder="填写出行人姓名" onchange="ieSet(${item.id},'traveler',this.value)"></div>
+    <div class="fb"><div class="fl">出发地</div><input class="ie" value="${(item.origin||"").replace(/"/g,'&quot;')}" placeholder="出发地点" onchange="ieSet(${item.id},'origin',this.value)"></div>
+    <div class="fb"><div class="fl">目的地</div><input class="ie" value="${(item.destination||"").replace(/"/g,'&quot;')}" placeholder="目的地点" onchange="ieSet(${item.id},'destination',this.value)"></div>`;
+      if(isTransit) return `
+    <div class="fb"><div class="fl">出行人</div><input class="ie" value="${(item.traveler||"").replace(/"/g,'&quot;')}" placeholder="填写乘车/乘机人" onchange="ieSet(${item.id},'traveler',this.value)"></div>
+    <div class="fb"><div class="fl">出发地</div><input class="ie" value="${(item.origin||"").replace(/"/g,'&quot;')}" placeholder="出发城市/车站" onchange="ieSet(${item.id},'origin',this.value)"></div>
+    <div class="fb"><div class="fl">目的地</div><input class="ie" value="${(item.destination||"").replace(/"/g,'&quot;')}" placeholder="目的城市/车站" onchange="ieSet(${item.id},'destination',this.value)"></div>`;
+      return tripInfo.length?`<div class="fb" style="grid-column:span 2"><div class="fl">出行信息</div><div class="fv">${tripInfo.join(" ")}</div></div>`:"";
+    })()}
   </div>
 
   <!-- 模块②：审核状态（可编辑） -->
