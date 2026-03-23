@@ -141,12 +141,12 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 <div class="main">
   <div id="bar-active" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">✅</span>
-    <span style="font-size:14px;color:#166534;flex:1">专业版已开通，每月最多识别 <b id="bar-month-remaining">3000</b> 张 · 到期时间：<b id="bar-expires">—</b></span>
+    <span style="font-size:14px;color:#166534;flex:1">专业版已开通 · 每月3000张 · 本月已用 <b id="bar-month-used">0</b> 张，剩余 <b id="bar-month-remaining">3000</b> 张 · 到期：<b id="bar-expires">—</b></span>
     <button class="btn sm" style="border-color:#86EFAC;color:#166534;background:#DCFCE7" onclick="go(3)">管理订阅</button>
   </div>
   <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">🎁</span>
-    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：还剩 <b id="trial-count">10</b> 次识别机会，用完后需订阅</span>
+    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：已用 <b id="trial-used">0</b> 张，剩余 <b id="trial-count">10</b> 张（共10张），用完后需订阅</span>
     <button class="btn pri sm" onclick="go(3)">立即订阅 →</button>
   </div>
   <div id="paywall" style="display:none;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:40px;text-align:center;margin-bottom:20px">
@@ -445,8 +445,11 @@ async function loadUser(){
     window.__trialRemaining=td.remaining;
     window.__isActive=(USER.status==="active");
     window.__monthRemaining=td.monthRemaining!==undefined?td.monthRemaining:3000;
+    window.__monthUsed=td.monthUses||0;
     const mrEl=document.getElementById("bar-month-remaining");
     if(mrEl) mrEl.textContent=window.__monthRemaining;
+    const muEl=document.getElementById("bar-month-used");
+    if(muEl) muEl.textContent=window.__monthUsed;
     ["bar-active","trial-bar","paywall"].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display="none";});
     if(USER.status==="active"){
       const bar=document.getElementById("bar-active");
@@ -456,6 +459,7 @@ async function loadUser(){
       const bar=document.getElementById("trial-bar");
       if(bar){bar.style.display="flex";bar.style.alignItems="center";bar.style.gap="12px";}
       const cnt=document.getElementById("trial-count");if(cnt)cnt.textContent=td.remaining;
+      const tu=document.getElementById("trial-used");if(tu)tu.textContent=10-td.remaining;
     }else{
       const pw=document.getElementById("paywall");if(pw)pw.style.display="block";
     }
@@ -529,12 +533,17 @@ async function deductUsage(count){
   }
   if(USER?.status==="active"){
     window.__monthRemaining=d.monthRemaining??window.__monthRemaining;
+    window.__monthUsed=(window.__monthUsed||0)+(count||1);
     const mrEl=document.getElementById("bar-month-remaining");
     if(mrEl) mrEl.textContent=window.__monthRemaining;
+    const muEl=document.getElementById("bar-month-used");
+    if(muEl) muEl.textContent=window.__monthUsed;
   } else {
     window.__trialRemaining=d.remaining??window.__trialRemaining;
     const cnt=document.getElementById("trial-count");
     if(cnt) cnt.textContent=window.__trialRemaining;
+    const tu=document.getElementById("trial-used");
+    if(tu) tu.textContent=10-window.__trialRemaining;
     if(window.__trialRemaining===0) document.getElementById("trial-bar").style.display="none";
   }
   return true;
