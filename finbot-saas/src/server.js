@@ -7,7 +7,6 @@ const jwt = require("jsonwebtoken");
 const { nanoid } = require("nanoid");
 const fetch = require("node-fetch");
 const path = require("path");
-const nodemailer = require("nodemailer");
 const db = require("./db");
 
 const app = express();
@@ -21,52 +20,6 @@ const ADMIN_KEY   = process.env.ADMIN_KEY   || "finbot-admin-2026";
 const HPJ_APPID   = process.env.HPJ_APPID   || "";   // 虎皮椒 AppID
 const HPJ_SECRET  = process.env.HPJ_SECRET  || "";   // 虎皮椒 AppSecret
 const BASE_URL    = process.env.BASE_URL    || "http://localhost:3723";
-
-// ── 邮件发送 ──────────────────────────────────────────
-const mailer = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.qq.com",
-  port: parseInt(process.env.SMTP_PORT) || 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER || "",
-    pass: process.env.SMTP_PASS || "",   // QQ邮箱授权码
-  },
-});
-
-async function sendMail(to, subject, html) {
-  if (!process.env.SMTP_USER) {
-    console.log(`[邮件跳过-未配置] to=${to} subject=${subject}`);
-    return;
-  }
-  await mailer.sendMail({
-    from: `"FINBOT票据预审" <${process.env.SMTP_USER}>`,
-    to, subject, html,
-  });
-}
-
-// 生成6位数字验证码
-function genCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-// 验证码频控检查
-function checkCodeLimit(email, ip) {
-  const now = Date.now();
-  const min60 = new Date(now - 3600000).toISOString();
-  const min1  = new Date(now - 60000).toISOString();
-  // 同邮箱60秒内不能重发
-  const recent = db.prepare("SELECT created_at FROM email_codes WHERE email=? AND created_at>? ORDER BY created_at DESC LIMIT 1").get(email, min1);
-  if (recent) return "发送太频繁，请60秒后再试";
-  // 同邮箱1小时内不超过5次
-  const hourCount = db.prepare("SELECT COUNT(*) as n FROM email_codes WHERE email=? AND created_at>?").get(email, min60);
-  if (hourCount.n >= 5) return "验证码发送次数过多，请1小时后再试";
-  // 同IP1小时内不超过10次
-  if (ip) {
-    const ipCount = db.prepare("SELECT COUNT(*) as n FROM email_codes WHERE ip=? AND created_at>?").get(ip, min60);
-    if (ipCount.n >= 10) return "操作过于频繁，请稍后再试";
-  }
-  return null;
-}
 
 // ── 套餐配置 ─────────────────────────────────────────
 const PLANS = {
@@ -97,53 +50,12 @@ function authAdmin(req, res, next) {
 }
 
 // ── 用户注册 ─────────────────────────────────────────
-// ── 发送注册验证码 ───────────────────────────────────
-app.post("/api/auth/send-code", async (req, res) => {
-  const { email, type } = req.body;   // type: register | reset
-  if (!email) return res.status(400).json({ error: "请填写邮箱" });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: "邮箱格式不正确" });
-  const ip = req.headers["x-forwarded-for"]?.split(",")[0] || req.ip;
-  const limit = checkCodeLimit(email, ip);
-  if (limit) return res.status(429).json({ error: limit });
-  if (type === "register") {
-    const exists = db.prepare("SELECT id FROM users WHERE email=?").get(email);
-    if (exists) return res.status(400).json({ error: "该邮箱已注册" });
-  }
-  if (type === "reset") {
-    const exists = db.prepare("SELECT id FROM users WHERE email=?").get(email);
-    if (!exists) return res.status(400).json({ error: "该邮箱未注册" });
-  }
-  const code = genCode();
-  const expireAt = new Date(Date.now() + 5 * 60000).toISOString();
-  db.prepare("INSERT INTO email_codes(email,code,type,expire_at,ip) VALUES(?,?,?,?,?)").run(email, code, type||"register", expireAt, ip||"");
-  try {
-    await sendMail(email, "FINBOT 验证码",
-      `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
-        <h2 style="color:#1E40AF">FINBOT 验证码</h2>
-        <p>您的验证码是：</p>
-        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#2563EB;padding:20px 0">${code}</div>
-        <p style="color:#64748B;font-size:13px">验证码5分钟内有效，请勿泄露给他人。</p>
-      </div>`
-    );
-    res.json({ ok: true, message: "验证码已发送，请查收邮件" });
-  } catch(e) {
-    console.error("[邮件发送失败]", e.message, e.code || "");
-    res.status(500).json({ error: "邮件发送失败：" + e.message });
-  }
-});
-
-// ── 邮箱验证码注册 ────────────────────────────────────
 app.post("/api/register", async (req, res) => {
-  const { email, code, password, name, company } = req.body;
-  if (!email || !password || !code) return res.status(400).json({ error: "邮箱、验证码和密码必填" });
+  const { email, password, name, company } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "邮箱和密码必填" });
   if (password.length < 6) return res.status(400).json({ error: "密码至少6位" });
   const exists = db.prepare("SELECT id FROM users WHERE email=?").get(email);
   if (exists) return res.status(400).json({ error: "该邮箱已注册" });
-  // 校验验证码
-  const now = new Date().toISOString();
-  const vc = db.prepare("SELECT * FROM email_codes WHERE email=? AND type='register' AND used=0 AND expire_at>? ORDER BY id DESC LIMIT 1").get(email, now);
-  if (!vc || vc.code !== code) return res.status(400).json({ error: "验证码错误或已过期" });
-  db.prepare("UPDATE email_codes SET used=1 WHERE id=?").run(vc.id);
   const hash = await bcrypt.hash(password, 10);
   db.prepare("INSERT INTO users(email,password,name,company) VALUES(?,?,?,?)").run(email, hash, name||"", company||"");
   res.json({ ok: true, message: "注册成功，请购买套餐后使用" });
@@ -171,22 +83,6 @@ app.post("/api/login", async (req, res) => {
     ok: true, token,
     user: { email: user.email, name: user.name, company: user.company, status: user.status, plan: user.plan, expires: user.expires }
   });
-});
-
-// ── 忘记密码 ─────────────────────────────────────────
-app.post("/api/auth/forgot-password/reset", async (req, res) => {
-  const { email, code, password } = req.body;
-  if (!email || !code || !password) return res.status(400).json({ error: "邮箱、验证码和新密码必填" });
-  if (password.length < 6) return res.status(400).json({ error: "密码至少6位" });
-  const user = db.prepare("SELECT id FROM users WHERE email=?").get(email);
-  if (!user) return res.status(400).json({ error: "该邮箱未注册" });
-  const now = new Date().toISOString();
-  const vc = db.prepare("SELECT * FROM email_codes WHERE email=? AND type='reset' AND used=0 AND expire_at>? ORDER BY id DESC LIMIT 1").get(email, now);
-  if (!vc || vc.code !== code) return res.status(400).json({ error: "验证码错误或已过期" });
-  db.prepare("UPDATE email_codes SET used=1 WHERE id=?").run(vc.id);
-  const hash = await bcrypt.hash(password, 10);
-  db.prepare("UPDATE users SET password=? WHERE id=?").run(hash, user.id);
-  res.json({ ok: true, message: "密码已重置，请重新登录" });
 });
 
 // ── 免费试用 ──────────────────────────────────────────
