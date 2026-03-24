@@ -1136,7 +1136,6 @@ function __commonFields(r, vno){
     价税合计:   Math.round(((Number(r.amount)||0)+(Number(r.tax)||0))*100)/100,
     对方单位:   __clean(r.party),
     发票号:     __clean(r.docNo),
-    提交人:     "",
     审核时间:   TODAY,
     是否人工修正: r.manualOverride?"是":"否",
   };
