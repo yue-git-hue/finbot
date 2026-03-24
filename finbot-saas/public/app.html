@@ -1096,30 +1096,14 @@ function renderKpis(){
 }
 
 // ═══════════════════════════════════════════════════════
-// 导出模块 - 四张独立工作表
+// 导出模块 - 两张表：汇总表 + 驳回清单
 // ═══════════════════════════════════════════════════════
 
-// 公共工具
 const TODAY = new Date().toISOString().slice(0,10);
 let __exportVn = 1;
 const __yr = String(new Date().getFullYear()).slice(2);
 
-function __vno(r){
-  const isPASS = c=>(c==="PASS"||c==="通过");
-  const isREJECT = c=>(c==="REJECT"||c==="驳回");
-  if(r.duplicate) return "重复";
-  if(isREJECT(r.conclusion)) return "驳回";
-  if(isPASS(r.conclusion)) return `JZ${__yr}${String(__exportVn++).padStart(4,"0")}`;
-  return `待审-${String(__exportVn++).padStart(4,"0")}`;
-}
-function __lv(r){
-  const isPASS=c=>(c==="PASS"||c==="通过");
-  const isREJECT=c=>(c==="REJECT"||c==="驳回");
-  if(r.duplicate) return "重复发票";
-  if(isREJECT(r.conclusion)) return "驳回";
-  if(isPASS(r.conclusion)) return "通过";
-  return "人工复核";
-}
+// ── 工具函数 ──────────────────────────────────────────
 function __clean(v){ return (!v||v==="null"||v==="无")?"":v; }
 function __traveler(r){
   const t=r.traveler||"";
@@ -1127,364 +1111,133 @@ function __traveler(r){
 }
 function __rules(r){
   const rules=r.hitRules||r.risks||[];
-  return rules.filter(x=>x.result!=="PASS");
+  return rules.filter(x=>x.result!=="PASS"&&!x.ignored);
 }
-function __ruleIds(r){ return __rules(r).map(x=>x.ruleId||"").filter(Boolean).join("；"); }
-function __riskTypes(r){ return __rules(r).map(x=>{const n=x.ruleName||x.rule_name||x.ruleId||"风险项";return n.split("（")[0].split("(")[0].trim();}).join("；"); }
-function __riskDesc(r){ return __rules(r).map(x=>`[${x.ruleId||""}]${x.message||""}`).join("；")||(r.manualReview&&r.manualReview!=="null"?r.manualReview:""); }
-function __topRisk(r){
-  const rules=__rules(r);
-  if(rules.some(x=>(x.riskLevel||x.level||"").toUpperCase()==="HIGH")) return "HIGH";
-  if(rules.some(x=>(x.riskLevel||x.level||"").toUpperCase()==="MEDIUM")) return "MEDIUM";
-  return rules.length?"LOW":"";
+function __riskDesc(r){
+  return __rules(r).map(x=>x.message||"").filter(Boolean).join("；")||(r.manualReview&&r.manualReview!=="null"?r.manualReview:"");
 }
-function __isPending(r){ return r.supportingDocStatus==="pending"||r.supportingDocStatus==="待补充附件"; }
 function __isReject(r){ return r.conclusion==="REJECT"||r.conclusion==="驳回"||r.duplicate; }
 function __isPass(r){ return (r.conclusion==="PASS"||r.conclusion==="通过")&&!r.duplicate; }
+function __isReview(r){ return !__isPass(r)&&!__isReject(r); }
 function __acct(r){
   const cat=r.expenseCategory||r.category||"其他";
   return r.suggestedAccount||(AM[cat]||AM["其他"])[0];
 }
-function __taxRate(r){
-  const amt=Number(r.amount)||0;
-  const tax=Number(r.tax)||0;
-  if(!amt||!tax) return "";
-  const rate=Math.round(tax/amt*100);
-  return [1,3,6,9,13].includes(rate)?`${rate}%`:`${rate}%（请核实）`;
-}
-function __deductible(r){
-  const cat=r.expenseCategory||r.category||"";
-  const party=r.party||"";
-  if(party.includes("个体工商户")||party.includes("小规模")) return "否（小规模）";
-  if(cat.includes("餐饮")||cat.includes("招待")) return "否（餐饮不抵扣）";
-  if(Number(r.tax)>0) return "是";
-  return "无税额";
+// 公共字段（两张表共享）
+function __commonFields(r, vno){
+  return {
+    单据编号:   vno||"",
+    文件名:     r.fileName||"",
+    单据类型:   r.docType||"",
+    费用类别:   r.expenseCategory||r.category||"",
+    开票日期:   __clean(r.date),
+    金额:       Number(r.amount)||0,
+    税额:       Number(r.tax)||0,
+    价税合计:   Math.round(((Number(r.amount)||0)+(Number(r.tax)||0))*100)/100,
+    对方单位:   __clean(r.party),
+    发票号:     __clean(r.docNo),
+    提交人:     "",
+    审核时间:   TODAY,
+    是否人工修正: r.manualOverride?"是":"否",
+  };
 }
 
-// ─────────────────────────────────────────────
-// 表1：完整汇总表 — 全量台账
-// ─────────────────────────────────────────────
+// ── 表1：汇总表（通过 + 复核中的记录）────────────────
 function buildSummaryRows(data){
   __exportVn=1;
-  return data.map(r=>{
-    const cat=r.expenseCategory||r.category||"其他";
-    return {
-      // 基础标识
-      单据ID:       String(Math.floor(Number(r.id)||0)).slice(-10)||String(r.id||""),
-      报销单号:     "",
-      明细行号:     "",
-      文件名:       r.fileName||"",
-      // 票据信息
-      单据类型:     r.docType||"",
-      开票日期:     __clean(r.date),
-      不含税金额:   Number(r.amount)||0,
-      税额:         Number(r.tax)||0,
-      价税合计:     Math.round(((Number(r.amount)||0)+(Number(r.tax)||0))*100)/100,
-      对方单位:     __clean(r.party),
-      发票号:       __clean(r.docNo),
-      对方税号:     __clean(r.taxNo),
-      购买方抬头:   __clean(r.title),
-      // 业务识别
-      费用大类:     cat,
-      建议科目:     __acct(r),
-      票据有效性:   {"VALID":"有效","INVALID":"无效"}[r.invoiceValidity]||r.invoiceValidity||"",
-      业务完整性:   {"COMPLETE":"完整","PARTIAL":"部分缺失","INSUFFICIENT":"严重缺失"}[r.businessCompleteness]||r.businessCompleteness||"",
-      // 行程/住宿扩展
-      出行人_乘车人:__traveler(r),
-      入住人:       r.docType==="酒店发票"?__traveler(r):"",
-      入住日期:     __clean(r.checkIn),
-      退房日期:     __clean(r.checkOut),
-      住宿晚数:     (r.nights&&r.nights!=="null")?r.nights:"",
-      出发地:       __clean(r.origin),
-      目的地:       __clean(r.destination),
-      // AI初审结论
-      AI初审结论:   __lv(r),
-      是否人工修正:  r.manualOverride?"是":"否",
-      AI风险等级:   {"HIGH":"高","MEDIUM":"中","LOW":"低"}[__topRisk(r)]||__topRisk(r)||"",
-      规则编码:     __ruleIds(r),
-      风险类型:     __riskTypes(r),
-      风险说明:     __riskDesc(r),
-      是否需补件:   __isPending(r)?"是":"否",
-      // 最终结论（当前与AI一致，人工复核后可更新）
-      最终结论:     __lv(r),
-      审核状态:     __isPass(r)?"待入账":__isReject(r)?"已驳回":"待补件/待复核",
-      建议动作:     __clean(r.suggestedAction),
-      当前责任人:   "",
-      // 流程状态
-      补件状态:     __isPending(r)?"待补充":"无需补件",
-      驳回原因:     __isReject(r)?__riskDesc(r):"",
-      是否允许重提: __isReject(r)?"待确认":"—",
-      // 入账建议
-      凭证编号:     __vno(r),
-      最终科目:     __isPass(r)?__acct(r):"",
-      凭证摘要:     __clean(r.memo),
-      最终处理意见: __clean(r.suggestedAction),
-    };
-  });
-}
-
-// ─────────────────────────────────────────────
-// 表2：补件清单 — 可补正任务表
-// 进入条件：supportingDocStatus=pending（可通过补材料解决的REVIEW）
-// ─────────────────────────────────────────────
-function buildSupplementRows(data){
-  let taskNo=1;
-  return data.filter(__isPending).map(r=>{
-    const rules=__rules(r);
-    // 缺失材料类型推断
-    let missingType="", missingDetail="", supplementWay="";
+  // 通过的记录进汇总表
+  return data.filter(r=>__isPass(r)||__isReview(r)).map(r=>{
+    const isPASS=__isPass(r);
+    const vno=isPASS?`JZ${__yr}${String(__exportVn++).padStart(4,"0")}`:
+               `待审-${String(__exportVn++).padStart(4,"0")}`;
+    const common=__commonFields(r,vno);
+    // 出行/住宿扩展字段
     const cat=r.expenseCategory||r.category||"";
-    if(cat.includes("市内交通")||r.docType==="网约车发票"||r.docType==="出租车票"){
-      missingType="行程证明"; missingDetail="出行人、出发地、目的地、订单详情";
-      supplementWay="上传平台订单截图（滴滴/高德/美团打车等）";
-    } else if(cat.includes("住宿")||r.docType==="酒店发票"){
-      missingType="住宿证明"; missingDetail="入住人、入住日期、晚数";
-      supplementWay="上传酒店订单确认单或水单";
-    } else if(cat.includes("餐饮")){
-      missingType="用途说明"; missingDetail="接待对象、用餐事由、人数";
-      supplementWay="填写接待申请单或事由说明";
-    } else if(rules.some(x=>x.ruleId==="T203")){
-      missingType="审批证明"; missingDetail="超标席别/舱位审批记录";
-      supplementWay="上传上级审批单";
-    } else {
-      missingType="补充说明"; missingDetail=__riskDesc(r);
-      supplementWay="联系财务补充说明材料";
-    }
+    const isHotel=r.docType==="酒店发票"||cat.includes("住宿");
+    const isTravel=cat.includes("城际交通")||cat.includes("市内交通")||r.docType==="铁路电子客票"||r.docType==="机票行程单"||r.docType==="网约车发票"||r.docType==="出租车票";
     return {
-      补件任务ID:     `BC${__yr}${String(taskNo++).padStart(4,"0")}`,
-      单据ID:         String(Math.floor(Number(r.id)||0)).slice(-10)||String(r.id||""),
-      报销单号:       "",
-      明细行号:       "",
-      文件名:         r.fileName||"",
-      // 报销人信息
-      提交人:         "",
-      部门:           "",
-      // 票据摘要
-      票据类型:       r.docType||"",
-      费用大类:       r.expenseCategory||r.category||"",
-      金额:           Math.round(((Number(r.amount)||0)+(Number(r.tax)||0))*100)/100,
-      开票日期:       __clean(r.date),
-      // 风险信息
-      风险等级:       __topRisk(r),
-      风险类型:       __riskTypes(r),
-      规则编码:       __ruleIds(r),
-      // 补件任务
-      补件原因:       __riskDesc(r),
-      缺失材料类型:   missingType,
-      缺失材料明细:   missingDetail,
-      建议补件方式:   supplementWay,
-      是否必须补件:   "是",
-      是否可说明替代: rules.some(x=>x.ruleId==="T203"||x.ruleId==="T402")?"是":"否",
-      // 流程管理
-      当前责任人:     "",
-      发起补件时间:   TODAY,
-      补件截止时间:   "",
-      超期天数:       "",
-      补件状态:       "待补充",
-      通知次数:       0,
-      // 审核结果（补件后填写）
-      补件审核人:     "",
-      补件审核时间:   "",
-      补件是否通过:   "",
-      补件后最终结论: "",
-    };
-  });
-}
-
-// ─────────────────────────────────────────────
-// 表3：凭证建议表 — 会计入账工作表
-// 进入条件：conclusion=PASS（可直接或确认后入账）
-// ─────────────────────────────────────────────
-function buildVoucherRows(data){
-  let vNo=1;
-  return data.filter(__isPass).map(r=>{
-    const cat=r.expenseCategory||r.category||"其他";
-    const acct=__acct(r);
-    const amt=Number(r.amount)||0;
-    const tax=Number(r.tax)||0;
-    // 科目拆分
-    const debitL1=acct.split(" ")[1]?.split("-")[0]||acct;
-    const debitL2=acct.split("-")[1]||"";
-    // 摘要模板
-    const memoTpl=cat.includes("差旅")? "[出差地点]+[出行人]+[费用类型]+费用":
-                  cat.includes("餐饮")? "[日期]+[事由]+商务招待费":
-                  cat.includes("住宿")? "[入住日期]-[退房日期]+[酒店名]+住宿费":
-                  "[日期]+[对方单位]+[费用类型]+费用";
-    return {
-      凭证建议ID:     `PZ${__yr}${String(vNo++).padStart(4,"0")}`,
-      单据ID:         String(Math.floor(Number(r.id)||0)).slice(-10)||String(r.id||""),
-      报销单号:       "",
-      明细行号:       "",
-      // 人员与组织
-      提交人:         "",
-      报销人:         __traveler(r)||"",
-      部门:           "",
-      项目:           "",
-      成本中心:       "",
-      // 费用分类
-      费用大类:       cat,
-      费用小类:       r.docType||"",
-      // 金额
-      不含税金额:     amt,
-      税额:           tax,
-      价税合计:       amt+tax,
-      币种:           "CNY",
-      // 税务属性
-      发票类型:       r.docType||"",
-      税率:           __taxRate(r),
-      是否可抵扣:     __deductible(r),
-      // 科目建议
-      借方一级科目:   debitL1,
-      借方二级科目:   debitL2,
-      借方三级科目:   "",
-      贷方科目:       "应付账款 / 银行存款",
-      科目建议说明:   __acct(r),
-      // 入账控制
-      是否允许自动入账:   "否（待确认）",
-      是否需人工确认科目: tax>0?"是（有税额）":"否",
-      // 凭证摘要
-      摘要模板:       memoTpl,
-      凭证摘要建议:   __clean(r.memo),
-      入账期间:       __clean(r.date)?.slice(0,7)||"",
-      // 并单/拆分建议
-      是否建议并单:   "否",
-      并单依据:       "",
-      并单组ID:       "",
-      是否建议拆分:   "否",
-      拆分规则说明:   "",
+      ...common,
+      购买方抬头:   __clean(r.title),
+      税号:         __clean(r.taxNo),
+      建议科目:     __acct(r),
+      凭证摘要:     __clean(r.memo),
+      // 出行/住宿字段（按类型显示）
+      出行人_入住人: isHotel?__traveler(r):(isTravel?__traveler(r):""),
+      出发地:       isTravel?__clean(r.origin):"",
+      目的地:       isTravel?__clean(r.destination):"",
+      入住日期:     isHotel?__clean(r.checkIn):"",
+      离店日期:     isHotel?__clean(r.checkOut):"",
+      住宿晚数:     isHotel&&r.nights&&r.nights!=="null"?r.nights:"",
       // 审核状态
-      会计复核状态:   "待复核",
-      最终入账科目:   "",
-      最终凭证摘要:   "",
-      是否已生成凭证: "否",
-      凭证号:         "",
+      审核结论:     isPASS?"通过":"待复核",
+      备注:         isPASS?"":(__riskDesc(r)||r.suggestedAction||""),
     };
   });
 }
 
-// ─────────────────────────────────────────────
-// 表4：驳回清单 — 驳回管理工作表
-// 进入条件：conclusion=REJECT 或 duplicate=true
-// ─────────────────────────────────────────────
+// ── 表2：驳回清单（驳回 + 重复的记录）────────────────
 function buildRejectRows(data){
-  let taskNo=1;
+  let n=1;
   return data.filter(__isReject).map(r=>{
-    const rules=__rules(r);
-    // 驳回类型判断
-    let rejectType="", rejectBasis="", allowResubmit="", resubmitCondition="";
+    const vno=`BH${__yr}${String(n++).padStart(4,"0")}`;
+    const common=__commonFields(r,vno);
+    // 驳回原因
+    let reason="", action="";
     if(r.duplicate){
-      rejectType="重复报销"; rejectBasis="D101：发票号/票号与已有记录重复";
-      allowResubmit="否"; resubmitCondition="—";
-    } else if(rules.some(x=>x.ruleId==="G003")){
-      rejectType="票据无效"; rejectBasis="G003：核心字段缺失";
-      allowResubmit="是"; resubmitCondition="补充完整有效票据后重提";
-    } else if(rules.some(x=>x.ruleId==="VAT03")){
-      rejectType="票据无效"; rejectBasis="VAT03：发票已作废或红冲";
-      allowResubmit="是"; resubmitCondition="提供有效替换发票";
-    } else if(rules.some(x=>x.ruleId==="G009")){
-      rejectType="分类错误"; rejectBasis="G009：费用类别与票据严重冲突";
-      allowResubmit="是"; resubmitCondition="更正费用类别后重提";
-    } else if(rules.some(x=>x.ruleId==="O102")){
-      rejectType="抬头错误"; rejectBasis="O102：发票抬头与公司名称不符";
-      allowResubmit="是"; resubmitCondition="重新开具正确抬头发票";
-    } else if(rules.some(x=>x.ruleId==="B101")){
-      rejectType="凭证无效"; rejectBasis="B101：银行回单核心字段缺失";
-      allowResubmit="是"; resubmitCondition="补充完整银行回单";
+      reason="重复发票：与已有记录发票号重复";
+      action="请确认是否重复报销，如非重复请联系财务";
     } else {
-      rejectType="不合规"; rejectBasis=__riskDesc(r);
-      allowResubmit="待确认"; resubmitCondition="请联系财务确认";
+      reason=__riskDesc(r)||r.manualReview||"";
+      action=r.suggestedAction||"驳回重提";
     }
+    // 需补充内容
+    const cat=r.expenseCategory||r.category||"";
+    let supplement="";
+    if(cat.includes("市内交通")||r.docType==="网约车发票"||r.docType==="出租车票")
+      supplement="上传平台订单截图（滴滴/高德/美团打车等）";
+    else if(cat.includes("住宿")||r.docType==="酒店发票")
+      supplement="上传酒店订单确认单或水单";
+    else if(cat.includes("餐饮"))
+      supplement="补充接待申请单或用餐事由说明";
+    else if(r.duplicate)
+      supplement="—";
+    else
+      supplement=r.supportingDocStatus==="pending"?"请补充相关证明材料":"重新提交符合要求的票据";
     return {
-      驳回任务ID:     `BH${__yr}${String(taskNo++).padStart(4,"0")}`,
-      单据ID:         String(Math.floor(Number(r.id)||0)).slice(-10)||String(r.id||""),
-      报销单号:       "",
-      明细行号:       "",
-      文件名:         r.fileName||"",
-      // 报销人信息
-      提交人:         "",
-      报销人:         __traveler(r)||"",
-      部门:           "",
-      项目:           "",
-      成本中心:       "",
-      // 票据摘要
-      票据类型:       r.docType||"",
-      费用大类:       r.expenseCategory||r.category||"",
-      费用小类:       "",
-      金额:           Math.round(((Number(r.amount)||0)+(Number(r.tax)||0))*100)/100,
-      开票日期:       __clean(r.date),
-      // 结论
-      AI初审结论:     __lv(r),
-      最终结论:       __lv(r),
-      风险等级:       __topRisk(r),
-      风险类型:       __riskTypes(r),
-      规则编码列表:   __ruleIds(r),
-      // 驳回详情
-      驳回类型:       rejectType,
-      驳回原因:       __riskDesc(r),
-      驳回依据:       rejectBasis,
-      驳回摘要:       `${rejectType}：${__riskDesc(r)?.slice(0,50)||""}`,
-      驳回人:         "系统（AI初审）",
-      驳回时间:       TODAY,
-      驳回责任角色:   "财务初审",
-      // 重提管理
-      是否允许重新提交: allowResubmit,
-      允许重提条件:   resubmitCondition,
-      // 通知状态
-      是否已通知报销人: "否",
-      通知时间:       "",
-      报销人反馈:     "",
-      驳回后状态:     "待报销人处理",
-      // 质量改进
-      是否高频驳回项: "否",
-      是否需优化制度: "",
-      是否需优化规则: "",
+      ...common,
+      驳回原因:     reason,
+      需补充内容:   supplement,
+      处理建议:     action,
+      是否可重提:   r.duplicate?"否":"是",
     };
   });
 }
 
-// ─────────────────────────────────────────────
-// Excel 格式化工具
-// ─────────────────────────────────────────────
+// ── Excel 格式化 ──────────────────────────────────────
 function applyXlsxFormat(ws, rows){
   if(!rows.length) return;
   const headers=Object.keys(rows[0]);
-  const range=XLSX.utils.decode_range(ws['!ref']);
-
-  // 冻结首行
-  ws['!freeze']={xSplit:0,ySplit:1,topLeftCell:"A2",activePane:"bottomLeft",state:"frozen"};
-
-  // 自动筛选
-  ws['!autofilter']={ref:`A1:${XLSX.utils.encode_col(range.e.c)}1`};
-
-  // 列宽：根据列名自动设置
-  ws['!cols']=headers.map(h=>{
-    const amtCols=["金额","税额","价税合计","不含税金额","住宿晚数","通知次数"];
-    if(amtCols.some(k=>h.includes(k))) return {wch:12};
-    if(h.includes("ID")||h.includes("编号")||h.includes("号")) return {wch:18};
-    if(h.includes("日期")||h.includes("时间")||h.includes("期间")) return {wch:13};
-    if(h.includes("原因")||h.includes("说明")||h.includes("摘要")||h.includes("条件")||h.includes("明细")||h.includes("方式")) return {wch:30};
-    if(h.includes("文件名")) return {wch:40};
-    if(h.includes("科目")) return {wch:20};
+  const range=XLSX.utils.decode_range(ws["!ref"]);
+  ws["!freeze"]={xSplit:0,ySplit:1,topLeftCell:"A2",activePane:"bottomLeft",state:"frozen"};
+  ws["!autofilter"]={ref:`A1:${XLSX.utils.encode_col(range.e.c)}1`};
+  ws["!cols"]=headers.map(h=>{
+    if(["金额","税额","价税合计","住宿晚数"].some(k=>h.includes(k))) return {wch:12};
+    if(["编号","发票号","税号"].some(k=>h.includes(k))) return {wch:20};
+    if(["日期","时间"].some(k=>h.includes(k))) return {wch:13};
+    if(["原因","说明","摘要","内容","建议","备注"].some(k=>h.includes(k))) return {wch:32};
+    if(h.includes("文件名")) return {wch:36};
+    if(["对方单位","购买方","出行人","单位"].some(k=>h.includes(k))) return {wch:20};
     return {wch:14};
   });
-
-  // 金额列格式 + 日期格式
-  const amtHeaders=["金额","税额","价税合计","不含税金额"];
-  const dateHeaders=["日期","时间","入住日期","退房日期"];
   for(let R=1;R<=range.e.r;R++){
     headers.forEach((h,C)=>{
       const addr=XLSX.utils.encode_cell({r:R,c:C});
       const cell=ws[addr];
       if(!cell) return;
-      if(amtHeaders.some(k=>h.includes(k))&&typeof cell.v==="number"){
+      if(["金额","税额","价税合计"].some(k=>h.includes(k))&&typeof cell.v==="number"){
         cell.t="n"; cell.z="#,##0.00";
       }
-      if(dateHeaders.some(k=>h.includes(k))&&cell.v){
-        cell.t="s";
-      }
-      // 长文本列自动换行
-      const wrapHeaders=["原因","说明","摘要","条件","明细","方式","依据","建议","风险","规则","模板","反馈","意见"];
-      if(wrapHeaders.some(k=>h.includes(k))){
+      if(["原因","说明","摘要","内容","建议","备注"].some(k=>h.includes(k))){
         if(!cell.s) cell.s={};
         cell.s.alignment={wrapText:true,vertical:"top"};
       }
@@ -1492,9 +1245,7 @@ function applyXlsxFormat(ws, rows){
   }
 }
 
-// ─────────────────────────────────────────────
-// renderEx：渲染导出页
-// ─────────────────────────────────────────────
+// ── renderEx：渲染导出页 ──────────────────────────────
 function renderEx(){
   const ecEl=document.getElementById("ec");
   const enEl=document.getElementById("en");
@@ -1503,35 +1254,23 @@ function renderEx(){
     enEl.style.display="none"; return;
   }
   __exportVn=1;
-
-  const totalAmt=RS.reduce((s,r)=>s+(Number(r.amount)||0)+(Number(r.tax)||0),0);
   const passCount=RS.filter(__isPass).length;
+  const reviewCount=RS.filter(__isReview).length;
   const rejectCount=RS.filter(__isReject).length;
-  const pendingCount=RS.filter(__isPending).length;
+  const totalAmt=RS.filter(r=>__isPass(r)||__isReview(r)).reduce((s,r)=>s+(Number(r.amount)||0)+(Number(r.tax)||0),0);
 
   const sheets=[
     {
-      icon:"📊", title:"完整汇总表",
-      desc:`全部 ${RS.length} 条 · ¥${totalAmt.toLocaleString("zh-CN",{minimumFractionDigits:2})}`,
+      icon:"📊", title:"报销汇总表",
+      desc:`${passCount}条通过 · ${reviewCount}条待复核 · 合计¥${totalAmt.toLocaleString("zh-CN",{minimumFractionDigits:2})}`,
       build:()=>buildSummaryRows(RS)
     },
     {
-      icon:"📎", title:"补件清单",
-      desc:`${pendingCount} 条待补充材料`,
-      build:()=>buildSupplementRows(RS)
-    },
-    {
-      icon:"📋", title:"凭证建议表",
-      desc:`${passCount} 条可入账`,
-      build:()=>buildVoucherRows(RS)
-    },
-    {
       icon:"✗", title:"驳回清单",
-      desc:`${rejectCount} 条驳回`,
+      desc:`${rejectCount}条驳回，需处理后重提`,
       build:()=>buildRejectRows(RS)
     },
   ];
-
   window.__sheets=sheets;
 
   ecEl.innerHTML=sheets.map((s,i)=>`
@@ -1545,19 +1284,18 @@ function renderEx(){
       </div>
     </div>`).join("")+`
     <div class="ec" style="grid-column:span 2;background:#EFF6FF;border-color:#BFDBFE">
-      <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:#1E40AF">📦 导出全部（四张表合并Excel）</div>
-      <div style="font-size:12px;color:#475569;margin-bottom:14px">一次性导出包含四个工作表的完整Excel文件</div>
-      <button class="btn pri full" onclick="doXlsxAll()" style="background:#2563EB">下载完整Excel（4张表）</button>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px;color:#1E40AF">📦 导出完整报告（两张表合并）</div>
+      <div style="font-size:12px;color:#475569;margin-bottom:14px">汇总表 + 驳回清单，一次性下载</div>
+      <button class="btn pri full" onclick="doXlsxAll()" style="background:#2563EB">下载完整Excel</button>
     </div>`;
-
   enEl.style.display="block";
 }
 
 function doXlsx(i){
+  __exportVn=1;
   const s=window.__sheets[i];
   const rows=s.build();
   if(!rows.length){alert(`${s.title}暂无数据`);return;}
-  __exportVn=1;
   const ws=XLSX.utils.json_to_sheet(rows);
   applyXlsxFormat(ws,rows);
   const wb=XLSX.utils.book_new();
@@ -1579,8 +1317,8 @@ function doXlsxAll(){
 }
 
 function doCsv(i){
-  const s=window.__sheets[i];
   __exportVn=1;
+  const s=window.__sheets[i];
   const rows=s.build();
   if(!rows.length){alert(`${s.title}暂无数据`);return;}
   const H=Object.keys(rows[0]);
@@ -1589,7 +1327,6 @@ function doCsv(i){
   a.href=URL.createObjectURL(new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"}));
   a.download=s.title+"_"+TODAY+".csv"; a.click();
 }
-
 
 const dz=document.getElementById("dz");
 dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("drag")});
