@@ -18,10 +18,7 @@ db.exec(`
     expires    TEXT,                       -- YYYY-MM-DD, null=永久
     created    TEXT DEFAULT (datetime('now','localtime')),
     last_login TEXT,
-    free_uses  INTEGER DEFAULT 0,         -- 免费试用次数（最多10次）
-    is_pro     INTEGER DEFAULT 0,         -- 是否强化版（0=基础版 1=强化版）
-    month_uses INTEGER DEFAULT 0,         -- 本月已识别张数
-    month_year TEXT    DEFAULT ''         -- 当前计费月份 YYYY-MM
+    free_uses  INTEGER DEFAULT 0          -- 免费试用次数（最多3次）
   );
 
   CREATE TABLE IF NOT EXISTS orders (
@@ -48,9 +45,6 @@ db.exec(`
 
 // 兼容旧数据库：自动添加字段
 try { db.exec("ALTER TABLE users ADD COLUMN free_uses INTEGER DEFAULT 0"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN is_pro INTEGER DEFAULT 0"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN month_uses INTEGER DEFAULT 0"); } catch(e) {}
-try { db.exec("ALTER TABLE users ADD COLUMN month_year TEXT DEFAULT ''"); } catch(e) {}
 
 // 审核记录表
 db.exec(`
@@ -74,6 +68,20 @@ db.exec(`
     edited      INTEGER DEFAULT 0,
     pages       INTEGER DEFAULT 1,
     created_at  TEXT DEFAULT (datetime('now','localtime'))
+  );
+`);
+
+// 验证码表
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_codes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    code       TEXT NOT NULL,
+    type       TEXT DEFAULT 'register',  -- register | reset
+    used       INTEGER DEFAULT 0,
+    expire_at  TEXT NOT NULL,
+    ip         TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now','localtime'))
   );
 `);
 
