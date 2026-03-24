@@ -265,38 +265,34 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
             <div style="width:26%;text-align:center">年付</div>
           </div>
           <!-- 基础版行 -->
-          <div style="display:flex;padding:16px 0;border-bottom:1px solid #F1F5F9;align-items:center">
+          <div style="display:flex;padding:16px 0;border-bottom:1px solid #F1F5F9;align-items:stretch">
             <div style="width:22%;padding:0 14px;font-weight:700;font-size:13px">基础版</div>
-            <div style="width:26%;text-align:center;padding:0 8px">
-              <div style="font-size:18px;font-weight:800;color:#0F172A">¥499</div>
+            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥499</div></div>
               <button class="plan-btn" id="pb-monthly" onclick="selectPlan('monthly')" style="margin-top:8px;width:92%">选择基础版（月付）</button>
             </div>
-            <div style="width:26%;text-align:center;padding:0 8px">
-              <div style="font-size:18px;font-weight:800;color:#0F172A">¥1299</div>
-              <div style="font-size:10px;color:#16A34A;font-weight:600;margin:2px 0">约 ¥433 / 月 · 季付更省</div>
+            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥1299</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥433 / 月 · 季付更省</div></div>
               <button class="plan-btn" id="pb-quarterly" onclick="selectPlan('quarterly')" style="margin-top:6px;width:92%">选择基础版（季付）</button>
             </div>
-            <div style="width:26%;text-align:center;padding:0 8px">
-              <div style="font-size:18px;font-weight:800;color:#0F172A">¥4999</div>
-              <div style="font-size:10px;color:#16A34A;font-weight:600;margin:2px 0">约 ¥417 / 月 · 年付最划算</div>
+            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥4999</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥417 / 月 · 年付最划算</div></div>
               <button class="plan-btn" id="pb-yearly" onclick="selectPlan('yearly')" style="margin-top:6px;width:92%">选择基础版（年付）</button>
             </div>
           </div>
           <!-- 强化版行 -->
-          <div style="display:flex;padding:16px 0;align-items:center;background:#F8FBFF">
+          <div style="display:flex;padding:16px 0;align-items:stretch;background:#F8FBFF">
             <div style="width:22%;padding:0 14px;font-weight:700;font-size:13px;color:#2563EB">强化版</div>
-            <div style="width:26%;text-align:center;padding:0 8px">
-              <div style="font-size:18px;font-weight:800;color:#2563EB">¥799</div>
+            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:18px;font-weight:800;color:#2563EB">¥799</div></div>
               <button class="plan-btn plan-btn-pro" id="pb-monthly_pro" onclick="selectPlan('monthly_pro')" style="margin-top:8px;width:92%">选择强化版（月付）</button>
             </div>
-            <div style="width:26%;text-align:center;padding:0 8px">
-              <div style="font-size:18px;font-weight:800;color:#2563EB">¥2199</div>
-              <div style="font-size:10px;color:#16A34A;font-weight:600;margin:2px 0">约 ¥733 / 月 · 季付更省</div>
+            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:18px;font-weight:800;color:#2563EB">¥2199</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥733 / 月 · 季付更省</div></div>
               <button class="plan-btn plan-btn-pro" id="pb-quarterly_pro" onclick="selectPlan('quarterly_pro')" style="margin-top:6px;width:92%">选择强化版（季付）</button>
             </div>
-            <div style="width:26%;text-align:center;padding:0 8px">
-              <div style="font-size:18px;font-weight:800;color:#2563EB">¥8599</div>
-              <div style="font-size:10px;color:#16A34A;font-weight:600;margin:2px 0">约 ¥717 / 月 · 年付最划算</div>
+            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:18px;font-weight:800;color:#2563EB">¥8599</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥717 / 月 · 年付最划算</div></div>
               <button class="plan-btn plan-btn-pro" id="pb-yearly_pro" onclick="selectPlan('yearly_pro')" style="margin-top:6px;width:92%">选择强化版（年付）</button>
             </div>
           </div>
@@ -330,18 +326,30 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       <div style="margin-bottom:20px">
         <div style="font-size:15px;font-weight:700;margin-bottom:14px">购买说明</div>
         <div style="display:flex;flex-direction:column;gap:10px">
-          ${[
-            ["识别额度如何计算？","每个套餐均包含每月固定识别额度，按自然月统计，到期后重新计算。"],
-            ["支付后多久开通？","完成支付并提交凭证后，我们会尽快为您开通服务；如遇高峰期，可能会略有延迟。"],
-            ["季付和年付如何收费？","季付和年付均为一次性支付对应周期费用，开通后在套餐周期内持续可用。"],
-            ["审核结果可以修改吗？","可以。系统中的审核结果支持人工修改编辑，导出表格将以最终确认结果为准。"],
-            ["是否支持套餐升级？","支持。如需从基础版升级到强化版，可联系客服协助处理。"],
-            ["遇到问题怎么办？","如在支付、开通、使用过程中遇到问题，可随时联系客服获取帮助。"],
-          ].map(([q,a])=>`
           <div style="background:#F8FAFC;border-radius:8px;padding:12px 16px">
-            <div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px">${q}</div>
-            <div style="font-size:12px;color:#64748B;line-height:1.7">${a}</div>
-          </div>`).join("")}
+            <div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px">识别额度如何计算？</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.7">每个套餐均包含每月固定识别额度，按自然月统计，到期后重新计算。</div>
+          </div>
+          <div style="background:#F8FAFC;border-radius:8px;padding:12px 16px">
+            <div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px">支付后多久开通？</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.7">完成支付并提交凭证后，我们会尽快为您开通服务；如遇高峰期，可能会略有延迟。</div>
+          </div>
+          <div style="background:#F8FAFC;border-radius:8px;padding:12px 16px">
+            <div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px">季付和年付如何收费？</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.7">季付和年付均为一次性支付对应周期费用，开通后在套餐周期内持续可用。</div>
+          </div>
+          <div style="background:#F8FAFC;border-radius:8px;padding:12px 16px">
+            <div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px">审核结果可以修改吗？</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.7">可以。系统中的审核结果支持人工修改编辑，导出表格将以最终确认结果为准。</div>
+          </div>
+          <div style="background:#F8FAFC;border-radius:8px;padding:12px 16px">
+            <div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px">是否支持套餐升级？</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.7">支持。如需从基础版升级到强化版，可联系客服协助处理。</div>
+          </div>
+          <div style="background:#F8FAFC;border-radius:8px;padding:12px 16px">
+            <div style="font-size:13px;font-weight:600;color:#0F172A;margin-bottom:4px">遇到问题怎么办？</div>
+            <div style="font-size:12px;color:#64748B;line-height:1.7">如在支付、开通、使用过程中遇到问题，可随时联系客服获取帮助。</div>
+          </div>
         </div>
       </div>
 
