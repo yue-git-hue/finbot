@@ -127,7 +127,8 @@ app.post("/api/auth/send-code", async (req, res) => {
     );
     res.json({ ok: true, message: "验证码已发送，请查收邮件" });
   } catch(e) {
-    res.status(500).json({ error: "邮件发送失败，请检查邮箱是否正确" });
+    console.error("[邮件发送失败]", e.message, e.code || "");
+    res.status(500).json({ error: "邮件发送失败：" + e.message });
   }
 });
 
