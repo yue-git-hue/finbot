@@ -1009,7 +1009,7 @@ function renderRes(){
       </div>
       <div><div class="vk">凭证编号</div><div style="font-weight:600;font-size:11px;color:#475569;font-family:monospace">${vNo}</div></div>
     </div>
-    ${item.memo?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;font-size:12px"><span style="font-size:10px;color:#94A3B8;margin-right:6px">建议摘要</span>${item.memo}</div>`:""}
+    <div style="margin-top:8px;padding-top:8px;border-top:1px solid #BFDBFE;font-size:12px;display:flex;align-items:center;gap:6px"><span style="font-size:10px;color:#94A3B8;white-space:nowrap">建议摘要</span><input class="ie" style="flex:1;font-size:12px" value="${(item.memo||"").replace(/"/g,'&quot;')}" placeholder="填写凭证摘要…" onchange="ieSet(${item.id},'memo',this.value)"></div>
     ${(item.suggestedAction&&item.suggestedAction!=="直接通过")?
       `<div style="margin-top:8px;padding:8px 10px;background:#FFFBEB;border-radius:6px;display:flex;align-items:center;gap:8px">
         <span style="font-size:18px">${item.supportingDocStatus==="pending"?"📎":"⚑"}</span>
