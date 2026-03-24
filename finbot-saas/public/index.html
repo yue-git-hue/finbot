@@ -389,74 +389,29 @@ footer a{color:#38BDF8;text-decoration:none}
   <div>咨询电话：<a href="tel:17661369798">17661369798</a> · 工作日 9:00-18:00</div>
 </footer>
 
-<!-- 登录/注册/忘记密码弹窗 -->
+<!-- 登录/注册弹窗 -->
 <div class="modal-bg" id="authModal">
   <div class="modal">
     <div class="tabs">
       <button class="tab-btn on" id="tab-login" onclick="switchTab('login')">登录</button>
       <button class="tab-btn" id="tab-register" onclick="switchTab('register')">注册</button>
     </div>
-
-    <!-- 登录面板 -->
     <div id="pane-login">
       <div class="form-group"><label class="form-label">邮箱</label><input class="form-input" id="l-email" type="email" placeholder="请输入邮箱地址"></div>
       <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="l-pass" type="password" placeholder="······" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="form-err" id="l-err"></div>
       <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doLogin()">登录</button>
-      <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:13px;color:#64748B">
-        <span>没有账号？<a href="#" onclick="switchTab('register')" style="color:#38BDF8">免费注册</a></span>
-        <a href="#" onclick="switchTab('forgot')" style="color:#38BDF8">忘记密码</a>
-      </div>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:#64748B">没有账号？<a href="#" onclick="switchTab('register')" style="color:#38BDF8">免费注册</a></div>
     </div>
-
-    <!-- 注册面板（两步：填信息→验证码）-->
     <div id="pane-register" style="display:none">
-      <div id="reg-step1">
-        <div class="form-group"><label class="form-label">邮箱</label><input class="form-input" id="r-email" type="email" placeholder="请输入邮箱地址"></div>
-        <div class="form-group"><label class="form-label">密码（至少6位）</label><input class="form-input" id="r-pass" type="password" placeholder="······"></div>
-        <div class="form-group"><label class="form-label">姓名（可选）</label><input class="form-input" id="r-name" placeholder="张三"></div>
-        <div class="form-group"><label class="form-label">公司名称（可选）</label><input class="form-input" id="r-company" placeholder="XX财务公司"></div>
-        <div class="form-err" id="r-err"></div>
-        <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" id="r-send-btn" onclick="sendRegCode()">获取验证码</button>
-        <div style="text-align:center;margin-top:14px;font-size:13px;color:#64748B">已有账号？<a href="#" onclick="switchTab('login')" style="color:#38BDF8">立即登录</a></div>
-      </div>
-      <div id="reg-step2" style="display:none">
-        <div style="text-align:center;margin-bottom:16px;font-size:13px;color:#64748B">验证码已发送至 <b id="r-email-show" style="color:#E2E8F0"></b></div>
-        <div class="form-group"><label class="form-label">验证码（6位数字）</label>
-          <div style="display:flex;gap:8px">
-            <input class="form-input" id="r-code" type="text" maxlength="6" placeholder="输入验证码" style="flex:1">
-            <button class="btn btn-ghost" id="r-resend-btn" onclick="sendRegCode(true)" style="white-space:nowrap;padding:0 14px">重新发送</button>
-          </div>
-        </div>
-        <div class="form-err" id="r-code-err"></div>
-        <div class="form-ok" id="r-ok"></div>
-        <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doRegister()">完成注册</button>
-        <div style="text-align:center;margin-top:10px;font-size:12px;color:#64748B"><a href="#" onclick="document.getElementById('reg-step1').style.display='block';document.getElementById('reg-step2').style.display='none'" style="color:#38BDF8">← 修改邮箱</a></div>
-      </div>
-    </div>
-
-    <!-- 忘记密码面板 -->
-    <div id="pane-forgot" style="display:none">
-      <div id="forgot-step1">
-        <div style="font-size:14px;font-weight:600;margin-bottom:16px;color:#E2E8F0">重置密码</div>
-        <div class="form-group"><label class="form-label">注册邮箱</label><input class="form-input" id="f-email" type="email" placeholder="请输入注册邮箱"></div>
-        <div class="form-err" id="f-err"></div>
-        <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" id="f-send-btn" onclick="sendResetCode()">发送验证码</button>
-        <div style="text-align:center;margin-top:14px;font-size:13px;color:#64748B"><a href="#" onclick="switchTab('login')" style="color:#38BDF8">← 返回登录</a></div>
-      </div>
-      <div id="forgot-step2" style="display:none">
-        <div style="text-align:center;margin-bottom:16px;font-size:13px;color:#64748B">验证码已发送至 <b id="f-email-show" style="color:#E2E8F0"></b></div>
-        <div class="form-group"><label class="form-label">验证码（6位数字）</label>
-          <div style="display:flex;gap:8px">
-            <input class="form-input" id="f-code" type="text" maxlength="6" placeholder="输入验证码" style="flex:1">
-            <button class="btn btn-ghost" id="f-resend-btn" onclick="sendResetCode(true)" style="white-space:nowrap;padding:0 14px">重新发送</button>
-          </div>
-        </div>
-        <div class="form-group"><label class="form-label">新密码（至少6位）</label><input class="form-input" id="f-pass" type="password" placeholder="······"></div>
-        <div class="form-err" id="f-code-err"></div>
-        <div class="form-ok" id="f-ok"></div>
-        <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doReset()">重置密码</button>
-      </div>
+      <div class="form-group"><label class="form-label">邮箱</label><input class="form-input" id="r-email" type="email" placeholder="请输入邮箱地址"></div>
+      <div class="form-group"><label class="form-label">密码（至少6位）</label><input class="form-input" id="r-pass" type="password" placeholder="······"></div>
+      <div class="form-group"><label class="form-label">姓名（可选）</label><input class="form-input" id="r-name" placeholder="张三"></div>
+      <div class="form-group"><label class="form-label">公司名称（可选）</label><input class="form-input" id="r-company" placeholder="XX财务公司"></div>
+      <div class="form-err" id="r-err"></div>
+      <div class="form-ok" id="r-ok"></div>
+      <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doRegister()">注册</button>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:#64748B">已有账号？<a href="#" onclick="switchTab('login')" style="color:#38BDF8">立即登录</a></div>
     </div>
   </div>
 </div>
@@ -464,18 +419,12 @@ footer a{color:#38BDF8;text-decoration:none}
 <script>
 function openModal(tab){document.getElementById("authModal").className="modal-bg on";switchTab(tab);}
 document.getElementById("authModal").addEventListener("click",function(e){if(e.target===this)this.className="modal-bg";});
-
 function switchTab(t){
   document.getElementById("tab-login").className="tab-btn"+(t==="login"?" on":"");
   document.getElementById("tab-register").className="tab-btn"+(t==="register"?" on":"");
-  ["pane-login","pane-register","pane-forgot"].forEach(id=>{
-    document.getElementById(id).style.display="none";
-  });
-  const pane=t==="forgot"?"pane-forgot":"pane-"+t;
-  document.getElementById(pane).style.display="block";
+  document.getElementById("pane-login").style.display=t==="login"?"block":"none";
+  document.getElementById("pane-register").style.display=t==="register"?"block":"none";
 }
-
-// ── 登录 ──
 async function doLogin(){
   const email=document.getElementById("l-email").value.trim();
   const password=document.getElementById("l-pass").value;
@@ -489,89 +438,20 @@ async function doLogin(){
     location.href="/app";
   }catch(e){document.getElementById("l-err").textContent="网络错误，请重试";}
 }
-
-// ── 注册第一步：发验证码 ──
-let regCodeTimer=null;
-async function sendRegCode(resend=false){
-  const email=document.getElementById("r-email").value.trim();
-  const pass=document.getElementById("r-pass").value;
-  document.getElementById("r-err").textContent="";
-  if(!email){document.getElementById("r-err").textContent="请填写邮箱";return;}
-  if(!pass||pass.length<6){document.getElementById("r-err").textContent="密码至少6位";return;}
-  const btn=document.getElementById(resend?"r-resend-btn":"r-send-btn");
-  btn.disabled=true;btn.textContent="发送中…";
-  try{
-    const r=await fetch("/api/auth/send-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,type:"register"})});
-    const d=await r.json();
-    if(!d.ok){document.getElementById("r-err").textContent=d.error;btn.disabled=false;btn.textContent=resend?"重新发送":"获取验证码";return;}
-    document.getElementById("r-email-show").textContent=email;
-    document.getElementById("reg-step1").style.display="none";
-    document.getElementById("reg-step2").style.display="block";
-    startCountdown(btn,60,"重新发送");
-  }catch(e){document.getElementById("r-err").textContent="网络错误，请重试";btn.disabled=false;btn.textContent=resend?"重新发送":"获取验证码";}
-}
-
-// ── 注册第二步：提交 ──
 async function doRegister(){
   const email=document.getElementById("r-email").value.trim();
-  const code=document.getElementById("r-code").value.trim();
   const password=document.getElementById("r-pass").value;
   const name=document.getElementById("r-name").value.trim();
   const company=document.getElementById("r-company").value.trim();
-  document.getElementById("r-code-err").textContent="";
+  document.getElementById("r-err").textContent="";
   document.getElementById("r-ok").textContent="";
   try{
-    const r=await fetch("/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,code,password,name,company})});
+    const r=await fetch("/api/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,password,name,company})});
     const d=await r.json();
-    if(!d.ok){document.getElementById("r-code-err").textContent=d.error;return;}
+    if(!d.ok){document.getElementById("r-err").textContent=d.error;return;}
     document.getElementById("r-ok").textContent="✓ 注册成功！正在跳转登录…";
     setTimeout(()=>switchTab("login"),1200);
-  }catch(e){document.getElementById("r-code-err").textContent="网络错误，请重试";}
-}
-
-// ── 忘记密码第一步：发验证码 ──
-async function sendResetCode(resend=false){
-  const email=document.getElementById("f-email").value.trim();
-  document.getElementById("f-err").textContent="";
-  if(!email){document.getElementById("f-err").textContent="请填写邮箱";return;}
-  const btn=document.getElementById(resend?"f-resend-btn":"f-send-btn");
-  btn.disabled=true;btn.textContent="发送中…";
-  try{
-    const r=await fetch("/api/auth/send-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,type:"reset"})});
-    const d=await r.json();
-    if(!d.ok){document.getElementById("f-err").textContent=d.error;btn.disabled=false;btn.textContent=resend?"重新发送":"发送验证码";return;}
-    document.getElementById("f-email-show").textContent=email;
-    document.getElementById("forgot-step1").style.display="none";
-    document.getElementById("forgot-step2").style.display="block";
-    startCountdown(btn,60,"重新发送");
-  }catch(e){document.getElementById("f-err").textContent="网络错误，请重试";btn.disabled=false;btn.textContent=resend?"重新发送":"发送验证码";}
-}
-
-// ── 忘记密码第二步：重置 ──
-async function doReset(){
-  const email=document.getElementById("f-email").value.trim();
-  const code=document.getElementById("f-code").value.trim();
-  const password=document.getElementById("f-pass").value;
-  document.getElementById("f-code-err").textContent="";
-  document.getElementById("f-ok").textContent="";
-  if(password.length<6){document.getElementById("f-code-err").textContent="密码至少6位";return;}
-  try{
-    const r=await fetch("/api/auth/forgot-password/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,code,password})});
-    const d=await r.json();
-    if(!d.ok){document.getElementById("f-code-err").textContent=d.error;return;}
-    document.getElementById("f-ok").textContent="✓ 密码已重置，请重新登录";
-    setTimeout(()=>switchTab("login"),1500);
-  }catch(e){document.getElementById("f-code-err").textContent="网络错误，请重试";}
-}
-
-// ── 倒计时工具 ──
-function startCountdown(btn,sec,resetText){
-  let s=sec;
-  btn.disabled=true;btn.textContent=`${s}秒后重发`;
-  const t=setInterval(()=>{
-    s--;btn.textContent=`${s}秒后重发`;
-    if(s<=0){clearInterval(t);btn.disabled=false;btn.textContent=resetText;}
-  },1000);
+  }catch(e){document.getElementById("r-err").textContent="网络错误，请重试";}
 }
 </script>
 </body>
