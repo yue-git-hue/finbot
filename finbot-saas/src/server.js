@@ -7,7 +7,6 @@ const jwt = require("jsonwebtoken");
 const { nanoid } = require("nanoid");
 const fetch = require("node-fetch");
 const path = require("path");
-const nodemailer = require("nodemailer");
 const db = require("./db");
 
 const app = express();
@@ -37,15 +36,24 @@ const PLANS = {
 // ── 中间件 ───────────────────────────────────────────
 
 // ── 邮件发送 ──────────────────────────────────────────
-const mailer = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.qq.com",
-  port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false,
-  auth: { user: process.env.SMTP_USER || "", pass: process.env.SMTP_PASS || "" },
-});
+// ── Resend 发信（HTTP API，不依赖 SMTP 端口）──────────
 async function sendMail(to, subject, html) {
-  if (!process.env.SMTP_USER) { console.log(`[邮件跳过] to=${to}`); return; }
-  await mailer.sendMail({ from: `"FINBOT票据预审" <${process.env.SMTP_USER}>`, to, subject, html });
+  const key = process.env.RESEND_KEY;
+  if (!key) { console.log(`[邮件跳过-未配置RESEND_KEY] to=${to}`); return; }
+  const r = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
+    body: JSON.stringify({
+      from: "FINBOT票据预审 <onboarding@resend.dev>",
+      to: [to],
+      subject,
+      html,
+    }),
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error("Resend发送失败: " + t);
+  }
 }
 function genCode() { return String(Math.floor(100000 + Math.random() * 900000)); }
 function checkCodeLimit(email, ip) {
