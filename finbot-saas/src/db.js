@@ -77,4 +77,28 @@ db.exec(`
   );
 `);
 
+// 验证码表
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_codes (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    email      TEXT NOT NULL,
+    code       TEXT NOT NULL,
+    type       TEXT DEFAULT 'register',  -- register | reset
+    used       INTEGER DEFAULT 0,
+    expire_at  TEXT NOT NULL,
+    ip         TEXT DEFAULT '',
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+  );
+`);
+
+// 企业规则配置表
+db.exec(`
+  CREATE TABLE IF NOT EXISTS company_rules (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id    INTEGER UNIQUE NOT NULL,
+    rules_json TEXT NOT NULL,
+    updated_at TEXT DEFAULT (datetime('now','localtime'))
+  );
+`);
+
 module.exports = db;
