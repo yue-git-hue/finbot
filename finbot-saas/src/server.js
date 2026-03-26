@@ -331,26 +331,7 @@ function activateOrder(outTradeNo) {
 
 
 // ── AI 识别代理（客户无需填Key）────────────────────────
-// ── 文件类型校验 ─────────────────────────────────────
-function validateImageInput(req, res, next) {
-  const messages = req.body?.messages || [];
-  for (const msg of messages) {
-    if (!Array.isArray(msg.content)) continue;
-    for (const part of msg.content) {
-      if (part.type === "image_url") {
-        const url = part.image_url?.url || "";
-        if (url.startsWith("data:") &&
-            !url.startsWith("data:image/jpeg") &&
-            !url.startsWith("data:image/png")) {
-          return res.status(400).json({ error: "仅支持 JPG/PNG 图片格式，请重新上传" });
-        }
-      }
-    }
-  }
-  next();
-}
-
-app.post("/api/ai/recognize", authUser, validateImageInput, async (req, res) => {
+app.post("/api/ai/recognize", authUser, async (req, res) => {
   // 查用户是否是强化版
   const user = db.prepare("SELECT plan, is_pro FROM users WHERE id=?").get(req.user.id);
   const isPro = user?.is_pro === 1 || PLANS[user?.plan]?.pro === true;
@@ -377,23 +358,25 @@ app.post("/api/ai/recognize", authUser, validateImageInput, async (req, res) => 
       res.status(500).json({ error: e.message });
     }
   } else {
-    // 基础版：路由到硅基 Qwen（强制7B快速模型）
-    const sfKey = process.env.SF_KEY;
-    if (!sfKey) return res.status(500).json({ error: "AI服务未配置，请联系管理员" });
+    // 基础版：路由到阿里云百炼 qwen-vl-max
+    const blKey = process.env.BAILIAN_KEY;
+    if (!blKey) return res.status(500).json({ error: "AI服务未配置，请联系管理员" });
     try {
-      const sfBody = { ...req.body, model: "Qwen/Qwen2.5-VL-72B-Instruct" };
-      const r = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
+      const blBody = { ...req.body, model: "qwen-vl-max" };
+      const r = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sfKey },
-        body: JSON.stringify(sfBody),
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + blKey },
+        body: JSON.stringify(blBody),
       });
       if (!r.ok) {
         const t = await r.text();
+        console.error("[百炼错误]", r.status, t.slice(0, 300));
         return res.status(r.status).json({ error: "AI服务错误: " + t.slice(0, 200) });
       }
       const d = await r.json();
       res.json(d);
     } catch (e) {
+      console.error("[百炼异常]", e.message);
       res.status(500).json({ error: e.message });
     }
   }
@@ -552,7 +535,7 @@ app.post("/api/admin/record-payment", authAdmin, async (req, res) => {
 
 // ── 管理后台 API ─────────────────────────────────────
 app.get("/api/admin/users", authAdmin, (req, res) => {
-  const users = db.prepare("SELECT id,email,name,company,status,plan,expires,free_uses,is_pro,month_uses,month_year,created,last_login FROM users ORDER BY created DESC").all();
+  const users = db.prepare("SELECT id,email,name,company,status,plan,expires,free_uses,created,last_login FROM users ORDER BY created DESC").all();
   res.json(users);
 });
 
