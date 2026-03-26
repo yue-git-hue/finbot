@@ -362,7 +362,7 @@ app.post("/api/ai/recognize", authUser, async (req, res) => {
     const blKey = process.env.BAILIAN_KEY;
     if (!blKey) return res.status(500).json({ error: "AI服务未配置，请联系管理员" });
     try {
-      const blBody = { ...req.body, model: "qwen3-vl-flash" };
+      const blBody = { ...req.body, model: "qwen3.5-flash", enable_thinking: false };
       const r = await fetch("https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + blKey },
