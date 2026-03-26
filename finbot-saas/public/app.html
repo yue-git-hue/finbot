@@ -503,7 +503,7 @@ async function loadUser(){
       const versionLabel=document.getElementById("sub-version-label");
       if(versionLabel){
         const isPro=(USER.plan||"").includes("pro");
-        versionLabel.textContent=isPro?"⚡ 强化版订阅中（GPT-4o）":"✅ 基础版订阅中（Qwen）";
+        versionLabel.textContent=isPro?"⚡ 强化版订阅中（OPENAI）":"✅ 基础版订阅中（Qwen）";
         versionLabel.style.color=isPro?"#1D4ED8":"#166534";
       }
       if(expiresDetail) expiresDetail.textContent=USER.expires?"到期："+USER.expires:"长期有效（无截止日）";
