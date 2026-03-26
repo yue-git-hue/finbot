@@ -175,7 +175,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       <div><div class="ptitle" style="margin-bottom:4px">审核结果</div><div class="psub" style="margin-bottom:0">驳回和重复发票排在最前</div></div>
       <div style="display:flex;gap:8px">
         <button class="btn" onclick="go(0)">继续上传</button>
-        <button class="btn danger sm" onclick="if(confirm('清空所有结果？')){RS=[];renderRes();}">清空</button>
+        <button class="btn danger sm" onclick="if(confirm('清空所有结果？')){RS=[];renderRes();try{localStorage.removeItem('fb_rs_'+TOKEN);}catch(e){}}">清空</button>
         <button class="btn pri" onclick="go(2)">导出报告 →</button>
       </div>
     </div>
@@ -470,6 +470,15 @@ const AM={
 };
 const DI={"增值税发票":"🧾","银行回单":"🏦","报销单":"📋","收据":"🗒️","铁路电子客票":"🚄","机票行程单":"✈️","出租车票":"🚕","网约车发票":"🚗","酒店发票":"🏨","餐饮发票":"🍽️","医疗发票":"🏥"};
 let RS=[],editId=null,USER=null;
+// 页面加载时从 localStorage 恢复审核数据
+function restoreRS(){
+  try{
+    const tok=localStorage.getItem("fb_token");
+    if(!tok) return;
+    const saved=localStorage.getItem("fb_rs_"+tok);
+    if(saved){RS=JSON.parse(saved);renderRes();}
+  }catch(e){}
+}
 const TOKEN=localStorage.getItem("fb_token");
 if(!TOKEN){location.href="/";throw new Error();}
 
@@ -520,7 +529,7 @@ async function loadUser(){
       const bar=document.getElementById("trial-bar");
       if(bar){bar.style.display="flex";bar.style.alignItems="center";bar.style.gap="12px";}
       const cnt=document.getElementById("trial-count");if(cnt)cnt.textContent=td.remaining;
-      const tu=document.getElementById("trial-used");if(tu)tu.textContent=3-td.remaining;
+      const tu=document.getElementById("trial-used");if(tu)tu.textContent=10-td.remaining;
     }else{
       const pw=document.getElementById("paywall");if(pw)pw.style.display="block";
     }
@@ -604,7 +613,7 @@ async function deductUsage(count){
     const cnt=document.getElementById("trial-count");
     if(cnt) cnt.textContent=window.__trialRemaining;
     const tu=document.getElementById("trial-used");
-    if(tu) tu.textContent=3-window.__trialRemaining;
+    if(tu) tu.textContent=10-window.__trialRemaining;
     if(window.__trialRemaining===0) document.getElementById("trial-bar").style.display="none";
   }
   return true;
@@ -651,29 +660,31 @@ async function runF(files){
   const qb=document.getElementById("qb"),ql=document.getElementById("ql");
   qb.style.display="block";
   ql.innerHTML=arr.map(f=>`<div class="qi" id="qi${f.name.replace(/\W/g,'_')}"><div class="spin"></div><span>${f.name}</span><span style="font-size:11px;color:#94A3B8;margin-left:auto" id="st${f.name.replace(/\W/g,'_')}">准备中</span></div>`).join("");
-  const out=[];
   for(const f of arr){
     const sid="st"+f.name.replace(/\W/g,'_');const sel=document.getElementById(sid);
     try{
       if(sel)sel.textContent="识别中…";
       const r=await analyze(f);
-      if(r.docNo&&(RS.some(ex=>ex.docNo===r.docNo)||out.some(ex=>ex.docNo===r.docNo))){
+      if(r.docNo&&RS.some(ex=>ex.docNo===r.docNo)){
         if(sel)sel.textContent="⊘ 重复跳过";continue;
       }
-      // 识别成功，按实际页数（发票张数）扣量
       await deductUsage(r.pages||1);
-      out.push(r);if(sel)sel.textContent="✓ 完成";
+      RS.unshift(r);
+      renderRes();go(1);  // 每识别完一张立即显示
+      if(sel)sel.textContent="✓ 完成";
+      // 保存到 localStorage
+      try{localStorage.setItem("fb_rs_"+TOKEN,JSON.stringify(RS.slice(0,200)));}catch(e){}
     }catch(e){
       if(sel)sel.textContent="✗ 失败";
-      out.push({id:Date.now()+Math.random(),fileName:f.name,docType:"识别失败",conclusion:"REVIEW",risks:[{level:"HIGH",message:"错误："+String(e.message)}],manualReview:"请人工处理"});
+      const errItem={id:Date.now()+Math.random(),fileName:f.name,docType:"识别失败",conclusion:"REVIEW",risks:[{level:"HIGH",message:"错误："+String(e.message)}],manualReview:"请人工处理"};
+      RS.unshift(errItem);
+      renderRes();go(1);
     }
     await new Promise(r=>setTimeout(r,300));
     const el=document.getElementById("qi"+f.name.replace(/\W/g,'_'));if(el)setTimeout(()=>el.remove(),800);
   }
   setTimeout(()=>{if(!document.getElementById("ql").children.length)qb.style.display="none";},1000);
   document.getElementById("dzt").textContent="拖拽上传 或 点击选择文件";
-  for(const r of out)RS.unshift(r);
-  renderRes();go(1);
 }
 
 async function analyze(file){
@@ -1474,8 +1485,7 @@ function buildRulesPrompt(){
 
 loadUser();
 loadRules();
-loadRules();
-loadRules();
+restoreRS();
 </script>
 </body>
 </html>
