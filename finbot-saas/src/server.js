@@ -122,17 +122,14 @@ app.post("/api/auth/send-code", async (req, res) => {
 
 // ── 邮箱验证码注册 ────────────────────────────────────
 app.post("/api/register", async (req, res) => {
-  const { email, code, password, name, company } = req.body;
-  if (!email || !password || !code) return res.status(400).json({ error: "邮箱、验证码和密码必填" });
+  const { phone, password, name, company } = req.body;
+  if (!phone || !password) return res.status(400).json({ error: "手机号和密码必填" });
+  if (!/^1[3-9]\d{9}$/.test(phone)) return res.status(400).json({ error: "手机号格式不正确" });
   if (password.length < 6) return res.status(400).json({ error: "密码至少6位" });
-  if (db.prepare("SELECT id FROM users WHERE email=?").get(email)) return res.status(400).json({ error: "该邮箱已注册" });
-  const now = new Date().toISOString();
-  const vc = db.prepare("SELECT * FROM email_codes WHERE email=? AND type='register' AND used=0 AND expire_at>? ORDER BY id DESC LIMIT 1").get(email, now);
-  if (!vc || vc.code !== code) return res.status(400).json({ error: "验证码错误或已过期" });
-  db.prepare("UPDATE email_codes SET used=1 WHERE id=?").run(vc.id);
+  if (db.prepare("SELECT id FROM users WHERE email=?").get(phone)) return res.status(400).json({ error: "该手机号已注册" });
   const hash = await bcrypt.hash(password, 10);
-  db.prepare("INSERT INTO users(email,password,name,company) VALUES(?,?,?,?)").run(email, hash, name||"", company||"");
-  res.json({ ok: true, message: "注册成功，请购买套餐后使用" });
+  db.prepare("INSERT INTO users(email,password,name,company) VALUES(?,?,?,?)").run(phone, hash, name||"", company||"");
+  res.json({ ok: true, message: "注册成功" });
 });
 
 // ── 忘记密码 ─────────────────────────────────────────
@@ -155,9 +152,9 @@ app.post("/api/auth/forgot-password/reset", async (req, res) => {
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
   const user = db.prepare("SELECT * FROM users WHERE email=?").get(email);
-  if (!user) return res.status(400).json({ error: "邮箱或密码错误" });
+  if (!user) return res.status(400).json({ error: "手机号或密码错误" });
   const ok = await bcrypt.compare(password, user.password);
-  if (!ok) return res.status(400).json({ error: "邮箱或密码错误" });
+  if (!ok) return res.status(400).json({ error: "手机号或密码错误" });
 
   // 检查是否过期
   if (user.expires && user.expires < new Date().toISOString().slice(0,10)) {
@@ -176,7 +173,7 @@ app.post("/api/login", async (req, res) => {
 });
 
 // ── 免费试用 ──────────────────────────────────────────
-const FREE_LIMIT = 10;
+const FREE_LIMIT = 3;
 
 const MONTHLY_LIMIT = 3000;
 
