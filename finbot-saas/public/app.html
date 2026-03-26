@@ -165,7 +165,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       <div style="font-size:13px;color:#94A3B8;margin-bottom:10px">支持 JPG、PNG · 单文件最大 20MB · 可批量上传 · 上传后自动识别</div>
       <button class="btn pri" onclick="event.stopPropagation();document.getElementById('fi').click()">选择文件</button>
     </div>
-    <input type="file" id="fi" multiple accept=".jpg,.jpeg,.png" style="display:none" onchange="runF(this.files)">
+    <input type="file" id="fi" multiple accept=".jpg,.jpeg,.png" style="display:none" onchange="runF(this.files);this.value=''">
     <div class="qbox" id="qb"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">处理队列</p><div id="ql"></div></div>
     <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;font-size:13px;color:#DC2626;margin-top:12px;display:none" id="eb"></div>
   </div>
@@ -227,10 +227,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
             <li>满足日常报销审核需求</li>
             <li>每月 3000 张识别额度</li>
             <li>性价比更高，适合个人或小团队</li>
-            
+            <li>底层模型：Qwen</li>
           </ul>
           <div style="font-size:11px;color:#94A3B8;padding:8px 10px;background:#F8FAFC;border-radius:6px;line-height:1.6">
-            适合常规报销场景、常规效率、预算优先的个人或小团队
+            适合常规报销场景、票据类型较单一、预算优先的个人或小团队
           </div>
         </div>
         <!-- 强化版 -->
@@ -244,10 +244,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
             <li>模糊票据、截图票据识别更稳</li>
             <li>减少人工修正，提高审核效率</li>
             <li>每月 3000 张识别额度</li>
-            
+            <li>底层模型：OpenAI</li>
           </ul>
           <div style="font-size:11px;color:#1E40AF;padding:8px 10px;background:#DBEAFE;border-radius:6px;line-height:1.6">
-            适合票据类型复杂、对准确率要求更高、速度更快、希望减少人工复核的团队或企业用户
+            适合票据类型复杂、对准确率要求更高、希望减少人工复核的团队或企业用户
           </div>
         </div>
       </div>
@@ -272,7 +272,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
               <button class="plan-btn" id="pb-monthly" onclick="selectPlan('monthly')" style="margin-top:8px;width:92%">选择基础版（月付）</button>
             </div>
             <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥1099</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥366 / 月 · 季付更省</div></div>
+              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥999</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥333 / 月 · 季付更省</div></div>
               <button class="plan-btn" id="pb-quarterly" onclick="selectPlan('quarterly')" style="margin-top:6px;width:92%">选择基础版（季付）</button>
             </div>
             <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
@@ -318,7 +318,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
           1. 扫码付款对应金额<br>
           2. 截图付款成功界面<br>
           3. 将截图发送至微信或拨打 <a href="tel:17661369798" style="color:#2563EB;font-weight:600">17661369798</a><br>
-          4. 每天 8:30-22:30 收到后立即开通
+          4. 工作日 9:00-18:00 收到后立即开通，非工作时间次日开通
         </div>
       </div>
 
@@ -625,13 +625,13 @@ async function pdfToImages(file){
   const imgs=[];
   for(let i=1;i<=pdf.numPages;i++){
     const page=await pdf.getPage(i);
-    const vp=page.getViewport({scale:2.0});
+    const vp=page.getViewport({scale:3.0});
     const canvas=document.createElement('canvas');
     canvas.width=vp.width;canvas.height=vp.height;
     const ctx=canvas.getContext('2d');
     ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,canvas.width,canvas.height);
     await page.render({canvasContext:ctx,viewport:vp,annotationMode:0}).promise;
-    imgs.push(canvas.toDataURL('image/jpeg',0.82).split(',')[1]);
+    imgs.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
   }
   return imgs;
 }
@@ -656,6 +656,13 @@ function tg(lvl,txt){
 async function runF(files){
   if(!(await checkActive()))return;
   const arr=[...files];if(!arr.length)return;
+  // 确保已有数据不丢失
+  if(RS.length===0){
+    try{
+      const saved=localStorage.getItem("fb_rs_"+TOKEN);
+      if(saved) RS=JSON.parse(saved);
+    }catch(e){}
+  }
   // 免费用户：超过剩余张数自动截断
   if(USER?.status!=="active"){
     const remaining=window.__trialRemaining||0;
@@ -865,7 +872,7 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
     const resp=await fetch("/api/ai/recognize",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
-      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1000,temperature:0,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据，输出JSON"}]}]})
+      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:2500,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据，输出JSON"}]}]})
     });
     if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
     const d=await resp.json();
