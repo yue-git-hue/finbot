@@ -532,6 +532,7 @@ async function loadUser(){
       const tu=document.getElementById("trial-used");if(tu)tu.textContent=3-td.remaining;
     }else{
       const pw=document.getElementById("paywall");if(pw)pw.style.display="block";
+      const p0=document.getElementById("p0");if(p0)p0.style.display="none";
     }
   }catch(e){location.href="/";}
 }
@@ -597,6 +598,7 @@ async function deductUsage(count){
     if(r.status===403){
       document.getElementById("paywall").style.display="block";
       document.getElementById("trial-bar").style.display="none";
+      const _p0b=document.getElementById("p0");if(_p0b)_p0b.style.display="none";
       go(3);
     }
     return false;
