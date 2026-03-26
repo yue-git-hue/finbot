@@ -520,7 +520,7 @@ async function loadUser(){
       const bar=document.getElementById("trial-bar");
       if(bar){bar.style.display="flex";bar.style.alignItems="center";bar.style.gap="12px";}
       const cnt=document.getElementById("trial-count");if(cnt)cnt.textContent=td.remaining;
-      const tu=document.getElementById("trial-used");if(tu)tu.textContent=10-td.remaining;
+      const tu=document.getElementById("trial-used");if(tu)tu.textContent=3-td.remaining;
     }else{
       const pw=document.getElementById("paywall");if(pw)pw.style.display="block";
     }
@@ -604,7 +604,7 @@ async function deductUsage(count){
     const cnt=document.getElementById("trial-count");
     if(cnt) cnt.textContent=window.__trialRemaining;
     const tu=document.getElementById("trial-used");
-    if(tu) tu.textContent=10-window.__trialRemaining;
+    if(tu) tu.textContent=3-window.__trialRemaining;
     if(window.__trialRemaining===0) document.getElementById("trial-bar").style.display="none";
   }
   return true;
