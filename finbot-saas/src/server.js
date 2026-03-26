@@ -87,6 +87,39 @@ function authAdmin(req, res, next) {
 }
 
 // ── 用户注册 ─────────────────────────────────────────
+// ── 发送验证码 ────────────────────────────────────────
+app.post("/api/auth/send-code", async (req, res) => {
+  const { email, type } = req.body;
+  if (!email) return res.status(400).json({ error: "请填写邮箱" });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return res.status(400).json({ error: "邮箱格式不正确" });
+  const ip = (req.headers["x-forwarded-for"]||"").split(",")[0].trim() || req.ip;
+  const limit = checkCodeLimit(email, ip);
+  if (limit) return res.status(429).json({ error: limit });
+  if (type === "register") {
+    if (db.prepare("SELECT id FROM users WHERE email=?").get(email)) return res.status(400).json({ error: "该邮箱已注册" });
+  }
+  if (type === "reset") {
+    if (!db.prepare("SELECT id FROM users WHERE email=?").get(email)) return res.status(400).json({ error: "该邮箱未注册" });
+  }
+  const code = genCode();
+  const expireAt = new Date(Date.now() + 5 * 60000).toISOString();
+  db.prepare("INSERT INTO email_codes(email,code,type,expire_at,ip) VALUES(?,?,?,?,?)").run(email, code, type||"register", expireAt, ip||"");
+  try {
+    await sendMail(email, "FINBOT 验证码",
+      `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px">
+        <h2 style="color:#1E40AF">FINBOT 验证码</h2>
+        <p>您的验证码是：</p>
+        <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#2563EB;padding:20px 0">${code}</div>
+        <p style="color:#64748B;font-size:13px">验证码5分钟内有效，请勿泄露给他人。</p>
+      </div>`
+    );
+    res.json({ ok: true, message: "验证码已发送，请查收邮件" });
+  } catch(e) {
+    console.error("[邮件发送失败]", e.message);
+    res.status(500).json({ error: "邮件发送失败：" + e.message });
+  }
+});
+
 // ── 邮箱验证码注册 ────────────────────────────────────
 app.post("/api/register", async (req, res) => {
   const { phone, password, name, company } = req.body;
@@ -97,6 +130,22 @@ app.post("/api/register", async (req, res) => {
   const hash = await bcrypt.hash(password, 10);
   db.prepare("INSERT INTO users(email,password,name,company) VALUES(?,?,?,?)").run(phone, hash, name||"", company||"");
   res.json({ ok: true, message: "注册成功" });
+});
+
+// ── 忘记密码 ─────────────────────────────────────────
+app.post("/api/auth/forgot-password/reset", async (req, res) => {
+  const { email, code, password } = req.body;
+  if (!email || !code || !password) return res.status(400).json({ error: "邮箱、验证码和新密码必填" });
+  if (password.length < 6) return res.status(400).json({ error: "密码至少6位" });
+  const user = db.prepare("SELECT id FROM users WHERE email=?").get(email);
+  if (!user) return res.status(400).json({ error: "该邮箱未注册" });
+  const now = new Date().toISOString();
+  const vc = db.prepare("SELECT * FROM email_codes WHERE email=? AND type='reset' AND used=0 AND expire_at>? ORDER BY id DESC LIMIT 1").get(email, now);
+  if (!vc || vc.code !== code) return res.status(400).json({ error: "验证码错误或已过期" });
+  db.prepare("UPDATE email_codes SET used=1 WHERE id=?").run(vc.id);
+  const hash = await bcrypt.hash(password, 10);
+  db.prepare("UPDATE users SET password=? WHERE id=?").run(hash, user.id);
+  res.json({ ok: true, message: "密码已重置，请重新登录" });
 });
 
 // ── 用户登录 ─────────────────────────────────────────
@@ -282,7 +331,26 @@ function activateOrder(outTradeNo) {
 
 
 // ── AI 识别代理（客户无需填Key）────────────────────────
-app.post("/api/ai/recognize", authUser, async (req, res) => {
+// ── 文件类型校验 ─────────────────────────────────────
+function validateImageInput(req, res, next) {
+  const messages = req.body?.messages || [];
+  for (const msg of messages) {
+    if (!Array.isArray(msg.content)) continue;
+    for (const part of msg.content) {
+      if (part.type === "image_url") {
+        const url = part.image_url?.url || "";
+        if (url.startsWith("data:") &&
+            !url.startsWith("data:image/jpeg") &&
+            !url.startsWith("data:image/png")) {
+          return res.status(400).json({ error: "仅支持 JPG/PNG 图片格式，请重新上传" });
+        }
+      }
+    }
+  }
+  next();
+}
+
+app.post("/api/ai/recognize", authUser, validateImageInput, async (req, res) => {
   // 查用户是否是强化版
   const user = db.prepare("SELECT plan, is_pro FROM users WHERE id=?").get(req.user.id);
   const isPro = user?.is_pro === 1 || PLANS[user?.plan]?.pro === true;
@@ -309,14 +377,15 @@ app.post("/api/ai/recognize", authUser, async (req, res) => {
       res.status(500).json({ error: e.message });
     }
   } else {
-    // 基础版：路由到硅基 Qwen
+    // 基础版：路由到硅基 Qwen（强制7B快速模型）
     const sfKey = process.env.SF_KEY;
     if (!sfKey) return res.status(500).json({ error: "AI服务未配置，请联系管理员" });
     try {
+      const sfBody = { ...req.body, model: "Qwen/Qwen2.5-VL-7B-Instruct" };
       const r = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sfKey },
-        body: JSON.stringify(req.body),
+        body: JSON.stringify(sfBody),
       });
       if (!r.ok) {
         const t = await r.text();
@@ -483,7 +552,7 @@ app.post("/api/admin/record-payment", authAdmin, async (req, res) => {
 
 // ── 管理后台 API ─────────────────────────────────────
 app.get("/api/admin/users", authAdmin, (req, res) => {
-  const users = db.prepare("SELECT id,email,name,company,status,plan,expires,free_uses,created,last_login FROM users ORDER BY created DESC").all();
+  const users = db.prepare("SELECT id,email,name,company,status,plan,expires,free_uses,is_pro,month_uses,month_year,created,last_login FROM users ORDER BY created DESC").all();
   res.json(users);
 });
 
