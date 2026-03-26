@@ -227,7 +227,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
             <li>满足日常报销审核需求</li>
             <li>每月 3000 张识别额度</li>
             <li>性价比更高，适合个人或小团队</li>
-            
+            <li>底层模型：Qwen</li>
           </ul>
           <div style="font-size:11px;color:#94A3B8;padding:8px 10px;background:#F8FAFC;border-radius:6px;line-height:1.6">
             适合常规报销场景、票据类型较单一、预算优先的个人或小团队
@@ -241,13 +241,13 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
           </div>
           <ul style="font-size:12px;color:#1E40AF;line-height:2;padding-left:16px;margin-bottom:12px">
             <li>适合复杂票据和疑难场景</li>
-            <li>模糊票据、截图票据识别更稳，速度更快</li>
+            <li>模糊票据、截图票据识别更稳</li>
             <li>减少人工修正，提高审核效率</li>
             <li>每月 3000 张识别额度</li>
-            
+            <li>底层模型：OpenAI</li>
           </ul>
           <div style="font-size:11px;color:#1E40AF;padding:8px 10px;background:#DBEAFE;border-radius:6px;line-height:1.6">
-            适合票据类型复杂、对准确率要求更高、速度更快、希望减少人工复核的团队或企业用户
+            适合票据类型复杂、对准确率要求更高、希望减少人工复核的团队或企业用户
           </div>
         </div>
       </div>
@@ -272,7 +272,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
               <button class="plan-btn" id="pb-monthly" onclick="selectPlan('monthly')" style="margin-top:8px;width:92%">选择基础版（月付）</button>
             </div>
             <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥1099</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥366 / 月 · 季付更省</div></div>
+              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥999</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥333 / 月 · 季付更省</div></div>
               <button class="plan-btn" id="pb-quarterly" onclick="selectPlan('quarterly')" style="margin-top:6px;width:92%">选择基础版（季付）</button>
             </div>
             <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
@@ -503,7 +503,7 @@ async function loadUser(){
       const versionLabel=document.getElementById("sub-version-label");
       if(versionLabel){
         const isPro=(USER.plan||"").includes("pro");
-        versionLabel.textContent=isPro?"⚡ 强化版订阅中（OPENAI）":"✅ 基础版订阅中（Qwen）";
+        versionLabel.textContent=isPro?"⚡ 强化版订阅中（GPT-4o）":"✅ 基础版订阅中（Qwen）";
         versionLabel.style.color=isPro?"#1D4ED8":"#166534";
       }
       if(expiresDetail) expiresDetail.textContent=USER.expires?"到期："+USER.expires:"长期有效（无截止日）";
@@ -532,7 +532,6 @@ async function loadUser(){
       const tu=document.getElementById("trial-used");if(tu)tu.textContent=3-td.remaining;
     }else{
       const pw=document.getElementById("paywall");if(pw)pw.style.display="block";
-      const p0=document.getElementById("p0");if(p0)p0.style.display="none";
     }
   }catch(e){location.href="/";}
 }
@@ -598,7 +597,6 @@ async function deductUsage(count){
     if(r.status===403){
       document.getElementById("paywall").style.display="block";
       document.getElementById("trial-bar").style.display="none";
-      const _p0b=document.getElementById("p0");if(_p0b)_p0b.style.display="none";
       go(3);
     }
     return false;
@@ -627,13 +625,13 @@ async function pdfToImages(file){
   const imgs=[];
   for(let i=1;i<=pdf.numPages;i++){
     const page=await pdf.getPage(i);
-    const vp=page.getViewport({scale:3.0});
+    const vp=page.getViewport({scale:2.0});
     const canvas=document.createElement('canvas');
     canvas.width=vp.width;canvas.height=vp.height;
     const ctx=canvas.getContext('2d');
     ctx.fillStyle="#FFFFFF";ctx.fillRect(0,0,canvas.width,canvas.height);
     await page.render({canvasContext:ctx,viewport:vp,annotationMode:0}).promise;
-    imgs.push(canvas.toDataURL('image/jpeg',0.92).split(',')[1]);
+    imgs.push(canvas.toDataURL('image/jpeg',0.82).split(',')[1]);
   }
   return imgs;
 }
@@ -867,7 +865,7 @@ M102 费用归类不确定 → REVIEW MEDIUM，message:"费用归类不明确，
     const resp=await fetch("/api/ai/recognize",{
       method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+TOKEN},
-      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:2500,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据，输出JSON"}]}]})
+      body:JSON.stringify({model:"Qwen/Qwen2.5-VL-72B-Instruct",max_tokens:1000,temperature:0,messages:[{role:"system",content:fullSys},{role:"user",content:[{type:"image_url",image_url:{url:`data:image/jpeg;base64,${img}`}},{type:"text",text:"识别此票据，输出JSON"}]}]})
     });
     if(!resp.ok){const t=await resp.text();let msg="识别失败";try{const j=JSON.parse(t);msg=j.error||msg;}catch(e){}throw new Error(msg);}
     const d=await resp.json();
