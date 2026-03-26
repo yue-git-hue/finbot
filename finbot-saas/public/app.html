@@ -656,6 +656,16 @@ function tg(lvl,txt){
 async function runF(files){
   if(!(await checkActive()))return;
   const arr=[...files];if(!arr.length)return;
+  // 免费用户：超过剩余张数自动截断
+  if(USER?.status!=="active"){
+    const remaining=window.__trialRemaining||0;
+    if(remaining<=0){
+      document.getElementById("paywall").style.display="block";
+      go(3);return;
+    }
+    // 只取能识别的张数
+    arr.splice(remaining);
+  }
   document.getElementById("dzt").textContent="AI 审核中…";
   const qb=document.getElementById("qb"),ql=document.getElementById("ql");
   qb.style.display="block";
@@ -670,7 +680,7 @@ async function runF(files){
       }
       await deductUsage(r.pages||1);
       RS.unshift(r);
-      renderRes();go(1);  // 每识别完一张立即显示
+      renderRes();  // 每识别完一张立即显示（不跳转页面）
       if(sel)sel.textContent="✓ 完成";
       // 保存到 localStorage
       try{localStorage.setItem("fb_rs_"+TOKEN,JSON.stringify(RS.slice(0,200)));}catch(e){}
@@ -678,7 +688,7 @@ async function runF(files){
       if(sel)sel.textContent="✗ 失败";
       const errItem={id:Date.now()+Math.random(),fileName:f.name,docType:"识别失败",conclusion:"REVIEW",risks:[{level:"HIGH",message:"错误："+String(e.message)}],manualReview:"请人工处理"};
       RS.unshift(errItem);
-      renderRes();go(1);
+      renderRes();
     }
     await new Promise(r=>setTimeout(r,300));
     const el=document.getElementById("qi"+f.name.replace(/\W/g,'_'));if(el)setTimeout(()=>el.remove(),800);
