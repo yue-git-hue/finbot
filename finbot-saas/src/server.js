@@ -24,9 +24,9 @@ const BASE_URL    = process.env.BASE_URL    || "http://localhost:3723";
 // ── 套餐配置 ─────────────────────────────────────────
 const PLANS = {
   // 基础版（硅基 Qwen）
-  monthly:       { name: "基础版·月付", price: 49900,  days: 30,  pro: false },
-  quarterly:     { name: "基础版·季付", price: 129900, days: 90,  pro: false },
-  yearly:        { name: "基础版·年付", price: 499900, days: 365, pro: false },
+  monthly:       { name: "基础版·月付", price: 39900,  days: 30,  pro: false },
+  quarterly:     { name: "基础版·季付", price: 99900,  days: 90,  pro: false },
+  yearly:        { name: "基础版·年付", price: 399900, days: 365, pro: false },
   // 强化版（OpenAI GPT-4o），每月多 ¥300
   monthly_pro:   { name: "强化版·月付", price: 79900,  days: 30,  pro: true  },
   quarterly_pro: { name: "强化版·季付", price: 219900, days: 90,  pro: true  },
