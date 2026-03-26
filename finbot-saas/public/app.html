@@ -106,7 +106,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   <button class="tab" onclick="go(3)">订阅</button>
   <button class="tab" onclick="go(4)">⚙️ 规则配置</button>
   
-  <a href="tel:17661369798" style="padding:7px 14px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;color:#166534;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;margin-right:8px">📞 17661369798</a>
+  <a href="tel:17661369798" style="padding:7px 14px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;color:#166534;font-size:12px;font-weight:600;text-decoration:none;white-space:nowrap;margin-right:8px">💬 客服/微信：17661369798</a>
   <div class="user-info">
     <span id="user-email" style="color:#475569"></span>
     <span class="status-badge" id="user-status"></span>
@@ -146,13 +146,13 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   </div>
   <div id="trial-bar" style="display:none;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:10px;padding:12px 20px;margin-bottom:16px;align-items:center;gap:12px">
     <span style="font-size:18px">🎁</span>
-    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：已用 <b id="trial-used">0</b> 张，剩余 <b id="trial-count">10</b> 张（共10张），用完后需订阅</span>
+    <span style="font-size:14px;color:#1E40AF;flex:1">免费试用：已用 <b id="trial-used">0</b> 张，剩余 <b id="trial-count">3</b> 张（共3张），用完后需订阅</span>
     <button class="btn pri sm" onclick="go(3)">立即订阅 →</button>
   </div>
   <div id="paywall" style="display:none;background:#fff;border:1px solid #E2E8F0;border-radius:12px;padding:40px;text-align:center;margin-bottom:20px">
     <div style="font-size:36px;margin-bottom:14px">🔒</div>
-    <div style="font-size:18px;font-weight:700;margin-bottom:8px">免费次数已用完</div>
-    <div style="font-size:14px;color:#475569;margin-bottom:20px">订阅后无限使用，购买后立即开通</div>
+    <div style="font-size:18px;font-weight:700;margin-bottom:8px">免费额度已用完</div>
+    <div style="font-size:14px;color:#475569;margin-bottom:20px">订阅后每月可识别 3000 张，购买后立即开通</div>
     <button class="btn pri" onclick="go(3)">查看套餐 →</button>
   </div>
 
@@ -268,15 +268,15 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
           <div style="display:flex;padding:16px 0;border-bottom:1px solid #F1F5F9;align-items:stretch">
             <div style="width:22%;padding:0 14px;font-weight:700;font-size:13px">基础版</div>
             <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥499</div></div>
+              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥399</div></div>
               <button class="plan-btn" id="pb-monthly" onclick="selectPlan('monthly')" style="margin-top:8px;width:92%">选择基础版（月付）</button>
             </div>
             <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥1299</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥433 / 月 · 季付更省</div></div>
+              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥999</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥333 / 月 · 季付更省</div></div>
               <button class="plan-btn" id="pb-quarterly" onclick="selectPlan('quarterly')" style="margin-top:6px;width:92%">选择基础版（季付）</button>
             </div>
             <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥4999</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥417 / 月 · 年付最划算</div></div>
+              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥3999</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥333 / 月 · 年付最划算</div></div>
               <button class="plan-btn" id="pb-yearly" onclick="selectPlan('yearly')" style="margin-top:6px;width:92%">选择基础版（年付）</button>
             </div>
           </div>
@@ -528,9 +528,9 @@ async function loadUser(){
 }
 
 const PLANS_INFO={
-  monthly:       {name:"基础版·月付", amount:"¥499"},
-  quarterly:     {name:"基础版·季付", amount:"¥1299"},
-  yearly:        {name:"基础版·年付", amount:"¥4999"},
+  monthly:       {name:"基础版·月付", amount:"¥399"},
+  quarterly:     {name:"基础版·季付", amount:"¥999"},
+  yearly:        {name:"基础版·年付", amount:"¥3999"},
   monthly_pro:   {name:"强化版·月付", amount:"¥799"},
   quarterly_pro: {name:"强化版·季付", amount:"¥2199"},
   yearly_pro:    {name:"强化版·年付", amount:"¥8599"},
