@@ -381,7 +381,7 @@ app.post("/api/ai/recognize", authUser, validateImageInput, async (req, res) => 
     const sfKey = process.env.SF_KEY;
     if (!sfKey) return res.status(500).json({ error: "AI服务未配置，请联系管理员" });
     try {
-      const sfBody = { ...req.body, model: "Qwen/Qwen2.5-VL-7B-Instruct" };
+      const sfBody = { ...req.body, model: "Qwen/Qwen2.5-VL-72B-Instruct" };
       const r = await fetch("https://api.siliconflow.cn/v1/chat/completions", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": "Bearer " + sfKey },
