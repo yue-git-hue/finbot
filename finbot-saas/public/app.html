@@ -604,27 +604,20 @@ async function selectPlan(key){
 
     __currentOrder = d.outTradeNo;
 
-    // 如果是演示模式（开发环境），直接跳转
+    // qrUrl：虎皮椒直接返回的二维码图片（PC扫码用，5分钟有效）
+    // payUrl：手机端 H5 跳转链接
     if(d.mock){
       document.getElementById("pay-loading").style.display = "none";
       document.getElementById("pay-qr-wrap").style.display = "block";
       document.getElementById("pay-confirm-btn").textContent = "🧪 演示：模拟支付成功";
       document.getElementById("pay-confirm-btn").onclick = ()=>{ location.href = d.payUrl; };
-      document.getElementById("pay-qr").innerHTML = `<div style="width:160px;height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f0fdf4;border-radius:8px;font-size:13px;color:#166534;gap:8px"><span style="font-size:28px">🧪</span>演示模式<div style="font-size:11px;color:#94A3B8">点按钮触发</div></div>`;
+      document.getElementById("pay-qr").innerHTML = `<div style="width:180px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f0fdf4;border-radius:8px;font-size:13px;color:#166634;gap:8px"><span style="font-size:28px">🧪</span>演示模式<div style="font-size:11px;color:#94A3B8">点按钮触发</div></div>`;
       return;
     }
 
-    // 生成二维码
+    // PC 端：直接显示二维码图片
     const qrEl = document.getElementById("pay-qr");
-    qrEl.innerHTML = "";
-    new QRCode(qrEl, {
-      text: d.payUrl,
-      width: 180,
-      height: 180,
-      colorDark: "#0F172A",
-      colorLight: "#ffffff",
-      correctLevel: QRCode.CorrectLevel.M,
-    });
+    qrEl.innerHTML = `<img src="${d.qrUrl}" style="width:180px;height:180px;border-radius:6px;display:block" alt="微信支付二维码">`;
 
     document.getElementById("pay-loading").style.display = "none";
     document.getElementById("pay-qr-wrap").style.display = "block";
