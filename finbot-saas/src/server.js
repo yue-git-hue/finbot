@@ -588,7 +588,7 @@ app.post("/api/admin/record-payment", authAdmin, async (req, res) => {
 });
 
 app.get("/api/admin/users", authAdmin, (req, res) => {
-  res.json(db.prepare("SELECT id,email,name,company,status,plan,expires,free_uses,created,last_login FROM users ORDER BY created DESC").all());
+  res.json(db.prepare("SELECT id,email,name,company,status,plan,expires,free_uses,month_uses,month_year,created,last_login FROM users ORDER BY created DESC").all());
 });
 
 app.post("/api/admin/user-status", authAdmin, (req, res) => {
