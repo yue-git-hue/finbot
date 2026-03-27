@@ -4,145 +4,266 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FINBOT · AI票据初审 Agent</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
+:root{
+  --p1:#7C3AED;--p2:#9333EA;--p3:#A855F7;--p4:#C084FC;--p5:#E9D5FF;
+  --bg:#0A0612;--bg2:#110A1E;--bg3:#1A0F2E;--bg4:#221540;
+  --border:#2D1B4E;--border2:#3D2566;
+  --text:#F3F0FF;--text2:#C4B5FD;--text3:#7C6FA8;--text4:#4A3B6B;
+  --green:#34D399;--red:#F87171;--yellow:#FCD34D;
+  --accent:#7C3AED;
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:#0F172A;color:#E2E8F0;min-height:100vh}
-.nav{padding:16px 40px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #1E293B;position:sticky;top:0;background:#0F172A;z-index:10}
-.nav-logo{font-size:20px;font-weight:800;color:#38BDF8}
-.nav-logo span{color:#64748B;font-weight:400;font-size:13px;margin-left:8px}
-.nav-btns{display:flex;gap:10px;align-items:center}
-.btn{padding:9px 22px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:inherit;transition:all 0.15s}
-.btn-ghost{background:transparent;border:1px solid #334155;color:#94A3B8}
-.btn-ghost:hover{background:#1E293B;color:#E2E8F0}
-.btn-pri{background:#2563EB;color:#fff}
-.btn-pri:hover{background:#1D4ED8}
-.btn-lg{padding:14px 32px;font-size:15px;border-radius:10px}
+body{font-family:'Noto Sans SC',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
 
-/* Hero */
-.hero{padding:80px 40px 60px;text-align:center;max-width:820px;margin:0 auto}
-.hero-badge{display:inline-block;background:#1E3A5F;border:1px solid #2563EB44;color:#38BDF8;font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;margin-bottom:20px;letter-spacing:0.05em}
-.hero h1{font-size:52px;font-weight:800;line-height:1.2;margin-bottom:20px}
-.hero h1 span{color:#38BDF8}
-.hero-sub{font-size:17px;color:#94A3B8;line-height:1.8;margin-bottom:12px}
-.hero-tagline{font-size:14px;color:#475569;margin-bottom:36px}
-.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
-.free-note{margin-top:14px;font-size:13px;color:#475569}
-.free-note span{color:#38BDF8}
+/* 背景网格 */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:48px 48px;opacity:0.3;pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(124,58,237,0.25) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
 
-/* 核心流程 */
-.flow{max-width:900px;margin:0 auto 70px;padding:0 40px}
-.flow h2{text-align:center;font-size:26px;font-weight:700;margin-bottom:12px}
-.flow-sub{text-align:center;font-size:14px;color:#64748B;margin-bottom:40px}
-.flow-steps{display:flex;align-items:flex-start;gap:0;position:relative}
-.flow-step{flex:1;text-align:center;position:relative;padding:0 12px}
-.flow-step:not(:last-child)::after{content:"→";position:absolute;right:-10px;top:20px;font-size:20px;color:#334155}
-.step-num{width:44px;height:44px;border-radius:50%;background:#1E3A5F;border:2px solid #2563EB;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#38BDF8;margin:0 auto 12px}
-.step-title{font-size:14px;font-weight:700;margin-bottom:6px}
-.step-desc{font-size:12px;color:#64748B;line-height:1.6}
+/* NAV */
+.nav{
+  padding:0 48px;height:64px;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);position:sticky;top:0;
+  background:rgba(10,6,18,0.85);backdrop-filter:blur(20px);z-index:100;
+}
+.nav-logo{display:flex;align-items:center;gap:10px}
+.nav-logo-mark{
+  width:32px;height:32px;background:linear-gradient(135deg,var(--p1),var(--p3));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:#fff;
+}
+.nav-logo-text{font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--text)}
+.nav-logo-sub{font-size:12px;color:var(--text3);font-weight:400}
+.nav-btns{display:flex;gap:8px;align-items:center}
+.nav-phone{font-size:12px;color:var(--text3);text-decoration:none;margin-right:8px;letter-spacing:0.02em}
+.nav-phone:hover{color:var(--text2)}
+.btn{padding:8px 20px;border-radius:6px;border:none;cursor:pointer;font-size:13px;font-weight:600;font-family:'Noto Sans SC',sans-serif;transition:all 0.15s;letter-spacing:0.02em}
+.btn-ghost{background:transparent;border:1px solid var(--border2);color:var(--text3)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-pri{background:linear-gradient(135deg,var(--p1),var(--p2));color:#fff;box-shadow:0 0 20px rgba(124,58,237,0.3)}
+.btn-pri:hover{background:linear-gradient(135deg,#6D28D9,var(--p1));box-shadow:0 0 28px rgba(124,58,237,0.5);transform:translateY(-1px)}
+.btn-lg{padding:13px 30px;font-size:14px;border-radius:8px}
 
-/* 功能特性 */
-.features{max-width:960px;margin:0 auto 70px;padding:0 40px}
-.features h2{text-align:center;font-size:26px;font-weight:700;margin-bottom:40px}
-.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.feat{background:#1E293B;border:1px solid #334155;border-radius:12px;padding:22px}
-.feat-icon{font-size:26px;margin-bottom:10px}
-.feat-title{font-size:14px;font-weight:700;margin-bottom:8px;color:#E2E8F0}
-.feat-desc{font-size:13px;color:#64748B;line-height:1.7}
-.feat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
-.ftag{font-size:11px;background:#0F172A;border:1px solid #334155;color:#64748B;padding:2px 8px;border-radius:4px}
+/* HERO */
+.hero{position:relative;padding:100px 40px 80px;text-align:center;max-width:860px;margin:0 auto;z-index:1}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.35);
+  color:var(--p4);font-size:12px;font-weight:600;padding:5px 14px;border-radius:20px;
+  margin-bottom:28px;letter-spacing:0.06em;text-transform:uppercase;
+}
+.hero-eyebrow span{width:6px;height:6px;background:var(--p3);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.hero h1{
+  font-family:'Syne',sans-serif;font-size:58px;font-weight:800;line-height:1.15;
+  margin-bottom:24px;letter-spacing:-0.02em;
+}
+.hero h1 .accent{
+  background:linear-gradient(135deg,var(--p3),var(--p4));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.hero-sub{font-size:16px;color:var(--text2);line-height:1.9;margin-bottom:10px;font-weight:400}
+.hero-tagline{font-size:13px;color:var(--text3);margin-bottom:36px;font-style:italic}
+.hero-tag-row{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(124,58,237,0.08);border:1px solid var(--border2);
+  border-radius:8px;padding:8px 16px;margin-bottom:32px;font-size:13px;color:var(--text3);
+}
+.pro-badge{
+  background:linear-gradient(135deg,var(--p1),var(--p2));color:#fff;
+  font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:0.05em;
+}
+.hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.free-note{font-size:13px;color:var(--text4)}
+.free-note em{color:var(--p4);font-style:normal;font-weight:600}
 
-/* 风险规则 */
-.rules{max-width:900px;margin:0 auto 70px;padding:0 40px}
-.rules h2{text-align:center;font-size:26px;font-weight:700;margin-bottom:12px}
-.rules-sub{text-align:center;font-size:14px;color:#64748B;margin-bottom:36px}
-.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.rule-item{background:#1E293B;border-radius:8px;padding:12px 16px;display:flex;align-items:flex-start;gap:10px;font-size:13px}
-.rule-icon{font-size:14px;flex-shrink:0;margin-top:1px}
-.rule-text{color:#94A3B8;line-height:1.5}
-.rule-text b{color:#E2E8F0}
+/* 数字统计 */
+.stats{
+  position:relative;z-index:1;max-width:800px;margin:0 auto 80px;
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;
+}
+.stat{background:var(--bg2);padding:24px;text-align:center}
+.stat-num{font-family:'Syne',sans-serif;font-size:30px;font-weight:800;color:var(--p4);margin-bottom:4px}
+.stat-label{font-size:12px;color:var(--text3)}
+
+/* SECTION 通用 */
+section{position:relative;z-index:1;max-width:960px;margin:0 auto 80px;padding:0 40px}
+section h2{font-family:'Syne',sans-serif;font-size:28px;font-weight:800;text-align:center;margin-bottom:10px;letter-spacing:-0.01em}
+.sec-sub{text-align:center;font-size:14px;color:var(--text3);margin-bottom:44px}
+
+/* 流程 */
+.flow-steps{display:flex;align-items:flex-start;gap:0}
+.flow-step{flex:1;text-align:center;position:relative;padding:0 14px}
+.flow-step:not(:last-child)::after{
+  content:'';position:absolute;top:22px;right:-4px;width:8px;height:8px;
+  border-top:2px solid var(--border2);border-right:2px solid var(--border2);
+  transform:rotate(45deg);
+}
+.step-num{
+  width:44px;height:44px;border-radius:10px;
+  background:linear-gradient(135deg,var(--p1),var(--p2));
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:#fff;
+  margin:0 auto 12px;box-shadow:0 0 16px rgba(124,58,237,0.4);
+}
+.step-title{font-size:14px;font-weight:700;margin-bottom:6px;color:var(--text)}
+.step-desc{font-size:12px;color:var(--text3);line-height:1.7}
+
+/* 功能卡片 */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.feat{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px;
+  transition:all 0.2s;position:relative;overflow:hidden;
+}
+.feat::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--p1),transparent);
+  opacity:0;transition:opacity 0.2s;
+}
+.feat:hover{border-color:var(--border2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(124,58,237,0.12)}
+.feat:hover::before{opacity:1}
+.feat-icon{font-size:24px;margin-bottom:12px}
+.feat-title{font-size:14px;font-weight:700;margin-bottom:8px;color:var(--text)}
+.feat-desc{font-size:12px;color:var(--text3);line-height:1.8}
+.feat-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px}
+.ftag{
+  font-size:10px;background:rgba(124,58,237,0.1);
+  border:1px solid rgba(124,58,237,0.2);color:var(--p4);
+  padding:2px 8px;border-radius:4px;
+}
+
+/* 新增：人工修正功能 */
+.new-feat{
+  background:linear-gradient(135deg,rgba(124,58,237,0.08),rgba(168,85,247,0.04));
+  border:1px solid rgba(124,58,237,0.25);
+}
+
+/* 规则 */
+.rules-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.rule-item{
+  background:var(--bg2);border:1px solid var(--border);border-radius:8px;
+  padding:12px 14px;display:flex;align-items:flex-start;gap:10px;font-size:12px;
+}
+.rule-icon{font-size:13px;flex-shrink:0;margin-top:1px}
+.rule-text{color:var(--text2);line-height:1.6}
+.rule-text b{color:var(--text);font-weight:600}
 
 /* 对比 */
-.compare{max-width:800px;margin:0 auto 70px;padding:0 40px}
-.compare h2{text-align:center;font-size:26px;font-weight:700;margin-bottom:36px}
-.compare-table{border:1px solid #334155;border-radius:12px;overflow:hidden}
-.compare-row{display:grid;grid-template-columns:2fr 1fr 1fr;border-bottom:1px solid #1E293B}
+.compare-table{border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.compare-row{display:grid;grid-template-columns:2fr 1fr 1fr;border-bottom:1px solid var(--border)}
 .compare-row:last-child{border-bottom:none}
-.compare-row.header{background:#1E293B}
-.compare-cell{padding:12px 16px;font-size:13px}
-.compare-cell.label{color:#94A3B8}
-.compare-cell.yes{color:#86EFAC;text-align:center}
-.compare-cell.no{color:#F87171;text-align:center}
-.compare-cell.head{font-weight:700;text-align:center;font-size:12px;color:#64748B;text-transform:uppercase;letter-spacing:0.06em}
+.compare-row.header{background:var(--bg3)}
+.compare-cell{padding:13px 18px;font-size:13px}
+.compare-cell.label{color:var(--text2)}
+.compare-cell.yes{color:var(--green);text-align:center;font-weight:600}
+.compare-cell.no{color:var(--red);text-align:center}
+.compare-cell.head{font-weight:700;text-align:center;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em}
+.compare-cell.head.hi{color:var(--p4)}
 
 /* 定价 */
-.pricing{max-width:860px;margin:0 auto 80px;padding:0 40px}
-.pricing h2{text-align:center;font-size:26px;font-weight:700;margin-bottom:12px}
-.pricing-sub{text-align:center;font-size:14px;color:#64748B;margin-bottom:36px}
 .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.plan{background:#1E293B;border:2px solid #334155;border-radius:14px;padding:28px 22px;text-align:center}
-.plan.hot{border-color:#2563EB;position:relative}
-.plan-badge{font-size:11px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
-.plan-name{font-size:17px;font-weight:700;margin-bottom:8px}
-.plan-price{font-size:36px;font-weight:800;color:#38BDF8;margin:10px 0 4px}
-.plan-price span{font-size:13px;color:#64748B;font-weight:400}
-.plan-origin{font-size:12px;color:#334155;text-decoration:line-through;margin-bottom:4px}
-.plan-save{font-size:12px;color:#86EFAC;margin-bottom:16px;font-weight:600}
+.plan{
+  background:var(--bg2);border:1px solid var(--border);
+  border-radius:14px;padding:28px 22px;text-align:center;
+  transition:all 0.2s;
+}
+.plan:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(124,58,237,0.15)}
+.plan.hot{
+  border-color:var(--p1);
+  background:linear-gradient(180deg,rgba(124,58,237,0.08) 0%,var(--bg2) 60%);
+  box-shadow:0 0 0 1px rgba(124,58,237,0.2),0 8px 32px rgba(124,58,237,0.12);
+}
+.plan-badge{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:10px}
+.plan-name{font-size:16px;font-weight:700;margin-bottom:10px;color:var(--text)}
+.plan-price{font-family:'Syne',sans-serif;font-size:38px;font-weight:800;color:var(--p4);margin:8px 0 4px}
+.plan-price span{font-size:13px;color:var(--text3);font-weight:400;font-family:'Noto Sans SC',sans-serif}
+.plan-save{font-size:12px;color:var(--green);margin-bottom:18px;font-weight:600}
 .plan-features{text-align:left;margin-bottom:22px}
-.plan-features li{font-size:13px;color:#94A3B8;padding:5px 0;list-style:none;display:flex;align-items:center;gap:6px}
-.plan-features li::before{content:"✓";color:#38BDF8;font-weight:700;flex-shrink:0}
+.plan-features li{font-size:13px;color:var(--text2);padding:5px 0;list-style:none;display:flex;align-items:center;gap:8px}
+.plan-features li::before{content:"✓";color:var(--p4);font-weight:700;flex-shrink:0;font-size:12px}
 
 /* FAQ */
-.faq{max-width:700px;margin:0 auto 70px;padding:0 40px}
-.faq h2{text-align:center;font-size:26px;font-weight:700;margin-bottom:36px}
-.faq-item{border-bottom:1px solid #1E293B;padding:16px 0}
-.faq-q{font-size:14px;font-weight:600;color:#E2E8F0;cursor:pointer;display:flex;justify-content:space-between}
-.faq-a{font-size:13px;color:#64748B;line-height:1.7;margin-top:10px;display:none}
+.faq-item{border-bottom:1px solid var(--border);padding:16px 0}
+.faq-q{font-size:14px;font-weight:600;color:var(--text);cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.faq-q span{color:var(--text3);font-size:16px;transition:transform 0.2s;flex-shrink:0}
+.faq-a{font-size:13px;color:var(--text3);line-height:1.8;margin-top:10px;display:none}
 .faq-item.open .faq-a{display:block}
 .faq-item.open .faq-q span{transform:rotate(180deg)}
 
 /* CTA */
-.cta{text-align:center;padding:60px 40px;background:#1E293B;border-top:1px solid #334155;border-bottom:1px solid #334155;margin-bottom:0}
-.cta h2{font-size:30px;font-weight:800;margin-bottom:12px}
-.cta p{font-size:15px;color:#64748B;margin-bottom:28px}
+.cta{
+  position:relative;z-index:1;text-align:center;padding:70px 40px;
+  background:linear-gradient(135deg,rgba(124,58,237,0.12),rgba(168,85,247,0.06));
+  border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  margin-bottom:0;overflow:hidden;
+}
+.cta::before{
+  content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:600px;height:300px;
+  background:radial-gradient(ellipse,rgba(124,58,237,0.2) 0%,transparent 70%);
+  pointer-events:none;
+}
+.cta h2{font-family:'Syne',sans-serif;font-size:32px;font-weight:800;margin-bottom:12px;letter-spacing:-0.01em}
+.cta p{font-size:15px;color:var(--text3);margin-bottom:30px}
+.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;position:relative}
 
 /* Footer */
-footer{text-align:center;padding:32px 20px;color:#334155;font-size:13px}
-footer a{color:#38BDF8;text-decoration:none}
+footer{position:relative;z-index:1;text-align:center;padding:32px 20px;color:var(--text4);font-size:13px}
+footer a{color:var(--p4);text-decoration:none}
+footer a:hover{color:var(--p3)}
 
 /* Modal */
-.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:100;align-items:center;justify-content:center}
+.modal-bg{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center}
 .modal-bg.on{display:flex}
-.modal{background:#1E293B;border:1px solid #334155;border-radius:16px;padding:36px;width:420px;max-width:92vw}
-.tabs{display:flex;border-bottom:1px solid #334155;margin-bottom:24px}
-.tab-btn{flex:1;padding:10px;background:transparent;border:none;border-bottom:2px solid transparent;color:#64748B;cursor:pointer;font-size:14px;font-family:inherit;font-weight:600}
-.tab-btn.on{border-bottom-color:#2563EB;color:#38BDF8}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:16px;padding:36px;width:420px;max-width:92vw}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:24px}
+.tab-btn{flex:1;padding:10px;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);cursor:pointer;font-size:14px;font-family:'Noto Sans SC',sans-serif;font-weight:600;transition:all 0.15s}
+.tab-btn.on{border-bottom-color:var(--p1);color:var(--p4)}
 .form-group{margin-bottom:16px}
-.form-label{font-size:12px;color:#64748B;margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:0.05em}
-.form-input{width:100%;padding:10px 14px;background:#0F172A;border:1px solid #334155;border-radius:8px;color:#E2E8F0;font-size:14px;font-family:inherit;outline:none}
-.form-input:focus{border-color:#38BDF8}
-.form-err{color:#F87171;font-size:12px;margin-top:8px;min-height:18px}
-.form-ok{color:#86EFAC;font-size:13px;margin-top:8px;text-align:center}
+.form-label{font-size:11px;color:var(--text3);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:0.06em}
+.form-input{width:100%;padding:10px 14px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--text);font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;transition:border-color 0.15s}
+.form-input:focus{border-color:var(--p1);box-shadow:0 0 0 3px rgba(124,58,237,0.15)}
+.form-err{color:var(--red);font-size:12px;margin-top:8px;min-height:18px}
+.form-ok{color:var(--green);font-size:13px;margin-top:8px;text-align:center}
 
+/* 响应式 */
 @media(max-width:768px){
-  .nav{padding:12px 16px}
-  .hero{padding:48px 20px 40px}
-  .hero h1{font-size:32px}
-  .flow,.features,.rules,.compare,.pricing,.faq{padding:0 16px}
+  .nav{padding:0 16px}
+  .hero{padding:60px 20px 48px}
+  .hero h1{font-size:34px}
+  section{padding:0 16px}
   .feat-grid{grid-template-columns:1fr}
   .rules-grid{grid-template-columns:1fr}
   .plans{grid-template-columns:1fr}
-  .flow-steps{flex-direction:column;gap:20px}
+  .flow-steps{flex-direction:column;gap:24px}
   .flow-step::after{display:none}
-  .compare-table{font-size:12px}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .compare-cell{padding:10px 12px;font-size:12px}
 }
 </style>
 </head>
 <body>
 
 <nav class="nav">
-  <div class="nav-logo">FINBOT <span>票据初审 Agent</span></div>
+  <div class="nav-logo">
+    <div class="nav-logo-mark">F</div>
+    <div>
+      <div class="nav-logo-text">FINBOT</div>
+    </div>
+    <div class="nav-logo-sub">票据初审 Agent</div>
+  </div>
   <div class="nav-btns">
-    <a href="tel:17661369798" style="font-size:13px;color:#64748B;text-decoration:none;margin-right:6px">📞 17661369798</a>
+    <a href="tel:17661369798" class="nav-phone">📞 17661369798</a>
     <button class="btn btn-ghost" onclick="openModal('login')">登录</button>
     <button class="btn btn-pri" onclick="openModal('register')">免费体验</button>
   </div>
@@ -150,34 +271,45 @@ footer a{color:#38BDF8;text-decoration:none}
 
 <!-- Hero -->
 <div class="hero">
-  <div class="hero-badge">专为代理记账公司 · 小微企业财务设计</div>
-  <h1>替财务做<span>第一轮初审</span><br>不是识别，是审核</h1>
-  <div class="hero-sub">上传票据后，自动完成识别、校验、风险提示和审核结论输出<br>通过 / 驳回 / 人工复核，直接替代财务第一轮人工初审</div>
+  <div class="hero-eyebrow">
+    <span></span>
+    专为代理记账公司 · 小微企业财务设计
+  </div>
+  <h1>替财务做<br><span class="accent">第一轮初审</span></h1>
+  <div class="hero-sub">上传票据，自动识别、校验、风险提示、输出审核结论<br>通过 / 驳回 / 人工复核，直接替代财务第一轮人工初审</div>
   <div class="hero-tagline">识别是门票，规则是价值，结论才是产品</div>
-  <div style="display:inline-flex;align-items:center;gap:8px;background:#1E3A5F;border:1px solid #2563EB44;border-radius:8px;padding:8px 16px;margin-bottom:28px;font-size:13px;color:#94A3B8">
-    <span style="background:#2563EB;color:#fff;font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px">强化版</span>
-    <span>OpenAI 驱动 · 更快更精准 · 复杂票据也能识别</span>
+  <div class="hero-tag-row">
+    <span class="pro-badge">强化版</span>
+    <span>OpenAI GPT-4o 驱动 · 速度更快 · 复杂票据也能识别</span>
   </div>
   <div class="hero-btns">
     <button class="btn btn-pri btn-lg" onclick="openModal('register')">免费注册体验</button>
     <button class="btn btn-ghost btn-lg" onclick="openModal('login')">已有账号登录</button>
   </div>
-  <div class="free-note">注册即可免费体验 <span>3 次</span>，无需付款，无需信用卡</div>
+  <div class="free-note">注册即可免费体验 <em>3 次</em>，无需付款，无需信用卡</div>
+</div>
+
+<!-- 数据 -->
+<div class="stats" style="position:relative;z-index:1;max-width:800px;margin:0 auto 80px">
+  <div class="stat"><div class="stat-num">3000</div><div class="stat-label">月识别额度（张）</div></div>
+  <div class="stat"><div class="stat-num">12+</div><div class="stat-label">风险规则自动核查</div></div>
+  <div class="stat"><div class="stat-num">10s</div><div class="stat-label">单张处理时间</div></div>
+  <div class="stat"><div class="stat-num">¥399</div><div class="stat-label">基础版月付起</div></div>
 </div>
 
 <!-- 核心流程 -->
-<div class="flow">
+<section>
   <h2>一次上传，完成全流程初审</h2>
-  <div class="flow-sub">不需要人工一张张看，系统自动处理所有环节</div>
+  <div class="sec-sub">不需要人工一张张看，系统自动处理所有环节</div>
   <div class="flow-steps">
     <div class="flow-step">
       <div class="step-num">1</div>
       <div class="step-title">上传票据</div>
-      <div class="step-desc">PDF、图片、多页批量<br>拖拽即可</div>
+      <div class="step-desc">JPG、PNG图片<br>批量拖拽即可</div>
     </div>
     <div class="flow-step">
       <div class="step-num">2</div>
-      <div class="step-title">自动识别</div>
+      <div class="step-title">AI识别</div>
       <div class="step-desc">提取金额、日期、税号<br>抬头等关键字段</div>
     </div>
     <div class="flow-step">
@@ -188,92 +320,94 @@ footer a{color:#38BDF8;text-decoration:none}
     <div class="flow-step">
       <div class="step-num">4</div>
       <div class="step-title">输出结论</div>
-      <div class="step-desc">通过 / 驳回 / 人工复核<br>明确告诉你怎么处理</div>
+      <div class="step-desc">通过/驳回/人工复核<br>明确告诉你怎么处理</div>
     </div>
     <div class="flow-step">
       <div class="step-num">5</div>
       <div class="step-title">导出报告</div>
-      <div class="step-desc">含凭证编号的Excel<br>直接交会计录入</div>
+      <div class="step-desc">含凭证编号Excel<br>直接交会计录入</div>
     </div>
   </div>
-</div>
+</section>
 
 <!-- 功能特性 -->
-<div class="features">
-  <h2>做深三类核心票据，不是浅支持十类</h2>
+<section>
+  <h2>核心功能</h2>
+  <div class="sec-sub">票据识别只是起点，规则引擎和审核结论才是价值所在</div>
   <div class="feat-grid">
     <div class="feat">
       <div class="feat-icon">🧾</div>
       <div class="feat-title">增值税发票</div>
-      <div class="feat-desc">自动校验抬头、税号、金额税额计算、发票日期，识别小规模纳税人进项税不可抵扣风险</div>
+      <div class="feat-desc">自动校验抬头、税号、金额税额计算、开票日期，识别小规模纳税人进项税不可抵扣风险</div>
       <div class="feat-tags"><span class="ftag">专票/普票</span><span class="ftag">税率校验</span><span class="ftag">抬头核查</span><span class="ftag">日期提醒</span></div>
     </div>
     <div class="feat">
       <div class="feat-icon">🚄</div>
       <div class="feat-title">出行票据</div>
-      <div class="feat-desc">铁路客票、机票行程单、出租车票自动识别，核查出行人信息、路线、日期，判断是否属于正常差旅</div>
-      <div class="feat-tags"><span class="ftag">铁路客票</span><span class="ftag">机票行程单</span><span class="ftag">出租车票</span><span class="ftag">出行人核查</span></div>
+      <div class="feat-desc">铁路客票、机票、网约车、出租车自动识别，核查出行人姓名、路线、日期，判断差旅合规性</div>
+      <div class="feat-tags"><span class="ftag">铁路客票</span><span class="ftag">机票行程单</span><span class="ftag">网约车</span><span class="ftag">出行人核查</span></div>
     </div>
     <div class="feat">
-      <div class="feat-icon">🏦</div>
-      <div class="feat-title">银行回单及其他</div>
-      <div class="feat-desc">银行回单、报销单、收据、住宿发票等全面支持，多页PDF一次处理，自动按票据类型分类</div>
-      <div class="feat-tags"><span class="ftag">银行回单</span><span class="ftag">报销单</span><span class="ftag">多页PDF</span><span class="ftag">自动分类</span></div>
+      <div class="feat-icon">🏨</div>
+      <div class="feat-title">住宿 & 餐饮</div>
+      <div class="feat-desc">酒店发票校验入住人、晚数、单晚合理性；餐饮按金额分级处理，超2000元要求补充接待说明</div>
+      <div class="feat-tags"><span class="ftag">酒店发票</span><span class="ftag">单晚校验</span><span class="ftag">餐饮分级</span><span class="ftag">接待说明</span></div>
     </div>
     <div class="feat">
       <div class="feat-icon">🔄</div>
       <div class="feat-title">重复报销检测</div>
-      <div class="feat-desc">按发票号自动识别重复提交，同一张票多次上传直接跳过，有效防止重复报销漏审</div>
+      <div class="feat-desc">按发票号自动识别重复提交，同一张票多次上传直接标记跳过，有效防止重复报销漏审</div>
       <div class="feat-tags"><span class="ftag">发票号比对</span><span class="ftag">自动跳过</span><span class="ftag">防漏审</span></div>
     </div>
-    <div class="feat">
-      <div class="feat-icon">📋</div>
-      <div class="feat-title">审核结论输出</div>
-      <div class="feat-desc">不只给表格，直接给判断：通过、驳回、人工复核，每条附风险原因和建议动作，财务一眼可处理</div>
-      <div class="feat-tags"><span class="ftag">通过</span><span class="ftag">驳回</span><span class="ftag">人工复核</span><span class="ftag">风险原因</span></div>
+    <div class="feat new-feat">
+      <div class="feat-icon">✏️</div>
+      <div class="feat-title">人工修正 & 结论覆盖</div>
+      <div class="feat-desc">识别结果支持内联编辑，可手动覆盖AI结论（通过/复核/驳回），导出时自动标注是否人工修正</div>
+      <div class="feat-tags"><span class="ftag">内联编辑</span><span class="ftag">结论覆盖</span><span class="ftag">修正标记</span><span class="ftag">风险忽略</span></div>
     </div>
     <div class="feat">
       <div class="feat-icon">📤</div>
       <div class="feat-title">批量导出报告</div>
-      <div class="feat-desc">Excel/CSV格式，含凭证编号、建议科目、风险清单、补件清单，直接交会计复核录入</div>
-      <div class="feat-tags"><span class="ftag">含凭证编号</span><span class="ftag">建议科目</span><span class="ftag">风险清单</span><span class="ftag">补件清单</span></div>
+      <div class="feat-desc">两张表格：报销汇总表（通过+复核）和驳回清单，含凭证编号、建议科目、驳回原因，直接交会计使用</div>
+      <div class="feat-tags"><span class="ftag">凭证编号</span><span class="ftag">建议科目</span><span class="ftag">驳回清单</span><span class="ftag">Excel/CSV</span></div>
     </div>
   </div>
-</div>
+</section>
 
 <!-- 风险规则 -->
-<div class="rules">
-  <h2>12 项风险规则，自动逐一核查</h2>
-  <div class="rules-sub">财务审核经验数字化，不是 OCR，是真正的初审工具</div>
+<section>
+  <h2>风险规则，自动逐一核查</h2>
+  <div class="sec-sub">财务审核经验数字化 — 不是 OCR，是真正的初审工具</div>
   <div class="rules-grid">
     <div class="rule-item"><span class="rule-icon">🔴</span><div class="rule-text"><b>发票抬头不符</b> — 抬头与报销单位名称不一致，直接驳回</div></div>
-    <div class="rule-item"><span class="rule-icon">🔴</span><div class="rule-text"><b>税号缺失或格式错误</b> — 应为15-20位，格式不符标记高风险</div></div>
-    <div class="rule-item"><span class="rule-icon">🔴</span><div class="rule-text"><b>金额税额计算异常</b> — 自动校验13%/9%/6%/3%/1%税率</div></div>
+    <div class="rule-item"><span class="rule-icon">🔴</span><div class="rule-text"><b>税号格式错误</b> — 应为15-20位，格式不符标记高风险</div></div>
+    <div class="rule-item"><span class="rule-icon">🔴</span><div class="rule-text"><b>金额税额异常</b> — 自动校验13%/9%/6%/3%/1%税率</div></div>
     <div class="rule-item"><span class="rule-icon">🔴</span><div class="rule-text"><b>报销超期</b> — 开票日期超过3个月，提示超期风险</div></div>
     <div class="rule-item"><span class="rule-icon">🔴</span><div class="rule-text"><b>出行人信息缺失</b> — 旅客运输类票据未填出行人姓名</div></div>
     <div class="rule-item"><span class="rule-icon">🔴</span><div class="rule-text"><b>重复发票</b> — 同一发票号再次提交，自动识别跳过</div></div>
     <div class="rule-item"><span class="rule-icon">🟡</span><div class="rule-text"><b>大额餐饮无事由</b> — 超2000元餐饮票据无人数和业务说明</div></div>
-    <div class="rule-item"><span class="rule-icon">🟡</span><div class="rule-text"><b>节假日非差旅票据</b> — 周末/节假日产生，需补充业务事由</div></div>
+    <div class="rule-item"><span class="rule-icon">🟡</span><div class="rule-text"><b>住宿超标</b> — 单晚超¥800提示复核，超¥1500驳回</div></div>
+    <div class="rule-item"><span class="rule-icon">🟡</span><div class="rule-text"><b>高铁席别超标</b> — 一等座/商务座需确认报销人级别</div></div>
     <div class="rule-item"><span class="rule-icon">🟡</span><div class="rule-text"><b>个体工商户进项税</b> — 提示进项税不可抵扣，需财务确认</div></div>
     <div class="rule-item"><span class="rule-icon">🟡</span><div class="rule-text"><b>图片模糊无法确认</b> — 关键字段不清晰，建议重新提交</div></div>
-    <div class="rule-item"><span class="rule-icon">🟡</span><div class="rule-text"><b>出行路线信息缺失</b> — 机票/火车票缺出发地到达地信息</div></div>
-    <div class="rule-item"><span class="rule-icon">🟢</span><div class="rule-text"><b>备注栏为空</b> — 建议补充业务说明，低风险提示</div></div>
+    <div class="rule-item"><span class="rule-icon">🟢</span><div class="rule-text"><b>附件补强提示</b> — 网约车/餐饮等缺辅助字段，提示补充附件</div></div>
   </div>
-</div>
+</section>
 
 <!-- 对比 -->
-<div class="compare">
+<section style="max-width:800px">
   <h2>和人工初审相比</h2>
+  <div class="sec-sub" style="margin-bottom:28px"></div>
   <div class="compare-table">
     <div class="compare-row header">
       <div class="compare-cell head">对比项</div>
       <div class="compare-cell head">人工初审</div>
-      <div class="compare-cell head" style="color:#38BDF8">FINBOT</div>
+      <div class="compare-cell head hi">FINBOT</div>
     </div>
     <div class="compare-row">
       <div class="compare-cell label">每张票处理时间</div>
-      <div class="compare-cell no">2-5分钟</div>
-      <div class="compare-cell yes">10秒内</div>
+      <div class="compare-cell no">2–5分钟</div>
+      <div class="compare-cell yes">约10秒</div>
     </div>
     <div class="compare-row">
       <div class="compare-cell label">批量处理能力</div>
@@ -296,21 +430,28 @@ footer a{color:#38BDF8;text-decoration:none}
       <div class="compare-cell yes">通过/驳回/复核</div>
     </div>
     <div class="compare-row">
+      <div class="compare-cell label">规则自定义</div>
+      <div class="compare-cell no">无法配置</div>
+      <div class="compare-cell yes">企业规则配置</div>
+    </div>
+    <div class="compare-row">
       <div class="compare-cell label">凭证报告导出</div>
       <div class="compare-cell no">手动整理</div>
       <div class="compare-cell yes">一键Excel导出</div>
     </div>
   </div>
-</div>
+</section>
 
 <!-- 定价 -->
-<div class="pricing">
+<section>
   <h2>简单透明的定价</h2>
-  <div class="pricing-sub">注册即可免费体验 3 次 · 无需付款 · 无需信用卡</div>
-  <div class="plans">
+  <div class="sec-sub">注册即可免费体验 3 次 · 无需付款 · 无需信用卡</div>
+  <!-- 基础版 -->
+  <div style="margin-bottom:10px;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.1em">基础版（Qwen VL）</div>
+  <div class="plans" style="margin-bottom:24px">
     <div class="plan">
-      <div class="plan-badge">基础版</div>
-      <div class="plan-name">月付套餐</div>
+      <div class="plan-badge">月付</div>
+      <div class="plan-name">基础版</div>
       <div class="plan-price">¥399<span>/月</span></div>
       <div class="plan-save">按月订阅，随时取消</div>
       <ul class="plan-features">
@@ -330,17 +471,35 @@ footer a{color:#38BDF8;text-decoration:none}
       <ul class="plan-features">
         <li>每月3000张识别额度</li>
         <li>优先客服响应</li>
-        <li>批量处理加速</li>
+        <li>企业规则自定义</li>
         <li>定制费用科目</li>
-        <li>规则自定义配置</li>
+        <li>批量处理加速</li>
       </ul>
       <button class="btn btn-pri" style="width:100%" onclick="openModal('register')">立即开始</button>
     </div>
     <div class="plan">
-      <div class="plan-badge">强化版</div>
-      <div class="plan-name">月付套餐</div>
-      <div class="plan-price">¥799<span>/月</span></div>
-      <div class="plan-save">OpenAI驱动，更快更精准</div>
+      <div class="plan-badge">年付</div>
+      <div class="plan-name">基础版年付</div>
+      <div class="plan-price">¥3999<span>/年</span></div>
+      <div class="plan-save">约¥333/月，年付最划算</div>
+      <ul class="plan-features">
+        <li>每月3000张识别额度</li>
+        <li>优先客服响应</li>
+        <li>企业规则自定义</li>
+        <li>定制费用科目</li>
+        <li>批量处理加速</li>
+      </ul>
+      <button class="btn btn-ghost" style="width:100%" onclick="openModal('register')">立即开始</button>
+    </div>
+  </div>
+  <!-- 强化版 -->
+  <div style="margin-bottom:10px;font-size:12px;font-weight:700;color:var(--p4);text-transform:uppercase;letter-spacing:0.1em">强化版（OpenAI GPT-4o）</div>
+  <div class="plans">
+    <div class="plan" style="border-color:var(--border2)">
+      <div class="plan-badge" style="color:var(--p4)">月付</div>
+      <div class="plan-name">强化版</div>
+      <div class="plan-price" style="font-size:34px">¥799<span>/月</span></div>
+      <div class="plan-save">GPT-4o，复杂票据更准</div>
       <ul class="plan-features">
         <li>每月3000张识别额度</li>
         <li>GPT-4o 强化识别</li>
@@ -348,72 +507,100 @@ footer a{color:#38BDF8;text-decoration:none}
         <li>减少人工修正</li>
         <li>优先客服响应</li>
       </ul>
-      <button class="btn btn-ghost" style="width:100%" onclick="openModal('register')">立即开始</button>
+      <button class="btn btn-ghost" style="width:100%;border-color:var(--border2)" onclick="openModal('register')">立即开始</button>
+    </div>
+    <div class="plan" style="border-color:var(--p1);background:linear-gradient(180deg,rgba(124,58,237,0.08) 0%,var(--bg2) 60%)">
+      <div class="plan-badge" style="color:#FBBF24">⭐ 强化版季付</div>
+      <div class="plan-name">强化版季付</div>
+      <div class="plan-price" style="font-size:34px">¥2199<span>/季</span></div>
+      <div class="plan-save">约¥733/月，季付更省</div>
+      <ul class="plan-features">
+        <li>每月3000张识别额度</li>
+        <li>GPT-4o 强化识别</li>
+        <li>复杂票据更准确</li>
+        <li>减少人工修正</li>
+        <li>优先客服响应</li>
+      </ul>
+      <button class="btn btn-pri" style="width:100%" onclick="openModal('register')">立即开始</button>
+    </div>
+    <div class="plan" style="border-color:var(--border2)">
+      <div class="plan-badge" style="color:var(--p4)">年付</div>
+      <div class="plan-name">强化版年付</div>
+      <div class="plan-price" style="font-size:34px">¥8599<span>/年</span></div>
+      <div class="plan-save">约¥717/月，年付最划算</div>
+      <ul class="plan-features">
+        <li>每月3000张识别额度</li>
+        <li>GPT-4o 强化识别</li>
+        <li>复杂票据更准确</li>
+        <li>减少人工修正</li>
+        <li>优先客服响应</li>
+      </ul>
+      <button class="btn btn-ghost" style="width:100%;border-color:var(--border2)" onclick="openModal('register')">立即开始</button>
     </div>
   </div>
-</div>
+</section>
 
 <!-- FAQ -->
-<div class="faq">
+<section style="max-width:700px">
   <h2>常见问题</h2>
+  <div class="sec-sub" style="margin-bottom:28px"></div>
   <div class="faq-item" onclick="this.classList.toggle('open')">
     <div class="faq-q">识别准确率如何？<span>▾</span></div>
-    <div class="faq-a">常见增值税发票、铁路客票识别准确率很高。偶尔出现识别偏差可以点"编辑"手动修正，最终凭证以会计复核为准，AI 负责做第一轮初审，不替代会计判断。</div>
+    <div class="faq-a">常见增值税发票、铁路客票识别准确率很高。识别结果支持内联编辑手动修正，最终凭证以会计复核为准，AI 负责做第一轮初审，不替代会计判断。</div>
+  </div>
+  <div class="faq-item" onclick="this.classList.toggle('open')">
+    <div class="faq-q">支持哪些票据格式？<span>▾</span></div>
+    <div class="faq-a">支持 JPG、PNG 图片格式，单文件最大 20MB，可批量上传。票据类型支持增值税专票/普票、铁路电子客票、机票行程单、网约车/出租车票、酒店发票、餐饮发票、银行回单、报销单、收据等。</div>
   </div>
   <div class="faq-item" onclick="this.classList.toggle('open')">
     <div class="faq-q">我的发票数据安全吗？<span>▾</span></div>
-    <div class="faq-a">发票图片传输过 AI 识别后不做永久存储，审核结果数据存储在安全的云服务器上。我们不会将您的票据数据用于任何其他用途。</div>
+    <div class="faq-a">发票图片经 AI 识别后不做永久存储，审核结果数据存储在安全的云服务器上。我们不会将您的票据数据用于任何其他用途。</div>
   </div>
   <div class="faq-item" onclick="this.classList.toggle('open')">
-    <div class="faq-q">支持哪些票据类型？<span>▾</span></div>
-    <div class="faq-a">增值税专票/普票、铁路电子客票、机票行程单、出租车票、银行回单、住宿发票、报销单、收据等。支持 PDF（多页）、JPG、PNG 格式，单文件最大 20MB，可批量上传。</div>
+    <div class="faq-q">基础版和强化版有什么区别？<span>▾</span></div>
+    <div class="faq-a">基础版使用阿里云百炼 Qwen VL 模型，适合常规票据场景，性价比高。强化版使用 OpenAI GPT-4o，识别速度更快，对模糊票据、截图票据、复杂表格等识别更准确，减少人工修正次数。</div>
   </div>
   <div class="faq-item" onclick="this.classList.toggle('open')">
     <div class="faq-q">怎么购买？支持什么支付方式？<span>▾</span></div>
-    <div class="faq-a">注册后选择套餐，通过微信/支付宝转账后联系客服开通。电话：17661369798，工作日 9:00-18:00。</div>
+    <div class="faq-a">注册后选择套餐，通过微信/支付宝扫码付款后联系客服开通。电话：17661369798，每天 8:30-22:30。</div>
   </div>
   <div class="faq-item" onclick="this.classList.toggle('open')">
     <div class="faq-q">适合哪些客户使用？<span>▾</span></div>
-    <div class="faq-a">最适合：代理记账公司（单据多、重复度高、人工审核耗时）、小微企业内部财务（贸易、电商、工程服务、差旅多的销售型公司）。不建议大型集团使用，他们需要对接 ERP 等复杂系统。</div>
+    <div class="faq-a">最适合：代理记账公司（单据多、重复度高、人工审核耗时）、小微企业内部财务（贸易、电商、工程服务、差旅多的销售型公司）。不建议大型集团使用，他们通常需要对接 ERP 等复杂系统。</div>
   </div>
-</div>
+</section>
 
 <!-- CTA -->
 <div class="cta">
   <h2>现在开始，免费体验 3 次</h2>
-  <p>注册后立即使用，无需付款，感受一下效果再决定要不要订阅</p>
-  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+  <p>注册后立即使用，无需付款，感受效果再决定是否订阅</p>
+  <div class="cta-btns">
     <button class="btn btn-pri btn-lg" onclick="openModal('register')">免费注册体验</button>
-    <a href="tel:17661369798" style="padding:14px 32px;background:transparent;border:2px solid #334155;border-radius:10px;color:#94A3B8;font-size:15px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:8px">📞 17661369798</a>
+    <a href="tel:17661369798" style="padding:13px 30px;background:transparent;border:1px solid var(--border2);border-radius:8px;color:var(--text3);font-size:14px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center;gap:8px">📞 17661369798</a>
   </div>
 </div>
 
 <footer>
-  <div style="margin-bottom:8px">FINBOT 票据初审 Agent</div>
-  <div>咨询电话：<a href="tel:17661369798">17661369798</a> · 工作日 9:00-18:00</div>
+  <div style="margin-bottom:8px;color:var(--text3)">FINBOT 票据初审 Agent</div>
+  <div>咨询电话：<a href="tel:17661369798">17661369798</a> · 每天 8:30–22:30</div>
 </footer>
 
-<!-- 登录/注册/忘记密码弹窗 -->
+<!-- 弹窗 -->
 <div class="modal-bg" id="authModal">
   <div class="modal">
     <div class="tabs">
       <button class="tab-btn on" id="tab-login" onclick="switchTab('login')">登录</button>
       <button class="tab-btn" id="tab-register" onclick="switchTab('register')">注册</button>
     </div>
-
-    <!-- 登录 -->
     <div id="pane-login">
       <div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="l-email" type="tel" placeholder="请输入手机号" maxlength="11"></div>
       <div class="form-group"><label class="form-label">密码</label><input class="form-input" id="l-pass" type="password" placeholder="······" onkeydown="if(event.key==='Enter')doLogin()"></div>
       <div class="form-err" id="l-err"></div>
       <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doLogin()">登录</button>
-      <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:13px;color:#64748B">
-        <span>没有账号？<a href="#" onclick="switchTab('register')" style="color:#38BDF8">免费注册</a></span>
-        <a href="#" onclick="switchTab('forgot')" style="color:#38BDF8">忘记密码</a>
+      <div style="display:flex;justify-content:space-between;margin-top:14px;font-size:13px;color:var(--text3)">
+        <span>没有账号？<a href="#" onclick="switchTab('register')" style="color:var(--p4)">免费注册</a></span>
       </div>
     </div>
-
-    <!-- 注册：手机号+密码，无需验证码 -->
     <div id="pane-register" style="display:none">
       <div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="r-phone" type="tel" placeholder="请输入手机号" maxlength="11"></div>
       <div class="form-group"><label class="form-label">密码（至少6位）</label><input class="form-input" id="r-pass" type="password" placeholder="······"></div>
@@ -422,32 +609,18 @@ footer a{color:#38BDF8;text-decoration:none}
       <div class="form-err" id="r-err"></div>
       <div class="form-ok" id="r-ok"></div>
       <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doRegister()">立即注册</button>
-      <div style="text-align:center;margin-top:14px;font-size:13px;color:#64748B">已有账号？<a href="#" onclick="switchTab('login')" style="color:#38BDF8">立即登录</a></div>
+      <div style="text-align:center;margin-top:14px;font-size:13px;color:var(--text3)">已有账号？<a href="#" onclick="switchTab('login')" style="color:var(--p4)">立即登录</a></div>
     </div>
-
-    <!-- 忘记密码 -->
     <div id="pane-forgot" style="display:none">
-      <div id="forgot-step1">
-        <div style="font-size:14px;font-weight:600;margin-bottom:16px">重置密码</div>
-        <div class="form-group"><label class="form-label">注册邮箱</label><input class="form-input" id="f-email" type="email" placeholder="请输入注册邮箱"></div>
-        <div class="form-err" id="f-err"></div>
-        <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" id="f-send-btn" onclick="sendResetCode()">发送验证码</button>
-        <div style="text-align:center;margin-top:14px;font-size:13px;color:#64748B"><a href="#" onclick="switchTab('login')" style="color:#38BDF8">← 返回登录</a></div>
+      <div style="font-size:14px;font-weight:600;margin-bottom:16px;color:var(--text)">忘记密码</div>
+      <div class="form-group"><label class="form-label">手机号</label><input class="form-input" id="f-phone" type="tel" placeholder="请输入注册手机号" maxlength="11"></div>
+      <div class="form-group"><label class="form-label">新密码（至少6位）</label><input class="form-input" id="f-pass" type="password" placeholder="······"></div>
+      <div class="form-err" id="f-err"></div>
+      <div class="form-ok" id="f-ok"></div>
+      <div style="background:rgba(124,58,237,0.08);border:1px solid var(--border2);border-radius:8px;padding:12px;font-size:12px;color:var(--text3);margin-bottom:14px;line-height:1.7">
+        忘记密码请联系客服重置：<a href="tel:17661369798" style="color:var(--p4)">17661369798</a>
       </div>
-      <div id="forgot-step2" style="display:none">
-        <div style="text-align:center;margin-bottom:16px;font-size:13px;color:#64748B">验证码已发送至 <b id="f-email-show" style="color:#0F172A"></b></div>
-        <div class="form-group">
-          <label class="form-label">验证码（6位数字）</label>
-          <div style="display:flex;gap:8px">
-            <input class="form-input" id="f-code" type="text" maxlength="6" placeholder="输入验证码" style="flex:1">
-            <button class="btn btn-ghost" id="f-resend-btn" onclick="sendResetCode(true)" style="white-space:nowrap;padding:0 14px;font-size:12px">重新发送</button>
-          </div>
-        </div>
-        <div class="form-group"><label class="form-label">新密码（至少6位）</label><input class="form-input" id="f-pass" type="password" placeholder="······"></div>
-        <div class="form-err" id="f-code-err"></div>
-        <div class="form-ok" id="f-ok"></div>
-        <button class="btn btn-pri" style="width:100%;margin-top:8px;padding:12px" onclick="doReset()">重置密码</button>
-      </div>
+      <div style="text-align:center;font-size:13px;color:var(--text3)"><a href="#" onclick="switchTab('login')" style="color:var(--p4)">← 返回登录</a></div>
     </div>
   </div>
 </div>
@@ -462,8 +635,6 @@ function switchTab(t){
   document.getElementById("pane-register").style.display=(t==="register")?"block":"none";
   document.getElementById("pane-forgot").style.display=(t==="forgot")?"block":"none";
 }
-
-// 登录
 async function doLogin(){
   const email=document.getElementById("l-email").value.trim();
   const password=document.getElementById("l-pass").value;
@@ -477,29 +648,6 @@ async function doLogin(){
     location.href="/app";
   }catch(e){document.getElementById("l-err").textContent="网络错误，请重试";}
 }
-
-// 注册第一步：发验证码
-async function sendRegCode(resend=false){
-  const email=document.getElementById("r-email").value.trim();
-  const pass=document.getElementById("r-pass").value;
-  const errEl=document.getElementById("r-err");
-  errEl.textContent="";
-  if(!email){errEl.textContent="请填写邮箱";return;}
-  if(!pass||pass.length<6){errEl.textContent="密码至少6位";return;}
-  const btn=document.getElementById(resend?"r-resend-btn":"r-send-btn");
-  btn.disabled=true; btn.textContent="发送中…";
-  try{
-    const r=await fetch("/api/auth/send-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,type:"register"})});
-    const d=await r.json();
-    if(!d.ok){errEl.textContent=d.error;btn.disabled=false;btn.textContent=resend?"重新发送":"获取验证码";return;}
-    document.getElementById("r-email-show").textContent=email;
-    document.getElementById("reg-step1").style.display="none";
-    document.getElementById("reg-step2").style.display="block";
-    startCountdown(btn,60,"重新发送");
-  }catch(e){errEl.textContent="网络错误，请重试";btn.disabled=false;btn.textContent=resend?"重新发送":"获取验证码";}
-}
-
-// 注册第二步：提交
 async function doRegister(){
   const phone=document.getElementById("r-phone").value.trim();
   const password=document.getElementById("r-pass").value;
@@ -517,49 +665,6 @@ async function doRegister(){
     document.getElementById("r-ok").textContent="✓ 注册成功！正在跳转登录…";
     setTimeout(()=>switchTab("login"),1200);
   }catch(e){document.getElementById("r-err").textContent="网络错误，请重试";}
-}
-
-// 忘记密码第一步：发验证码
-async function sendResetCode(resend=false){
-  const email=document.getElementById("f-email").value.trim();
-  const errEl=document.getElementById("f-err");
-  errEl.textContent="";
-  if(!email){errEl.textContent="请填写邮箱";return;}
-  const btn=document.getElementById(resend?"f-resend-btn":"f-send-btn");
-  btn.disabled=true; btn.textContent="发送中…";
-  try{
-    const r=await fetch("/api/auth/send-code",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,type:"reset"})});
-    const d=await r.json();
-    if(!d.ok){errEl.textContent=d.error;btn.disabled=false;btn.textContent=resend?"重新发送":"发送验证码";return;}
-    document.getElementById("f-email-show").textContent=email;
-    document.getElementById("forgot-step1").style.display="none";
-    document.getElementById("forgot-step2").style.display="block";
-    startCountdown(btn,60,"重新发送");
-  }catch(e){errEl.textContent="网络错误，请重试";btn.disabled=false;btn.textContent=resend?"重新发送":"发送验证码";}
-}
-
-// 忘记密码第二步：重置
-async function doReset(){
-  const email=document.getElementById("f-email").value.trim();
-  const code=document.getElementById("f-code").value.trim();
-  const password=document.getElementById("f-pass").value;
-  document.getElementById("f-code-err").textContent="";
-  document.getElementById("f-ok").textContent="";
-  if(password.length<6){document.getElementById("f-code-err").textContent="密码至少6位";return;}
-  try{
-    const r=await fetch("/api/auth/forgot-password/reset",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({email,code,password})});
-    const d=await r.json();
-    if(!d.ok){document.getElementById("f-code-err").textContent=d.error;return;}
-    document.getElementById("f-ok").textContent="✓ 密码已重置，请重新登录";
-    setTimeout(()=>switchTab("login"),1500);
-  }catch(e){document.getElementById("f-code-err").textContent="网络错误，请重试";}
-}
-
-// 倒计时
-function startCountdown(btn,sec,resetText){
-  let s=sec;
-  btn.disabled=true; btn.textContent=`${s}秒后重发`;
-  const t=setInterval(()=>{s--;btn.textContent=`${s}秒后重发`;if(s<=0){clearInterval(t);btn.disabled=false;btn.textContent=resetText;}},1000);
 }
 </script>
 </body>
