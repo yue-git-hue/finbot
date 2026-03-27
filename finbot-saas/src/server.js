@@ -34,12 +34,10 @@ const PLANS = {
   yearly_pro:    { name: "强化版·年付", price: 859900, days: 365, pro: true  },
 };
 
-// ── 虎皮椒签名（官方标准算法）───────────────────────────
-// 规则：所有参数（除 sign）按 key 字母排序，拼成 key=val& 后追加 appsecret=xxx，整体 MD5
-function hpjSign(params, appSecret) {
-  const sorted = Object.keys(params).sort();
-  const str = sorted.map(k => `${k}=${params[k]}`).join("&") + `&appsecret=${appSecret}`;
-  return crypto.createHash("md5").update(str).digest("hex");
+// ── 虎皮椒 V3 签名算法 ──────────────────────────────────
+// hash = MD5(appid + time + appsecret)
+function hpjHash(appId, time, appSecret) {
+  return crypto.createHash("md5").update(appId + time + appSecret).digest("hex");
 }
 
 // ── 中间件 ───────────────────────────────────────────
@@ -256,34 +254,33 @@ app.post("/api/order/create", authUser, async (req, res) => {
     });
   }
 
-  // ── 正式：调用虎皮椒下单接口 ─────────────────────────
+  // ── 正式：调用虎皮椒 V3 下单接口 ────────────────────────
   try {
-    const title   = p.name + " - FINBOT票据预审";
+    const title     = p.name + " - FINBOT票据预审";
     const notifyUrl = `${BASE_URL}/api/order/notify`;
     const returnUrl = `${BASE_URL}/app?pay=success&order=${outTradeNo}`;
+    const time      = String(Math.floor(Date.now() / 1000));
+    const hash      = hpjHash(HPJ_APPID, time, HPJ_SECRET);
 
-    // 待签名参数（按 key 字母排序）
-    const params = {
+    const params = new URLSearchParams({
       appid:          HPJ_APPID,
-      dtype:          "WAP",            // WAP = H5微信支付，扫码传 "NATIVE"
+      time,
+      hash,
+      type:           "WAP",          // WAP=H5跳转微信, NATIVE=扫码
+      out_order_id:   outTradeNo,
+      money:          (p.price / 100).toFixed(2),  // 单位：元，保留两位小数
+      name:           title,
       notify_url:     notifyUrl,
       return_url:     returnUrl,
-      title:          title,
-      total_fee:      String(p.price),  // 单位：分
-      trade_order_id: outTradeNo,
-      version:        "1.1",
-    };
+    });
 
-    params.sign = hpjSign(params, HPJ_SECRET);
-
-    const body = new URLSearchParams(params);
-    const r = await fetch("https://api.xunhupay.com/payment/do.html", {
+    const r = await fetch("https://api.xunhupay.com/payments/wechat.html", {
       method: "POST",
-      body,
+      body: params,
     });
     const d = await r.json();
 
-    if (d.errcode !== 0) throw new Error(d.errmsg || "虎皮椒下单失败");
+    if (!d.errcode || d.errcode !== 0) throw new Error(d.errmsg || JSON.stringify(d));
 
     res.json({ ok: true, payUrl: d.url, outTradeNo });
   } catch (e) {
@@ -306,16 +303,13 @@ app.get("/api/order/status", authUser, async (req, res) => {
     return res.json({ ok: true, paid: true, paidAt: row.paid_at });
   }
 
-  // 向虎皮椒主动查询（可选，但能应对 notify 丢失的情况）
+  // 向虎皮椒 V3 主动查询
   if (HPJ_APPID && HPJ_SECRET) {
     try {
-      const params = {
-        appid:          HPJ_APPID,
-        trade_order_id: order,
-      };
-      params.sign = hpjSign(params, HPJ_SECRET);
-      const body = new URLSearchParams(params);
-      const r = await fetch("https://api.xunhupay.com/payment/query.html", { method: "POST", body });
+      const time = String(Math.floor(Date.now() / 1000));
+      const hash = hpjHash(HPJ_APPID, time, HPJ_SECRET);
+      const body = new URLSearchParams({ appid: HPJ_APPID, time, hash, out_order_id: order });
+      const r = await fetch("https://api.xunhupay.com/payments/query.html", { method: "POST", body });
       const d = await r.json();
       if (d.errcode === 0 && d.status === "OD") {
         activateOrder(order);
@@ -323,30 +317,27 @@ app.get("/api/order/status", authUser, async (req, res) => {
       }
     } catch (e) {
       console.error("[HPJ查单失败]", e.message);
-      // 查询失败不报错，继续返回 pending
     }
   }
 
   res.json({ ok: true, paid: false, status: row.status });
 });
 
-// ── 虎皮椒异步回调（付款成功后服务端通知）──────────────
-// 虎皮椒文档：POST application/x-www-form-urlencoded，需返回字符串 "success"
+// ── 虎皮椒 V3 异步回调 ────────────────────────────────
 app.post("/api/order/notify", express.urlencoded({ extended: true }), (req, res) => {
-  const { trade_order_id, status, appid, total_fee, title, sign } = req.body;
+  const { out_order_id, status, appid, time, hash } = req.body;
 
-  // ── 验签（防伪造回调）────────────────────────────────
-  if (HPJ_SECRET) {
-    const params = { appid, title, total_fee, trade_order_id };
-    const expected = hpjSign(params, HPJ_SECRET);
-    if (sign !== expected) {
-      console.error("[HPJ回调验签失败]", { received: sign, expected });
+  // ── V3 验签 ──────────────────────────────────────────
+  if (HPJ_SECRET && appid && time && hash) {
+    const expected = hpjHash(appid, time, HPJ_SECRET);
+    if (hash !== expected) {
+      console.error("[HPJ回调验签失败]", { received: hash, expected });
       return res.send("fail");
     }
   }
 
   if (status === "OD") {
-    activateOrder(trade_order_id);
+    activateOrder(out_order_id);
     res.send("success");
   } else {
     res.send("fail");
