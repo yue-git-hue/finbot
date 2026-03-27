@@ -148,7 +148,7 @@ function filterUsers(){
   <td>${u.plan?(u.plan.includes('pro')?'<span style="color:#2563EB;font-weight:600">⚡ '+u.plan+'</span>':'🤖 '+u.plan):'—'}</td>
   <td style="font-family:monospace;font-size:11px">${u.expires||"—"}</td>
   <td style="text-align:center"><span style="color:${(3-(u.free_uses||0))<=0?'#FCA5A5':'#86EFAC'};font-weight:600">${Math.max(0,3-(u.free_uses||0))}</span><span style="color:#64748B;font-size:10px">/3</span></td>
-  <td style="text-align:center;font-family:monospace;font-size:11px">${u.status==='active'?`<span style='color:${(u.month_uses||0)>=3000?"#FCA5A5":"#38BDF8"}'>${u.month_uses||0}</span><span style='color:#64748B;font-size:10px'>/3000</span>`:'—'}</td>
+  <td style="text-align:center;font-family:monospace;font-size:11px">${(()=>{if(u.status!=='active')return '—';const cur=new Date().toISOString().slice(0,7);const uses=(u.month_year===cur)?(u.month_uses||0):0;return`<span style='color:${uses>=3000?"#FCA5A5":"#38BDF8"}'>${uses}</span><span style='color:#64748B;font-size:10px'>/3000</span>`;})()}</td>
   <td style="font-size:11px;color:#64748B">${(u.created||"").slice(0,10)}</td>
   <td style="font-size:11px;color:#64748B">${(u.last_login||"—").slice(0,16)}</td>
   <td><div style="display:flex;gap:5px">
