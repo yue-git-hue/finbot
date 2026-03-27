@@ -254,7 +254,7 @@ app.post("/api/order/create", authUser, async (req, res) => {
     });
   }
 
-  // ── 正式：调用虎皮椒 V3 下单接口 ────────────────────────
+  // ── 正式：调用虎皮椒下单接口 ────────────────────────
   try {
     const title     = p.name + " - FINBOT票据预审";
     const notifyUrl = `${BASE_URL}/api/order/notify`;
@@ -266,23 +266,31 @@ app.post("/api/order/create", authUser, async (req, res) => {
       appid:          HPJ_APPID,
       time,
       hash,
-      type:           "WAP",          // WAP=H5跳转微信, NATIVE=扫码
       out_order_id:   outTradeNo,
-      money:          (p.price / 100).toFixed(2),  // 单位：元，保留两位小数
-      name:           title,
+      total_fee:      String(p.price),   // 单位：分
+      title,
       notify_url:     notifyUrl,
       return_url:     returnUrl,
+      dtype:          "WAP",             // WAP = H5微信支付跳转
     });
 
-    const r = await fetch("https://api.xunhupay.com/payments/wechat.html", {
+    const r = await fetch("https://api.xunhupay.com/payment/do.html", {
       method: "POST",
       body: params,
     });
-    const d = await r.json();
+    const text = await r.text();
+    let d;
+    try { d = JSON.parse(text); } catch(e) {
+      console.error("[HPJ响应非JSON]", text.slice(0, 300));
+      throw new Error("虎皮椒接口返回异常，请检查APPID和域名配置");
+    }
 
-    if (!d.errcode || d.errcode !== 0) throw new Error(d.errmsg || JSON.stringify(d));
+    // 正常响应：{ ret:200, data:{ pay_url:"...", trade_order_id:"..." }, msg:"" }
+    if (d.ret !== 200 || !d.data?.pay_url) {
+      throw new Error(d.msg || d.data?.errmsg || JSON.stringify(d));
+    }
 
-    res.json({ ok: true, payUrl: d.url, outTradeNo });
+    res.json({ ok: true, payUrl: d.data.pay_url, outTradeNo });
   } catch (e) {
     console.error("[HPJ下单失败]", e.message);
     res.status(500).json({ error: e.message });
@@ -303,15 +311,16 @@ app.get("/api/order/status", authUser, async (req, res) => {
     return res.json({ ok: true, paid: true, paidAt: row.paid_at });
   }
 
-  // 向虎皮椒 V3 主动查询
+  // 向虎皮椒主动查询
   if (HPJ_APPID && HPJ_SECRET) {
     try {
       const time = String(Math.floor(Date.now() / 1000));
       const hash = hpjHash(HPJ_APPID, time, HPJ_SECRET);
       const body = new URLSearchParams({ appid: HPJ_APPID, time, hash, out_order_id: order });
-      const r = await fetch("https://api.xunhupay.com/payments/query.html", { method: "POST", body });
+      const r = await fetch("https://api.xunhupay.com/payment/query.html", { method: "POST", body });
       const d = await r.json();
-      if (d.errcode === 0 && d.status === "OD") {
+      // 响应：{ ret:200, data:{ status:"OD"|"WP", ... } }
+      if (d.ret === 200 && d.data?.status === "OD") {
         activateOrder(order);
         return res.json({ ok: true, paid: true });
       }
@@ -323,11 +332,13 @@ app.get("/api/order/status", authUser, async (req, res) => {
   res.json({ ok: true, paid: false, status: row.status });
 });
 
-// ── 虎皮椒 V3 异步回调 ────────────────────────────────
+// ── 虎皮椒异步回调 ────────────────────────────────────
 app.post("/api/order/notify", express.urlencoded({ extended: true }), (req, res) => {
-  const { out_order_id, status, appid, time, hash } = req.body;
+  // 虎皮椒回调字段：out_order_id 或 trade_order_id（兼容两种）
+  const out_order_id = req.body.out_order_id || req.body.trade_order_id;
+  const { status, appid, time, hash } = req.body;
 
-  // ── V3 验签 ──────────────────────────────────────────
+  // 验签：hash = MD5(appid + time + appsecret)
   if (HPJ_SECRET && appid && time && hash) {
     const expected = hpjHash(appid, time, HPJ_SECRET);
     if (hash !== expected) {
