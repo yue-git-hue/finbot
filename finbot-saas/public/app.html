@@ -814,7 +814,15 @@ async function runF(files){
       if(sel)sel.textContent="识别中…";
       const r=await analyze(f);
       if(r.docNo&&RS.some(ex=>ex.docNo===r.docNo)){
-        if(sel)sel.textContent="⊘ 重复跳过";continue;
+        // 停止转圈，显示跳过，800ms后自动移除
+        const qEl=document.getElementById("qi"+f.name.replace(/\W/g,'_'));
+        if(qEl){
+          const spinEl=qEl.querySelector('.spin');
+          if(spinEl){spinEl.style.animation='none';spinEl.style.borderColor='#CBD5E1';spinEl.style.borderTopColor='#CBD5E1';}
+          if(sel)sel.textContent="⊘ 重复跳过";
+          setTimeout(()=>qEl.remove(),1200);
+        }
+        continue;
       }
       await deductUsage(r.pages||1);
       RS.unshift(r);
@@ -1194,12 +1202,8 @@ function renderRes(){
       </select>
     </div>
     <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">附件补强</div>
-      <select class="ie-sel" style="font-size:11px;font-weight:600;color:${sdColor[item.supportingDocStatus]||'#475569'}" onchange="ieSet(${item.id},'supportingDocStatus',this.value)">
-        <option value="not_required"${item.supportingDocStatus==='not_required'?' selected':''}>无需补强</option>
-        <option value="pending"${item.supportingDocStatus==='pending'?' selected':''}>待补充附件</option>
-        <option value="matched"${item.supportingDocStatus==='matched'?' selected':''}>补强成功</option>
-      </select>
+      <div style="font-size:10px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">附件补强备注</div>
+      <input class="ie" style="font-size:11px;width:100%;color:#475569" placeholder="填写补强说明，如：已上传平台截图、已附酒店水单…" value="${(item.supportingDocNote||'').replace(/"/g,'&quot;')}" onchange="ieSet(${item.id},'supportingDocNote',this.value)">
     </div>
   </div>
 
