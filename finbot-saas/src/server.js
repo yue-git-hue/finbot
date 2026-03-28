@@ -26,12 +26,12 @@ const BASE_URL    = process.env.BASE_URL    || "http://localhost:3723";
 const PLANS = {
   // 基础版（硅基 Qwen）
   monthly:       { name: "基础版·月付", price: 39900,  days: 30,  pro: false },
-  quarterly:     { name: "基础版·季付", price: 109900, days: 90,  pro: false },
-  yearly:        { name: "基础版·年付", price: 399900, days: 365, pro: false },
+  quarterly:     { name: "基础版·季付", price: 99900, days: 90,  pro: false },
+  yearly:        { name: "基础版·年付", price: 359900, days: 365, pro: false },
   // 强化版（OpenAI GPT-4o）
-  monthly_pro:   { name: "强化版·月付", price: 79900,  days: 30,  pro: true  },
-  quarterly_pro: { name: "强化版·季付", price: 219900, days: 90,  pro: true  },
-  yearly_pro:    { name: "强化版·年付", price: 859900, days: 365, pro: true  },
+  monthly_pro:   { name: "强化版·月付", price: 59900,  days: 30,  pro: true  },
+  quarterly_pro: { name: "强化版·季付", price: 159900, days: 90,  pro: true  },
+  yearly_pro:    { name: "强化版·年付", price: 559900, days: 365, pro: true  },
 };
 
 // ── 虎皮椒签名（官方标准，v1.1）────────────────────────
