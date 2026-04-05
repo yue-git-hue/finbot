@@ -6,7 +6,6 @@
 <title>FINBOT · 票据预审</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background:#F8FAFC;color:#0F172A;min-height:100vh}
@@ -159,14 +158,14 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
 
   <div class="page on" id="p0">
     <div class="ptitle">上传票据</div>
-    <div class="psub">支持JPG、PNG图片，PDF文件，可批量上传（注：PDF文件里面只能有一张票据；直接上传JPG/PNG图片效果更好）</div>
+    <div class="psub">仅支持JPG、PNG图片，可批量上传</div>
     <div class="dz" id="dz" onclick="document.getElementById('fi').click()">
       <div style="font-size:44px;margin-bottom:12px">📁</div>
       <div style="font-size:15px;font-weight:600;margin-bottom:7px" id="dzt">拖拽上传 或 点击选择文件</div>
       <div style="font-size:13px;color:#94A3B8;margin-bottom:10px">支持 JPG、PNG · 单文件最大 20MB · 可批量上传 · 上传后自动识别</div>
       <button class="btn pri" onclick="event.stopPropagation();document.getElementById('fi').click()">选择文件</button>
     </div>
-    <input type="file" id="fi" multiple accept=".jpg,.jpeg,.png" style="display:none" onchange="runF(this.files);this.value=''">
+    <input type="file" id="fi" multiple accept=".jpg,.jpeg,.png" style="display:none" onchange="runF(this.files)">
     <div class="qbox" id="qb"><p style="font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">处理队列</p><div id="ql"></div></div>
     <div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:10px 14px;font-size:13px;color:#DC2626;margin-top:12px;display:none" id="eb"></div>
   </div>
@@ -192,8 +191,8 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
   </div>
 
   <div class="page" id="p3">
-    <div class="ptitle">订阅管理（注：开通订阅后请刷新页面）</div>
-    <div class="psub" id="sub-psub">选择适合您的套餐，完成支付并提交凭证后，会立即为您开通服务。</div>
+    <div class="ptitle">订阅管理</div>
+    <div class="psub" id="sub-psub">选择适合您的套餐，完成支付并提交凭证后，我们将尽快为您开通服务。</div>
     <div style="font-size:12px;color:#94A3B8;margin-top:-12px;margin-bottom:20px;line-height:1.8">
       适用于票据识别、报销审核与结果导出场景。如有疑问，可联系客服协助开通与配置。
     </div>
@@ -228,10 +227,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
             <li>满足日常报销审核需求</li>
             <li>每月 3000 张识别额度</li>
             <li>性价比更高，适合个人或小团队</li>
-            <li>底层模型：常规大模型</li>
+            <li>底层模型：Qwen</li>
           </ul>
           <div style="font-size:11px;color:#94A3B8;padding:8px 10px;background:#F8FAFC;border-radius:6px;line-height:1.6">
-            适合常规报销场景、常规效率、预算优先的个人或小团队
+            适合常规报销场景、票据类型较单一、预算优先的个人或小团队
           </div>
         </div>
         <!-- 强化版 -->
@@ -245,10 +244,10 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
             <li>模糊票据、截图票据识别更稳</li>
             <li>减少人工修正，提高审核效率</li>
             <li>每月 3000 张识别额度</li>
-            <li>底层模型：全球智能先进大模型</li>
+            <li>底层模型：OpenAI</li>
           </ul>
           <div style="font-size:11px;color:#1E40AF;padding:8px 10px;background:#DBEAFE;border-radius:6px;line-height:1.6">
-            适合票据类型复杂、对准确率要求更高、速度更快、希望减少人工复核的团队或企业用户
+            适合票据类型复杂、对准确率要求更高、希望减少人工复核的团队或企业用户
           </div>
         </div>
       </div>
@@ -256,86 +255,79 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
       <!-- 套餐价格 -->
       <div style="margin-bottom:28px">
         <div style="font-size:15px;font-weight:700;margin-bottom:4px">套餐价格</div>
-        <div style="font-size:12px;color:#94A3B8;margin-bottom:14px">可按月付、季付或年付开通，周期越长越划算。</div>
+        <div style="font-size:12px;color:#94A3B8;margin-bottom:14px">按张数购买，有效期1年，越买越划算。</div>
         <div style="background:#fff;border:1px solid #E2E8F0;border-radius:12px;overflow:hidden">
           <!-- 表头 -->
           <div style="display:flex;background:#F8FAFC;padding:10px 0;font-size:11px;font-weight:700;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;border-bottom:1px solid #F1F5F9">
-            <div style="width:22%;padding:0 14px">套餐</div>
-            <div style="width:26%;text-align:center">月付</div>
-            <div style="width:26%;text-align:center">季付</div>
-            <div style="width:26%;text-align:center">年付</div>
+            <div style="width:20%;padding:0 14px">套餐</div>
+            <div style="width:20%;text-align:center">入门包<br><span style="color:#CBD5E1;font-weight:400;font-size:10px">300张</span></div>
+            <div style="width:20%;text-align:center">标准包<br><span style="color:#CBD5E1;font-weight:400;font-size:10px">1000张</span></div>
+            <div style="width:20%;text-align:center">专业包<br><span style="color:#CBD5E1;font-weight:400;font-size:10px">3000张</span></div>
+            <div style="width:20%;text-align:center">旗舰包<br><span style="color:#CBD5E1;font-weight:400;font-size:10px">10000张</span></div>
           </div>
           <!-- 基础版行 -->
-          <div style="display:flex;padding:16px 0;border-bottom:1px solid #F1F5F9;align-items:stretch">
-            <div style="width:22%;padding:0 14px;font-weight:700;font-size:13px">基础版</div>
-            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥399</div></div>
-              <button class="plan-btn" id="pb-monthly" onclick="selectPlan('monthly')" style="margin-top:8px;width:92%">选择基础版（月付）</button>
+          <div style="display:flex;padding:14px 0;border-bottom:1px solid #F1F5F9;align-items:stretch">
+            <div style="width:20%;padding:0 14px;font-weight:700;font-size:13px;display:flex;align-items:center">基础版</div>
+            <div style="width:20%;text-align:center;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:17px;font-weight:800;color:#0F172A">¥79</div><div style="font-size:10px;color:#94A3B8">≈¥0.26/张</div></div>
+              <button class="plan-btn" id="pb-basic_300" onclick="selectPlan('basic_300')" style="margin-top:6px;width:90%;font-size:11px">选择</button>
             </div>
-            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥1099</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥366 / 月 · 季付更省</div></div>
-              <button class="plan-btn" id="pb-quarterly" onclick="selectPlan('quarterly')" style="margin-top:6px;width:92%">选择基础版（季付）</button>
+            <div style="width:20%;text-align:center;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:17px;font-weight:800;color:#0F172A">¥199</div><div style="font-size:10px;color:#16A34A;font-weight:600">≈¥0.20/张</div></div>
+              <button class="plan-btn" id="pb-basic_1000" onclick="selectPlan('basic_1000')" style="margin-top:6px;width:90%;font-size:11px">选择</button>
             </div>
-            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#0F172A">¥3999</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥333 / 月 · 年付最划算</div></div>
-              <button class="plan-btn" id="pb-yearly" onclick="selectPlan('yearly')" style="margin-top:6px;width:92%">选择基础版（年付）</button>
+            <div style="width:20%;text-align:center;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:17px;font-weight:800;color:#0F172A">¥499</div><div style="font-size:10px;color:#16A34A;font-weight:600">≈¥0.17/张</div></div>
+              <button class="plan-btn" id="pb-basic_3000" onclick="selectPlan('basic_3000')" style="margin-top:6px;width:90%;font-size:11px">选择</button>
+            </div>
+            <div style="width:20%;text-align:center;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:17px;font-weight:800;color:#0F172A">¥1399</div><div style="font-size:10px;color:#16A34A;font-weight:600">≈¥0.14/张</div></div>
+              <button class="plan-btn" id="pb-basic_10000" onclick="selectPlan('basic_10000')" style="margin-top:6px;width:90%;font-size:11px">选择</button>
             </div>
           </div>
           <!-- 强化版行 -->
-          <div style="display:flex;padding:16px 0;align-items:stretch;background:#F8FBFF">
-            <div style="width:22%;padding:0 14px;font-weight:700;font-size:13px;color:#2563EB">强化版</div>
-            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#2563EB">¥599</div></div>
-              <button class="plan-btn plan-btn-pro" id="pb-monthly_pro" onclick="selectPlan('monthly_pro')" style="margin-top:8px;width:92%">选择强化版（月付）</button>
+          <div style="display:flex;padding:14px 0;align-items:stretch;background:#F8FBFF">
+            <div style="width:20%;padding:0 14px;font-weight:700;font-size:13px;color:#2563EB;display:flex;align-items:center">强化版</div>
+            <div style="width:20%;text-align:center;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:17px;font-weight:800;color:#2563EB">¥169</div><div style="font-size:10px;color:#94A3B8">≈¥0.56/张</div></div>
+              <button class="plan-btn plan-btn-pro" id="pb-pro_300" onclick="selectPlan('pro_300')" style="margin-top:6px;width:90%;font-size:11px">选择</button>
             </div>
-            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#2563EB">¥1599</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥533 / 月 · 季付更省</div></div>
-              <button class="plan-btn plan-btn-pro" id="pb-quarterly_pro" onclick="selectPlan('quarterly_pro')" style="margin-top:6px;width:92%">选择强化版（季付）</button>
+            <div style="width:20%;text-align:center;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:17px;font-weight:800;color:#2563EB">¥449</div><div style="font-size:10px;color:#16A34A;font-weight:600">≈¥0.45/张</div></div>
+              <button class="plan-btn plan-btn-pro" id="pb-pro_1000" onclick="selectPlan('pro_1000')" style="margin-top:6px;width:90%;font-size:11px">选择</button>
             </div>
-            <div style="width:26%;text-align:center;padding:8px 8px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
-              <div><div style="font-size:18px;font-weight:800;color:#2563EB">¥5599</div><div style="font-size:10px;color:#16A34A;font-weight:600;margin:3px 0">约 ¥466 / 月 · 年付最划算</div></div>
-              <button class="plan-btn plan-btn-pro" id="pb-yearly_pro" onclick="selectPlan('yearly_pro')" style="margin-top:6px;width:92%">选择强化版（年付）</button>
+            <div style="width:20%;text-align:center;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:17px;font-weight:800;color:#2563EB">¥1199</div><div style="font-size:10px;color:#16A34A;font-weight:600">≈¥0.40/张</div></div>
+              <button class="plan-btn plan-btn-pro" id="pb-pro_3000" onclick="selectPlan('pro_3000')" style="margin-top:6px;width:90%;font-size:11px">选择</button>
+            </div>
+            <div style="width:20%;text-align:center;padding:6px 4px;display:flex;flex-direction:column;align-items:center;justify-content:space-between">
+              <div><div style="font-size:17px;font-weight:800;color:#2563EB">¥3299</div><div style="font-size:10px;color:#16A34A;font-weight:600">≈¥0.33/张</div></div>
+              <button class="plan-btn plan-btn-pro" id="pb-pro_10000" onclick="selectPlan('pro_10000')" style="margin-top:6px;width:90%;font-size:11px">选择</button>
             </div>
           </div>
         </div>
+        <div style="margin-top:10px;font-size:12px;color:#94A3B8">· 所有套餐有效期1年 · 额度随用随扣 · 可多次购买叠加</div>
       </div>
-
-      <!-- 收款码区域 -->
+            <!-- 收款码区域 -->
       <div id="pay-box" style="display:none;background:#fff;border:1px solid #E2E8F0;border-radius:14px;padding:28px;text-align:center;margin-bottom:28px">
         <div style="font-size:15px;font-weight:700;margin-bottom:4px" id="pay-title">—</div>
-        <div style="font-size:22px;font-weight:800;color:#07C160;margin-bottom:6px" id="pay-amount">—</div>
-        <div style="font-size:12px;color:#94A3B8;margin-bottom:20px">微信扫码支付 · 支付后自动开通</div>
-
-        <!-- 加载状态 -->
-        <div id="pay-loading" style="padding:40px 0;color:#94A3B8;font-size:14px">
-          <div style="width:28px;height:28px;border:3px solid #07C160;border-top-color:transparent;border-radius:50%;animation:sp 0.8s linear infinite;margin:0 auto 12px"></div>
-          正在生成支付码…
-        </div>
-
-        <!-- 二维码容器 -->
-        <div id="pay-qr-wrap" style="display:none">
-          <div style="font-size:12px;color:#475569;margin-bottom:10px;font-weight:600">💚 微信扫码付款</div>
-          <div id="pay-qr" style="display:inline-block;padding:12px;background:#fff;border:1px solid #E2E8F0;border-radius:10px"></div>
-          <div style="margin-top:14px;font-size:12px;color:#94A3B8">请在 <span id="pay-countdown" style="color:#0F172A;font-weight:700">15:00</span> 内完成支付</div>
-
-          <!-- 支付确认按钮 -->
-          <div style="margin-top:18px">
-            <button id="pay-confirm-btn" onclick="checkPayStatus()" style="padding:10px 32px;background:#07C160;color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
-              ✅ 我已完成支付
-            </button>
-            <div style="font-size:12px;color:#94A3B8;margin-top:8px">支付完成后点击此按钮，系统将自动验证并开通</div>
+        <div style="font-size:22px;font-weight:800;color:#2563EB;margin-bottom:20px" id="pay-amount">—</div>
+        <div style="display:flex;gap:24px;justify-content:center;align-items:flex-start;flex-wrap:wrap">
+          <div>
+            <div style="font-size:12px;color:#475569;margin-bottom:8px;font-weight:600">💚 微信扫码付款</div>
+            <img id="qr-wechat" src="https://via.placeholder.com/160x160/07C160/ffffff?text=微信收款码" style="width:160px;height:160px;border-radius:8px;border:1px solid #E2E8F0">
+          </div>
+          <div>
+            <div style="font-size:12px;color:#475569;margin-bottom:8px;font-weight:600">💙 支付宝扫码付款</div>
+            <img id="qr-alipay" src="https://via.placeholder.com/160x160/1677FF/ffffff?text=支付宝收款码" style="width:160px;height:160px;border-radius:8px;border:1px solid #E2E8F0">
           </div>
         </div>
-
-        <!-- 支付失败提示 -->
-        <div id="pay-error" style="display:none;padding:16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;color:#DC2626;font-size:13px"></div>
-
-        <!-- 支付成功提示 -->
-        <div id="pay-success" style="display:none;padding:20px;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px">
-          <div style="font-size:24px;margin-bottom:8px">🎉</div>
-          <div style="font-size:15px;font-weight:700;color:#166534;margin-bottom:6px">支付成功！账号已开通</div>
-          <div style="font-size:13px;color:#166534;margin-bottom:16px">权益已生效，可立即开始使用</div>
-          <button onclick="location.reload()" style="padding:8px 24px;background:#16A34A;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">刷新页面</button>
+        <div style="margin-top:20px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:14px;font-size:13px;color:#92400E;line-height:1.8;text-align:left">
+          <strong>付款步骤：</strong><br>
+          1. 扫码付款对应金额<br>
+          2. 截图付款成功界面<br>
+          3. 将截图发送至微信或拨打 <a href="tel:17661369798" style="color:#2563EB;font-weight:600">17661369798</a><br>
+          4. 工作日 9:00-18:00 收到后立即开通，非工作时间次日开通
         </div>
       </div>
 
@@ -458,7 +450,7 @@ body{font-family:'PingFang SC','Microsoft YaHei',system-ui,sans-serif;background
         <div style="font-size:14px;font-weight:700;margin-bottom:4px">🏢 公司信息</div>
         <div style="font-size:12px;color:#94A3B8;margin-bottom:16px">用于发票抬头校验</div>
         <label style="font-size:12px;color:#475569;display:block;margin-bottom:5px">公司全称（发票抬头应与此一致）</label>
-        <input class="rule-input" id="rc-company-name" type="text" placeholder="如：技术服务科技有限公司" style="width:100%">
+        <input class="rule-input" id="rc-company-name" type="text" placeholder="如：海构智眼（宁波）检测科技有限公司" style="width:100%">
       </div>
     </div>
     <div id="rules-saved-tip" style="display:none;background:#F0FDF4;border:1px solid #86EFAC;border-radius:8px;padding:12px 16px;margin-top:16px;font-size:13px;color:#166534;font-weight:600">
@@ -554,146 +546,34 @@ async function loadUser(){
 }
 
 const PLANS_INFO={
-  monthly:       {name:"基础版·月付", amount:"¥399"},
-  quarterly:     {name:"基础版·季付", amount:"¥1099"},
-  yearly:        {name:"基础版·年付", amount:"¥3999"},
-  monthly_pro:   {name:"强化版·月付", amount:"¥599"},
-  quarterly_pro: {name:"强化版·季付", amount:"¥1599"},
-  yearly_pro:    {name:"强化版·年付", amount:"¥5599"},
+  basic_300:   {name:"基础版·入门包 300张",   amount:"¥79"},
+  basic_1000:  {name:"基础版·标准包 1000张",  amount:"¥199"},
+  basic_3000:  {name:"基础版·专业包 3000张",  amount:"¥499"},
+  basic_10000: {name:"基础版·旗舰包 10000张", amount:"¥1399"},
+  pro_300:     {name:"强化版·入门包 300张",   amount:"¥169"},
+  pro_1000:    {name:"强化版·标准包 1000张",  amount:"¥449"},
+  pro_3000:    {name:"强化版·专业包 3000张",  amount:"¥1199"},
+  pro_10000:   {name:"强化版·旗舰包 10000张", amount:"¥3299"},
 };
+// 收款码图片URL（替换为你的真实收款码）
+const QR_WECHAT="YOUR_WECHAT_QR_URL";
+const QR_ALIPAY="YOUR_ALIPAY_QR_URL";
 
-let __currentOrder = null;
-let __countdownTimer = null;
-let __pollTimer = null;
-
-async function selectPlan(key){
-  // 高亮按钮
+function selectPlan(key){
+  // 清除所有按钮高亮
   document.querySelectorAll(".plan-btn").forEach(b=>{
     b.classList.remove("plan-btn-active","plan-btn-pro-active");
   });
-  const btn = document.getElementById("pb-"+key);
+  // 高亮选中按钮
+  const btn=document.getElementById("pb-"+key);
   if(btn) btn.classList.add(key.includes("pro")?"plan-btn-pro-active":"plan-btn-active");
-
-  const p = PLANS_INFO[key];
-  document.getElementById("pay-title").textContent = p.name;
-  document.getElementById("pay-amount").textContent = p.amount;
-
-  // 重置支付框状态
-  const box = document.getElementById("pay-box");
-  box.style.display = "block";
-  box.scrollIntoView({behavior:"smooth", block:"nearest"});
-  document.getElementById("pay-loading").style.display = "block";
-  document.getElementById("pay-qr-wrap").style.display = "none";
-  document.getElementById("pay-error").style.display = "none";
-  document.getElementById("pay-success").style.display = "none";
-
-  // 清除上次轮询
-  if(__pollTimer){ clearInterval(__pollTimer); __pollTimer = null; }
-  if(__countdownTimer){ clearInterval(__countdownTimer); __countdownTimer = null; }
-  if(__currentOrder){ __currentOrder = null; }
-
-  // 创建订单
-  try {
-    const r = await fetch("/api/order/create", {
-      method: "POST",
-      headers: {"Content-Type":"application/json", "Authorization":"Bearer "+TOKEN},
-      body: JSON.stringify({plan: key})
-    });
-    const d = await r.json();
-    if(!d.ok || !d.payUrl) throw new Error(d.error || "创建订单失败");
-
-    __currentOrder = d.outTradeNo;
-
-    // qrUrl：虎皮椒直接返回的二维码图片（PC扫码用，5分钟有效）
-    // payUrl：手机端 H5 跳转链接
-    if(d.mock){
-      document.getElementById("pay-loading").style.display = "none";
-      document.getElementById("pay-qr-wrap").style.display = "block";
-      document.getElementById("pay-confirm-btn").textContent = "🧪 演示：模拟支付成功";
-      document.getElementById("pay-confirm-btn").onclick = ()=>{ location.href = d.payUrl; };
-      document.getElementById("pay-qr").innerHTML = `<div style="width:180px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f0fdf4;border-radius:8px;font-size:13px;color:#166634;gap:8px"><span style="font-size:28px">🧪</span>演示模式<div style="font-size:11px;color:#94A3B8">点按钮触发</div></div>`;
-      return;
-    }
-
-    // PC 端：直接显示二维码图片
-    const qrEl = document.getElementById("pay-qr");
-    qrEl.innerHTML = `<img src="${d.qrUrl}" style="width:180px;height:180px;border-radius:6px;display:block" alt="微信支付二维码">`;
-
-    document.getElementById("pay-loading").style.display = "none";
-    document.getElementById("pay-qr-wrap").style.display = "block";
-    document.getElementById("pay-confirm-btn").textContent = "✅ 我已完成支付";
-    document.getElementById("pay-confirm-btn").onclick = checkPayStatus;
-
-    // 15分钟倒计时
-    let seconds = 15 * 60;
-    __countdownTimer = setInterval(()=>{
-      seconds--;
-      const m = String(Math.floor(seconds/60)).padStart(2,"0");
-      const s = String(seconds%60).padStart(2,"0");
-      const el = document.getElementById("pay-countdown");
-      if(el) el.textContent = m+":"+s;
-      if(seconds <= 0){
-        clearInterval(__countdownTimer);
-        if(el) el.textContent = "已超时";
-      }
-    }, 1000);
-
-    // 自动轮询（每5秒查一次，共3分钟）
-    let pollCount = 0;
-    __pollTimer = setInterval(async()=>{
-      pollCount++;
-      if(pollCount > 36){ clearInterval(__pollTimer); return; }
-      const paid = await queryOrderStatus(__currentOrder);
-      if(paid){
-        clearInterval(__pollTimer);
-        clearInterval(__countdownTimer);
-        showPaySuccess();
-      }
-    }, 5000);
-
-  } catch(e) {
-    document.getElementById("pay-loading").style.display = "none";
-    const errEl = document.getElementById("pay-error");
-    errEl.textContent = "创建订单失败：" + e.message;
-    errEl.style.display = "block";
-  }
-}
-
-async function queryOrderStatus(outTradeNo){
-  try{
-    const r = await fetch("/api/order/status?order="+outTradeNo, {
-      headers: {"Authorization":"Bearer "+TOKEN}
-    });
-    const d = await r.json();
-    return d.paid === true;
-  }catch(e){ return false; }
-}
-
-async function checkPayStatus(){
-  const btn = document.getElementById("pay-confirm-btn");
-  if(!__currentOrder){ return; }
-  btn.disabled = true;
-  btn.textContent = "查询中…";
-  const paid = await queryOrderStatus(__currentOrder);
-  if(paid){
-    clearInterval(__pollTimer);
-    clearInterval(__countdownTimer);
-    showPaySuccess();
-  } else {
-    btn.disabled = false;
-    btn.textContent = "✅ 我已完成支付";
-    // 给用户提示
-    const errEl = document.getElementById("pay-error");
-    errEl.textContent = "暂未查到支付记录，如已支付请稍等几秒后再点击。如有问题请联系客服：17661369798";
-    errEl.style.display = "block";
-    setTimeout(()=>{ errEl.style.display="none"; }, 5000);
-  }
-}
-
-function showPaySuccess(){
-  document.getElementById("pay-qr-wrap").style.display = "none";
-  document.getElementById("pay-error").style.display = "none";
-  document.getElementById("pay-success").style.display = "block";
+  const p=PLANS_INFO[key];
+  document.getElementById("pay-title").textContent=p.name;
+  document.getElementById("pay-amount").textContent=p.amount;
+  if(QR_WECHAT!=="YOUR_WECHAT_QR_URL") document.getElementById("qr-wechat").src=QR_WECHAT;
+  if(QR_ALIPAY!=="YOUR_ALIPAY_QR_URL") document.getElementById("qr-alipay").src=QR_ALIPAY;
+  document.getElementById("pay-box").style.display="block";
+  document.getElementById("pay-box").scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 
 function logout(){localStorage.removeItem("fb_token");localStorage.removeItem("fb_user");location.href="/";}
@@ -787,13 +667,6 @@ function tg(lvl,txt){
 async function runF(files){
   if(!(await checkActive()))return;
   const arr=[...files];if(!arr.length)return;
-  // 确保已有数据不丢失
-  if(RS.length===0){
-    try{
-      const saved=localStorage.getItem("fb_rs_"+TOKEN);
-      if(saved) RS=JSON.parse(saved);
-    }catch(e){}
-  }
   // 免费用户：超过剩余张数自动截断
   if(USER?.status!=="active"){
     const remaining=window.__trialRemaining||0;
@@ -814,15 +687,7 @@ async function runF(files){
       if(sel)sel.textContent="识别中…";
       const r=await analyze(f);
       if(r.docNo&&RS.some(ex=>ex.docNo===r.docNo)){
-        // 停止转圈，显示跳过，800ms后自动移除
-        const qEl=document.getElementById("qi"+f.name.replace(/\W/g,'_'));
-        if(qEl){
-          const spinEl=qEl.querySelector('.spin');
-          if(spinEl){spinEl.style.animation='none';spinEl.style.borderColor='#CBD5E1';spinEl.style.borderTopColor='#CBD5E1';}
-          if(sel)sel.textContent="⊘ 重复跳过";
-          setTimeout(()=>qEl.remove(),1200);
-        }
-        continue;
+        if(sel)sel.textContent="⊘ 重复跳过";continue;
       }
       await deductUsage(r.pages||1);
       RS.unshift(r);
@@ -1202,8 +1067,12 @@ function renderRes(){
       </select>
     </div>
     <div style="background:#F8FAFC;border-radius:7px;padding:8px 10px">
-      <div style="font-size:10px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">附件补强备注</div>
-      <input class="ie" style="font-size:11px;width:100%;color:#475569" placeholder="填写补强说明，如：已上传平台截图、已附酒店水单…" value="${(item.supportingDocNote||'').replace(/"/g,'&quot;')}" onchange="ieSet(${item.id},'supportingDocNote',this.value)">
+      <div style="font-size:10px;color:#94A3B8;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.05em">附件补强</div>
+      <select class="ie-sel" style="font-size:11px;font-weight:600;color:${sdColor[item.supportingDocStatus]||'#475569'}" onchange="ieSet(${item.id},'supportingDocStatus',this.value)">
+        <option value="not_required"${item.supportingDocStatus==='not_required'?' selected':''}>无需补强</option>
+        <option value="pending"${item.supportingDocStatus==='pending'?' selected':''}>待补充附件</option>
+        <option value="matched"${item.supportingDocStatus==='matched'?' selected':''}>补强成功</option>
+      </select>
     </div>
   </div>
 
